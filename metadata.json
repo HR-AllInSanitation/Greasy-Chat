@@ -1,0 +1,7 @@
+{
+  "name": "All in Sanitation - Service Estimator",
+  "description": "AI-powered price estimator for All in Sanitation, specializing in grease trap, clarifier, and hydrojetting services across Southern California.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
