@@ -10,6 +10,9 @@ type ConversationStep =
   | 'ASK_SYSTEM_TYPE'
   | 'ASK_GALLONS'
   | 'ASK_PARKING_DISTANCE'
+  | 'ASK_CONTACT_INFO'
+  | 'CONFIRM_QUOTE'
+  | 'SHOW_QUOTE'
   | 'COMPLETE'
   | 'NONE';
 
@@ -39,7 +42,7 @@ export const ChatInterface: React.FC = () => {
   const hasApiKey = !!process.env.API_KEY;
   
   const [messages, setMessages] = useState<Message[]>(() => {
-    if (!hasApiKey) return [{ role: 'model', text: "Chat key not authorized. Please request a manual quote." }];
+    // If no API key is present, start silently with the normal welcome prompt and allow the local flow to proceed.
     try {
       const saved = sessionStorage.getItem('ais_chat_history');
       if (saved) return JSON.parse(saved);
@@ -89,17 +92,12 @@ export const ChatInterface: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isProcessingRef = useRef(false);
+  const inFlightRef = useRef(false);
 
   const getSuggestions = () => {
-    if (conversationStep === 'ASK_SYSTEM_TYPE') {
-      return ['Indoor Trap', 'Outdoor Interceptor', 'Clarifier', 'Hydro Jetting'];
-    }
-    if (conversationStep === 'ASK_GALLONS') {
-      if (collectedInputs.serviceType === ServiceType.GREASE_TRAP) return ['25', '50', '75', 'Unsure'];
-      return ['750', '1600', '2500', 'Unsure'];
-    }
+    // Suggestions are shown ONLY for the parking distance step per spec.
     if (conversationStep === 'ASK_PARKING_DISTANCE') {
-      return ['50', '100', '150', '200', 'Unsure'];
+      return ['50','100','150','200','Unsure'];
     }
     return [];
   };
@@ -119,73 +117,339 @@ export const ChatInterface: React.FC = () => {
     if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
   }, [messages]);
 
+  // IMPORTANT: The local, Gemini-independent flow below is intentional and must NOT be removed.
   const processMessage = async (text: string) => {
     const cleanText = text.trim();
-    if (!cleanText || isProcessingRef.current || !hasApiKey) return;
+    if (!cleanText || isProcessingRef.current) { return; }
     isProcessingRef.current = true;
-    
-    let updatedInputs = { ...collectedInputs };
-    let updatedFields = { ...confirmedFields };
-    let updatedLead = { ...currentLead };
-    let updatedStep = conversationStep;
-    
-    const userMessage: Message = { role: 'user', text: cleanText };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
 
     try {
+      let updatedInputs = { ...collectedInputs };
+      let updatedFields = { ...confirmedFields };
+      let updatedLead = { ...currentLead };
+      let updatedStep = conversationStep;
+      
+      const userMessage: Message = { role: 'user', text: cleanText };
+      setMessages(prev => [...prev, userMessage]);
+      setInput('');
+      setIsLoading(true);
+
+    // If there's no Gemini API key, handle known steps locally (do NOT call Gemini)
+    if (!hasApiKey) {
+      // Detect if user sent contact info early (email or phone) and handle it immediately
+      const _emailEarly = cleanText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+      const _phoneEarly = cleanText.match(/(\+?\d{1,2}[-.\s]?)?(\(?\d{3}\)?)[-.\s]?\d{3}[-.\s]?\d{4}/);
+      if (_emailEarly || _phoneEarly) {
+        if (_emailEarly) updatedLead.email = _emailEarly[0];
+        if (_phoneEarly) updatedLead.phone = _phoneEarly[0];
+        if (!updatedFields.name) {
+          const nameCandidate = cleanText.replace(_emailEarly ? _emailEarly[0] : '', '').replace(_phoneEarly ? _phoneEarly[0] : '', '').trim();
+          if (nameCandidate) { updatedLead.name = nameCandidate; updatedFields.name = true; }
+        }
+        setCurrentLead(updatedLead);
+        setConfirmedFields(updatedFields);
+        if (updatedLead.name && (updatedLead.email || updatedLead.phone)) {
+          setConversationStep('CONFIRM_QUOTE');
+          setMessages(prev => [...prev, { role: 'model', text: "Do you confirm this quote? Reply 'yes' to confirm." }]);
+        } else {
+          setMessages(prev => [...prev, { role: 'model', text: "Please provide your name, email, and phone number." }]);
+        }
+        setIsLoading(false);
+        isProcessingRef.current = false;
+        return;
+      }
+
+      // Business name + address parsing (local-only)
       if (conversationStep === 'ASK_BUSINESS_NAME_ADDRESS') {
-        const looksLikeAddress = (t: string): boolean => {
-          const streetTokens = "st|street|rd|road|ave|avenue|blvd|boulevard|pkwy|parkway|dr|drive|ln|lane|way|ct|court|pl|place|ter|terrace|cir|circle";
-          const patternA = new RegExp(`^\\s*\\d+.*\\b(${streetTokens})\\b`, "i");
-          return patternA.test(t);
+        const streetTokens = "st|street|rd|road|ave|avenue|blvd|boulevard|pkwy|parkway|dr|drive|ln|lane|way|ct|court|pl|place|ter|terrace|cir|circle";
+        const patternA = new RegExp(`\\b\\d+[^\\n,]*\\b(${streetTokens})\\b`, "i");
+        const patternB = /,\s*[A-Z]{2}\s*\d{5}(?:-\d{4})?/i; // ", CA 91354" or ", NY 10001-1234"
+
+        const parseNameAndAddress = (t: string) => {
+          const aMatch = t.match(patternA);
+          if (aMatch) {
+            const addrStart = t.toLowerCase().indexOf(aMatch[0].toLowerCase());
+            const address = t.slice(addrStart).trim();
+            const name = t.slice(0, addrStart).trim().replace(/,$/, '');
+            if (name) return { name, address };
+            return { address };
+          }
+          const bMatch = t.match(patternB);
+          if (bMatch) {
+            const idx = t.search(patternB);
+            // attempt to include a reasonable window before the match as the street portion
+            const preceding = t.slice(0, idx);
+            const lastComma = preceding.lastIndexOf(',');
+            const start = lastComma !== -1 ? lastComma + 1 : Math.max(0, idx - 60);
+            const address = t.slice(start).trim();
+            const name = t.replace(address, '').replace(/,$/, '').trim();
+            if (name) return { name, address };
+            return { address };
+          }
+          return {};
         };
 
-        const inputIsAddress = looksLikeAddress(cleanText);
-        if (inputIsAddress) {
-          updatedLead.address = cleanText;
+        const parsed = parseNameAndAddress(cleanText);
+        if (parsed.address && parsed.name) {
+          updatedLead.address = parsed.address;
+          updatedLead.restaurantName = parsed.name;
           updatedFields.address = true;
-        } else {
-          updatedLead.restaurantName = cleanText;
           updatedFields.name = true;
-        }
-
-        if (updatedFields.name && updatedFields.address) {
           updatedStep = 'ASK_SYSTEM_TYPE';
-        } else {
-          const nextPrompt = updatedFields.name ? "What is the service address?" : "What is the business name?";
-          setMessages(prev => [...prev, { role: 'model', text: nextPrompt }]);
+          setCollectedInputs(updatedInputs);
+          setCurrentLead(updatedLead);
+          setConfirmedFields(updatedFields);
+          setConversationStep(updatedStep);
+          setMessages(prev => [...prev, { role: 'model', text: "What is the system type?" }]);
+          setIsLoading(false);
+          isProcessingRef.current = false;
+          return;
+        } else if (parsed.address) {
+          updatedLead.address = parsed.address;
+          updatedFields.address = true;
+          // Address-only → ask for business name (exact phrasing)
+          setMessages(prev => [...prev, { role: 'model', text: "Thanks — what’s the business name?" }]);
+          setConfirmedFields(updatedFields);
+          setCurrentLead(updatedLead);
+          setConversationStep(updatedStep); // stay on ASK_BUSINESS_NAME_ADDRESS
+          setIsLoading(false);
+          isProcessingRef.current = false;
+          return;
+        } else if (parsed.name) {
+          updatedLead.restaurantName = parsed.name;
+          updatedFields.name = true;
+          // Name-only → ask for address (exact phrasing)
+          setMessages(prev => [...prev, { role: 'model', text: "Got it — what’s the address?" }]);
           setConfirmedFields(updatedFields);
           setCurrentLead(updatedLead);
           setConversationStep(updatedStep);
           setIsLoading(false);
           isProcessingRef.current = false;
           return;
+        } else {
+          // Parsing failed → ask for both (exact phrasing)
+          setMessages(prev => [...prev, { role: 'model', text: "What’s your business name and address?" }]);
+          setIsLoading(false);
+          isProcessingRef.current = false;
+          return;
         }
       }
 
+      // System type -> advance to gallons
+      if (conversationStep === 'ASK_SYSTEM_TYPE') {
+        if (/indoor|inside|trap|trampa/i.test(cleanText)) updatedInputs.serviceType = ServiceType.GREASE_TRAP;
+        if (/outdoor|outside|interceptor/i.test(cleanText)) updatedInputs.serviceType = ServiceType.INTERCEPTOR;
+        if (/clarifier|clarificador/i.test(cleanText)) updatedInputs.serviceType = ServiceType.CLARIFIER;
+        if (/jet|hydro|drain/i.test(cleanText)) updatedInputs.serviceType = ServiceType.HYDRO_JET;
+        updatedFields.systemType = true;
+        updatedStep = 'ASK_GALLONS';
+        setCollectedInputs(updatedInputs);
+        setConfirmedFields(updatedFields);
+        setConversationStep(updatedStep);
+        setMessages(prev => [...prev, { role: 'model', text: "How many gallons?" }]);
+        setIsLoading(false);
+        isProcessingRef.current = false;
+        return;
+      }
+
+      // Gallons -> advance to parking distance
+      if (conversationStep === 'ASK_GALLONS') {
+        if (/unsure|no se|no estoy seguro/i.test(cleanText)) {
+          updatedInputs.gallons = 0; 
+        } else if (/\d+/.test(cleanText)) {
+          updatedInputs.gallons = parseInt(cleanText.match(/\d+/)![0]);
+        }
+        updatedFields.gallons = true;
+        updatedStep = 'ASK_PARKING_DISTANCE';
+        setCollectedInputs(updatedInputs);
+        setConfirmedFields(updatedFields);
+        setConversationStep(updatedStep);
+        setMessages(prev => [...prev, { role: 'model', text: "What’s the parking distance?" }]);
+        setIsLoading(false);
+        isProcessingRef.current = false;
+        return;
+      }
+
+      // Parking distance -> complete and show quote
+      if (conversationStep === 'ASK_PARKING_DISTANCE') {
+        if (/\d+/.test(cleanText)) {
+          updatedInputs.parkingDistance = parseInt(cleanText.match(/\d+/)![0]);
+        } else if (/unsure|no se/i.test(cleanText)) {
+          updatedInputs.parkingDistance = 150; 
+        }
+        updatedFields.distance = true;
+        updatedStep = 'ASK_CONTACT_INFO';
+        setCollectedInputs(updatedInputs);
+        setConfirmedFields(updatedFields);
+
+        // proceed to collect contact info before showing quote
+        setConversationStep('ASK_CONTACT_INFO');
+        setMessages(prev => [...prev, { role: 'model', text: "Thanks — next, what's your contact name and phone?" }]);
+
+        setIsLoading(false);
+        isProcessingRef.current = false;
+        return;
+      }
+
+      // Contact info (name/email/phone) -> confirm quote
+      if (conversationStep === 'ASK_CONTACT_INFO') {
+        const emailMatch = cleanText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+        const phoneMatch = cleanText.match(/(\+?\d{1,2}[-.\s]?)?(\(?\d{3}\)?)[-.\s]?\d{3}[-.\s]?\d{4}/);
+        if (emailMatch) updatedLead.email = emailMatch[0];
+        if (phoneMatch) updatedLead.phone = phoneMatch[0];
+        if (!updatedFields.name && !emailMatch && !phoneMatch) {
+          updatedLead.name = cleanText;
+          updatedFields.name = true;
+        }
+        setCurrentLead(updatedLead);
+        setConfirmedFields(updatedFields);
+
+        if (updatedLead.name && (updatedLead.email || updatedLead.phone)) {
+          setConversationStep('CONFIRM_QUOTE');
+          setMessages(prev => [...prev, { role: 'model', text: "Do you confirm this quote? Reply 'yes' to confirm." }]);
+        } else {
+          setMessages(prev => [...prev, { role: 'model', text: "Please provide your name, email, and phone number." }]);
+        }
+
+        setIsLoading(false);
+        isProcessingRef.current = false;
+        return;
+      }
+    }
+
+    // If we're at the confirmation step, handle locally (no Gemini) per spec.
+    if (conversationStep === 'CONFIRM_QUOTE') {
+      const confirmed = /^(yes|y|si|sure|confirm|confirmar|sí|ok)$/i.test(cleanText.trim());
+      if (confirmed) {
+        // If any required inputs are missing, ask for them instead of proceeding.
+        if (!confirmedFields.name || !confirmedFields.address || !confirmedFields.systemType || !confirmedFields.gallons || !confirmedFields.distance) {
+          if (!confirmedFields.name || !confirmedFields.address) {
+            setMessages(prev => [...prev, { role: 'model', text: "What’s your business name and address?" }]);
+          } else if (!confirmedFields.systemType) {
+            setMessages(prev => [...prev, { role: 'model', text: "What is the system type?" }]);
+          } else if (!confirmedFields.gallons) {
+            setMessages(prev => [...prev, { role: 'model', text: "How many gallons?" }]);
+          } else if (!confirmedFields.distance) {
+            setMessages(prev => [...prev, { role: 'model', text: "What’s the parking distance?" }]);
+          }
+          setIsLoading(false);
+          isProcessingRef.current = false;
+          return;
+        }
+
+        const finalEst = calculateServiceEstimate(collectedInputs);
+        setCurrentEstimate(finalEst);
+        setConversationStep('SHOW_QUOTE');
+        setMessages(prev => [...prev, { role: 'model', text: "Here is your estimate.", estimate: finalEst }]);
+        setIsLoading(false);
+        isProcessingRef.current = false;
+        return;
+      }
+    }
+
+    try {
+      if (conversationStep === 'ASK_BUSINESS_NAME_ADDRESS') {
+        const streetTokens = "st|street|rd|road|ave|avenue|blvd|boulevard|pkwy|parkway|dr|drive|ln|lane|way|ct|court|pl|place|ter|terrace|cir|circle";
+        const patternA = new RegExp(`\\b\\d+[^\\n,]*\\b(${streetTokens})\\b`, "i");
+        const patternB = /,\s*[A-Z]{2}\s*\d{5}(?:-\d{4})?/i; // ", CA 91354" or ", NY 10001-1234"
+
+        const parseNameAndAddress = (t: string) => {
+          const aMatch = t.match(patternA);
+          if (aMatch) {
+            const addrStart = t.toLowerCase().indexOf(aMatch[0].toLowerCase());
+            const address = t.slice(addrStart).trim();
+            const name = t.slice(0, addrStart).trim().replace(/,$/, '');
+            if (name) return { name, address };
+            return { address };
+          }
+          const bMatch = t.match(patternB);
+          if (bMatch) {
+            const idx = t.search(patternB);
+            // attempt to include a reasonable window before the match as the street portion
+            const preceding = t.slice(0, idx);
+            const lastComma = preceding.lastIndexOf(',');
+            const start = lastComma !== -1 ? lastComma + 1 : Math.max(0, idx - 60);
+            const address = t.slice(start).trim();
+            const name = t.replace(address, '').replace(/,$/, '').trim();
+            if (name) return { name, address };
+            return { address };
+          }
+          return {};
+        };
+
+        const parsed = parseNameAndAddress(cleanText);
+        if (parsed.address && parsed.name) {
+          updatedLead.address = parsed.address;
+          updatedLead.restaurantName = parsed.name;
+          updatedFields.address = true;
+          updatedFields.name = true;
+          updatedStep = 'ASK_SYSTEM_TYPE';
+        } else if (parsed.address) {
+          updatedLead.address = parsed.address;
+          updatedFields.address = true;
+          // Address-only → ask for business name (exact phrasing)
+          setMessages(prev => [...prev, { role: 'model', text: "Thanks — what’s the business name?" }]);
+          setConfirmedFields(updatedFields);
+          setCurrentLead(updatedLead);
+          setConversationStep(updatedStep); // stay on ASK_BUSINESS_NAME_ADDRESS
+          setIsLoading(false);
+          isProcessingRef.current = false;
+          return;
+        } else if (parsed.name) {
+          updatedLead.restaurantName = parsed.name;
+          updatedFields.name = true;
+          // Name-only → ask for address (exact phrasing)
+          setMessages(prev => [...prev, { role: 'model', text: "Got it — what’s the address?" }]);
+          setConfirmedFields(updatedFields);
+          setCurrentLead(updatedLead);
+          setConversationStep(updatedStep);
+          setIsLoading(false);
+          isProcessingRef.current = false;
+          return;
+        } else {
+          // Parsing failed → ask for both (exact phrasing)
+          setMessages(prev => [...prev, { role: 'model', text: "What’s your business name and address?" }]);
+          setIsLoading(false);
+          isProcessingRef.current = false;
+          return;
+        }
+      }
+
+      if (inFlightRef.current) {
+        // Prevent duplicate Gemini calls while one is in-flight.
+        setIsLoading(false);
+        isProcessingRef.current = false;
+        return;
+      }
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const contents = [...messages, userMessage].slice(-6).map(m => ({
         role: m.role === 'user' ? 'user' : 'model',
         parts: [{ text: m.text }]
       }));
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents,
-        config: {
-          systemInstruction: `You are "The Greasy Agent", dispatcher for LA Restaurant Services.
+      inFlightRef.current = true;
+      let response: any;
+      try {
+        const aiPromise = ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents,
+          config: {
+            systemInstruction: `You are "The Greasy Agent", dispatcher for LA Restaurant Services.
 TONE: Professional dispatcher.
 BILINGUAL: Respond in the language the user uses (English or Spanish).
 CONSTRAINTS: 1-2 sentences. Ask only ONE question.
 UNSURE: If user says "Unsure", accept it and move forward.
 FLOW: System Type -> Capacity -> Hose Distance. Use setConversationStep tool.`,
-          tools: [{ functionDeclarations: [setConversationStepTool] }],
-        }
-      });
+            tools: [{ functionDeclarations: [setConversationStepTool] }],
+          }
+        });
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject({ code: 'timeout' }), 12000));
+        response = await Promise.race([aiPromise, timeoutPromise]);
+      } finally {
+        inFlightRef.current = false;
+      }
 
-      if (response.functionCalls) {
+      if (response && response.functionCalls) {
         for (const call of response.functionCalls) {
           if (call.name === 'setConversationStep') {
             updatedStep = (call.args as any).step as ConversationStep;
@@ -194,7 +458,7 @@ FLOW: System Type -> Capacity -> Hose Distance. Use setConversationStep tool.`,
         }
       }
 
-      const responseText = response.text || "Understood.";
+      const responseText = response?.text || "Understood.";
       
       if (updatedStep === 'ASK_GALLONS') {
         if (/indoor|inside|trap|trampa/i.test(cleanText)) updatedInputs.serviceType = ServiceType.GREASE_TRAP;
@@ -229,7 +493,7 @@ FLOW: System Type -> Capacity -> Hose Distance. Use setConversationStep tool.`,
       if (updatedStep === 'COMPLETE' && updatedFields.name && updatedFields.address) {
           const finalEst = calculateServiceEstimate(updatedInputs);
           setCurrentEstimate(finalEst);
-          setConversationStep('NONE');
+          setConversationStep('SHOW_QUOTE');
           const completionText = cleanText.toLowerCase().includes('hola') || cleanText.toLowerCase().includes('buenos') || /es|español/i.test(responseText)
             ? "Ruta optimizada. Aquí tienes tu presupuesto basado en el despacho de Sylmar."
             : "Operational range optimized. Here is your estimate based on Sylmar dispatch.";
@@ -239,11 +503,180 @@ FLOW: System Type -> Capacity -> Hose Distance. Use setConversationStep tool.`,
       }
 
     } catch (e: any) {
-      setMessages(prev => [...prev, { role: 'model', text: "Dispatch busy. Call 818.698.4252." }]);
+      const status = e?.status || e?.statusCode || e?.response?.status || e?.code;
+      if (status === 401 || status === 403) {
+        // Fallback: treat as if there's no API key and run local handlers so UI doesn't get stuck.
+        // Business name + address parsing
+        if (conversationStep === 'ASK_BUSINESS_NAME_ADDRESS') {
+          const streetTokens = "st|street|rd|road|ave|avenue|blvd|boulevard|pkwy|parkway|dr|drive|ln|lane|way|ct|court|pl|place|ter|terrace|cir|circle";
+          const patternA = new RegExp(`\\b\\d+[^\\n,]*\\b(${streetTokens})\\b`, "i");
+          const patternB = /,\s*[A-Z]{2}\s*\d{5}(?:-\d{4})?/i;
+
+          const parseNameAndAddress = (t: string) => {
+            const aMatch = t.match(patternA);
+            if (aMatch) {
+              const addrStart = t.toLowerCase().indexOf(aMatch[0].toLowerCase());
+              const address = t.slice(addrStart).trim();
+              const name = t.slice(0, addrStart).trim().replace(/,$/, '');
+              if (name) return { name, address };
+              return { address };
+            }
+            const bMatch = t.match(patternB);
+            if (bMatch) {
+              const idx = t.search(patternB);
+              const preceding = t.slice(0, idx);
+              const lastComma = preceding.lastIndexOf(',');
+              const start = lastComma !== -1 ? lastComma + 1 : Math.max(0, idx - 60);
+              const address = t.slice(start).trim();
+              const name = t.replace(address, '').replace(/,$/, '').trim();
+              if (name) return { name, address };
+              return { address };
+            }
+            return {};
+          };
+
+          const parsed = parseNameAndAddress(cleanText);
+          if (parsed.address && parsed.name) {
+            updatedLead.address = parsed.address;
+            updatedLead.restaurantName = parsed.name;
+            updatedFields.address = true;
+            updatedFields.name = true;
+            updatedStep = 'ASK_SYSTEM_TYPE';
+            setCollectedInputs(updatedInputs);
+            setCurrentLead(updatedLead);
+            setConfirmedFields(updatedFields);
+            setConversationStep(updatedStep);
+            setMessages(prev => [...prev, { role: 'model', text: "What is the system type?" }]);
+            setIsLoading(false);
+            isProcessingRef.current = false;
+            return;
+          } else if (parsed.address) {
+            updatedLead.address = parsed.address;
+            updatedFields.address = true;
+            setMessages(prev => [...prev, { role: 'model', text: "Thanks — what’s the business name?" }]);
+            setConfirmedFields(updatedFields);
+            setCurrentLead(updatedLead);
+            setConversationStep(updatedStep);
+            setIsLoading(false);
+            isProcessingRef.current = false;
+            return;
+          } else if (parsed.name) {
+            updatedLead.restaurantName = parsed.name;
+            updatedFields.name = true;
+            setMessages(prev => [...prev, { role: 'model', text: "Got it — what’s the address?" }]);
+            setConfirmedFields(updatedFields);
+            setCurrentLead(updatedLead);
+            setConversationStep(updatedStep);
+            setIsLoading(false);
+            isProcessingRef.current = false;
+            return;
+          } else {
+            setMessages(prev => [...prev, { role: 'model', text: "What’s your business name and address?" }]);
+            setIsLoading(false);
+            isProcessingRef.current = false;
+            return;
+          }
+        }
+
+        // System type
+        if (conversationStep === 'ASK_SYSTEM_TYPE') {
+          if (/indoor|inside|trap|trampa/i.test(cleanText)) updatedInputs.serviceType = ServiceType.GREASE_TRAP;
+          if (/outdoor|outside|interceptor/i.test(cleanText)) updatedInputs.serviceType = ServiceType.INTERCEPTOR;
+          if (/clarifier|clarificador/i.test(cleanText)) updatedInputs.serviceType = ServiceType.CLARIFIER;
+          if (/jet|hydro|drain/i.test(cleanText)) updatedInputs.serviceType = ServiceType.HYDRO_JET;
+          updatedFields.systemType = true;
+          updatedStep = 'ASK_GALLONS';
+          setCollectedInputs(updatedInputs);
+          setConfirmedFields(updatedFields);
+          setConversationStep(updatedStep);
+          setMessages(prev => [...prev, { role: 'model', text: "How many gallons?" }]);
+          setIsLoading(false);
+          isProcessingRef.current = false;
+          return;
+        }
+
+        // Gallons
+        if (conversationStep === 'ASK_GALLONS') {
+          if (/unsure|no se|no estoy seguro/i.test(cleanText)) {
+            updatedInputs.gallons = 0;
+          } else if (/\d+/.test(cleanText)) {
+            updatedInputs.gallons = parseInt(cleanText.match(/\d+/)![0]);
+          }
+          updatedFields.gallons = true;
+          updatedStep = 'ASK_PARKING_DISTANCE';
+          setCollectedInputs(updatedInputs);
+          setConfirmedFields(updatedFields);
+          setConversationStep(updatedStep);
+          setMessages(prev => [...prev, { role: 'model', text: "What’s the parking distance?" }]);
+          setIsLoading(false);
+          isProcessingRef.current = false;
+          return;
+        }
+
+        // Parking distance
+        if (conversationStep === 'ASK_PARKING_DISTANCE') {
+          if (/\d+/.test(cleanText)) {
+            updatedInputs.parkingDistance = parseInt(cleanText.match(/\d+/)![0]);
+          } else if (/unsure|no se/i.test(cleanText)) {
+            updatedInputs.parkingDistance = 150;
+          }
+          updatedFields.distance = true;
+          updatedStep = 'ASK_CONTACT_INFO';
+          setCollectedInputs(updatedInputs);
+          setConfirmedFields(updatedFields);
+
+          // proceed to collect contact info before showing quote
+          setConversationStep('ASK_CONTACT_INFO');
+          setMessages(prev => [...prev, { role: 'model', text: "Thanks — next, what's your contact name and phone?" }]);
+          setIsLoading(false);
+          isProcessingRef.current = false;
+          return;
+        }
+
+        // Contact info
+        if (conversationStep === 'ASK_CONTACT_INFO') {
+          const emailMatch = cleanText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+          const phoneMatch = cleanText.match(/(\+?\d{1,2}[-.\s]?)?(\(?\d{3}\)?)[-.\s]?\d{3}[-.\s]?\d{4}/);
+          if (emailMatch) updatedLead.email = emailMatch[0];
+          if (phoneMatch) updatedLead.phone = phoneMatch[0];
+          if (!updatedFields.name && !emailMatch && !phoneMatch) {
+            updatedLead.name = cleanText;
+            updatedFields.name = true;
+          }
+          setCurrentLead(updatedLead);
+          setConfirmedFields(updatedFields);
+
+          if (updatedLead.name && (updatedLead.email || updatedLead.phone)) {
+            setConversationStep('CONFIRM_QUOTE');
+            setMessages(prev => [...prev, { role: 'model', text: "Do you confirm this quote? Reply 'yes' to confirm." }]);
+            setIsLoading(false);
+            isProcessingRef.current = false;
+            return;
+          } else {
+            setMessages(prev => [...prev, { role: 'model', text: "Please provide your name, email, and phone number." }]);
+            setIsLoading(false);
+            isProcessingRef.current = false;
+            return;
+          }
+        }
+
+        // If none of the local fallback branches above matched, inform the user that the chat key is not authorized.
+        setMessages(prev => [...prev, { role: 'model', text: "Chat key not authorized. Please request a manual quote." }]);
+
+      } else if (status === 429) {
+        setMessages(prev => [...prev, { role: 'model', text: "Chat is busy. Try again in 30 seconds." }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'model', text: "Chat temporarily unavailable. Please request a manual quote." }]);
+      }
     } finally {
       setIsLoading(false);
       isProcessingRef.current = false;
     }
+  } finally {
+    // Ensure we always clear UI loading state even if an unexpected early return occurs inside the try block.
+    setIsLoading(false);
+    isProcessingRef.current = false;
+  }
   };
 
   return (
@@ -290,9 +723,18 @@ FLOW: System Type -> Capacity -> Hose Distance. Use setConversationStep tool.`,
               <i className="fas fa-rotate-left"></i>
             </button>
             <div className="flex-1 relative">
-              <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && processMessage(input)} placeholder={hasApiKey ? "Instructions..." : "Offline"} className="w-full bg-slate-50 border-2 border-slate-50 focus:border-amber-500 focus:bg-white rounded-xl px-6 py-3.5 text-[14px] font-bold outline-none transition-all shadow-inner" disabled={isLoading} />
+<input
+  ref={inputRef}
+  type="text"
+  value={input}
+  onChange={(e) => setInput(e.target.value)}
+  onKeyDown={(e) => e.key === 'Enter' && processMessage((e.target as HTMLInputElement).value)}
+  placeholder={"Instructions..."}
+  className="w-full bg-slate-50 border-2 border-slate-50 focus:border-amber-500 focus:bg-white rounded-xl px-6 py-3.5 text-[14px] font-bold outline-none transition-all shadow-inner"
+  disabled={isLoading}
+/>
             </div>
-            <button onClick={() => processMessage(input)} disabled={isLoading || !input.trim()} className="bg-slate-950 text-white w-14 h-14 rounded-xl flex items-center justify-center shadow-xl hover:bg-black transition-all">
+            <button onClick={() => processMessage(inputRef.current?.value || '')} disabled={isLoading || !(inputRef.current?.value?.trim() || input.trim())} className="bg-slate-950 text-white w-14 h-14 rounded-xl flex items-center justify-center shadow-xl hover:bg-black transition-all">
               <i className="fas fa-paper-plane text-amber-500"></i>
             </button>
           </div>

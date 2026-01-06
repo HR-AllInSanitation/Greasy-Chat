@@ -78,11 +78,18 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
   const distanceFee = Math.max(0, distance - thresholdMi) * surchargePerMi;
   baseMin += distanceFee;
 
-  // 4. Hose Distance Surcharge ($2.50 per ft after 100ft)
-  const hoseFee = parkingDistance > 100 ? (parkingDistance - 100) * 2.50 : 0;
+  // 4. Hose Distance Surcharge (50ft included; each additional 50ft segment = $100)
+  const HOSE_INCLUDED_FT = 50;
+  const HOSE_SEGMENT_FT = 50;
+  const HOSE_SEGMENT_PRICE = 100;
+
+  const segmentsNeeded = parkingDistance > 0 ? Math.ceil(parkingDistance / HOSE_SEGMENT_FT) : 0;
+  const extraSegments = Math.max(0, segmentsNeeded - 1);
+  const hoseFee = extraSegments * HOSE_SEGMENT_PRICE;
+
   if (hoseFee > 0) {
     baseMin += hoseFee;
-    notes.push(`Extended hose run: ${parkingDistance}ft.`);
+    notes.push(`Extended hose run: ${parkingDistance}ft (+${extraSegments} hose${extraSegments > 1 ? 's' : ''}).`);
     requiresVerification = true;
   }
 
