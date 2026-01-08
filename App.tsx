@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChatInterface } from './components/ChatInterface';
 
 type LegalType = 'privacy' | 'compliance' | 'terms' | null;
 
 const App: React.FC = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [activeLegal, setActiveLegal] = useState<LegalType>(null);
 
   const services = [
@@ -42,19 +45,37 @@ const App: React.FC = () => {
       desc: "Full documentation and FOG reporting to keep your facility 100% health-code compliant.",
       icon: "fa-file-shield",
       tag: "Legal"
+    },
+    {
+      title: "Hood Cleaning",
+      desc: "Professional kitchen exhaust hood cleaning for fire safety and code compliance. Includes degreasing and filter service.",
+      icon: "fa-broom",
+      tag: "Kitchen"
+    },
+    {
+      title: "Janitorial Services",
+      desc: "Comprehensive facility cleaning and sanitation for restrooms, dining areas, and kitchens. Nightly and deep-clean options available.",
+      icon: "fa-soap",
+      tag: "Sanitation"
     }
   ];
 
+  const didDispatchRef = React.useRef(false);
   const triggerChatAction = (message?: string, focusOnly: boolean = false) => {
     const element = document.getElementById('estimator');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('ais-trigger-chat', { 
-          detail: { message, focusOnly } 
-        }));
-      }, 500);
-    }
+    if (!element) return;
+
+    element.scrollIntoView({ behavior: 'smooth' });
+    const timeoutId = setTimeout(() => {
+      if (didDispatchRef.current) return;
+      didDispatchRef.current = true;
+      window.dispatchEvent(new CustomEvent('ais-trigger-chat', {
+        detail: { message, focusOnly }
+      }));
+    }, 500);
+
+    // In StrictMode dev, effect cleanup can run; return cleanup to avoid double dispatch.
+    return () => clearTimeout(timeoutId);
   };
 
   const scrollToSection = (id: string) => {
@@ -162,7 +183,14 @@ const App: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {services.map((service, idx) => (
-                <div key={idx} className="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 relative overflow-hidden">
+                <div
+                  key={idx}
+                  className="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 relative overflow-hidden cursor-pointer"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('greasy-select-service', { detail: { service: service.title } }));
+                    window.dispatchEvent(new CustomEvent('ais-trigger-chat', { detail: { focusOnly: true } }));
+                  }}
+                >
                   <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
                     <i className={`fas ${service.icon} text-[80px]`}></i>
                   </div>
@@ -180,25 +208,26 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div id="estimator" className="lg:col-span-5 lg:sticky lg:top-28 order-1 lg:order-2 scroll-mt-28">
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-tr from-amber-500 to-amber-200 rounded-[3rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-            
-            <div className="relative bg-slate-950 text-white p-6 rounded-t-[2.5rem] shadow-2xl flex items-center justify-between border-b border-white/5">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-amber-500 text-slate-950 rounded-[1rem] flex items-center justify-center transform group-hover:rotate-6 transition-transform shadow-lg shadow-amber-500/20">
-                  <i className="fas fa-robot text-xl" aria-hidden="true"></i>
-                </div>
-                <div>
-                  <h3 className="font-black text-sm uppercase tracking-widest leading-none">THE GREASY AGENT</h3>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Optimizing Route...</span>
+        <div id="estimator" className="lg:col-span-5 order-1 lg:order-2 scroll-mt-28">
+          <div className="sticky top-28 z-20">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-tr from-amber-500 to-amber-200 rounded-[3rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+              <div className="relative bg-slate-950 text-white p-6 rounded-t-[2.5rem] shadow-2xl flex items-center justify-between border-b border-white/5">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-amber-500 text-slate-950 rounded-[1rem] flex items-center justify-center transform group-hover:rotate-6 transition-transform shadow-lg shadow-amber-500/20">
+                    <i className="fas fa-robot text-xl" aria-hidden="true"></i>
+                  </div>
+                  <div>
+                    <h3 className="font-black text-sm uppercase tracking-widest leading-none">THE GREASY AGENT</h3>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Optimizing Route...</span>
+                    </div>
                   </div>
                 </div>
               </div>
+              <ChatInterface />
             </div>
-            <ChatInterface />
           </div>
         </div>
       </main>
