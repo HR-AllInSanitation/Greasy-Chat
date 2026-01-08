@@ -39,6 +39,101 @@ const isNonEmptyValue = (v: unknown) => {
   return true;
 };
 
+const isUnsureValue = (s: string): boolean => {
+  const t = s.trim().toLowerCase();
+  if (!t) return false;
+  return [
+    'unsure',
+    'not sure',
+    "im not sure",
+    "i'm not sure",
+    'dont know',
+    "don't know",
+    'i dont know',
+    "i don't know",
+    'not certain',
+    "im not certain",
+    "i'm not certain",
+    'no se',
+    'no sé',
+    'nose',
+    'ni idea',
+    'no estoy seguro',
+    'no estoy segura',
+    'incierto',
+  ].includes(t);
+};
+
+const stripFillers = (input: string): string => {
+  const trimmed = input.trim();
+  return trimmed.replace(/^\b(?:sure|okay|ok|yeah|hey|hello|hi|well|um|uh|yo|sup)[,\s]*/i, '').trim();
+};
+
+const extractBusinessName = (input: string): string | null => {
+  const cleaned = stripFillers(input);
+  const match = cleaned.match(/^(?:it['’]?s|its)\s+(.+)/i);
+  if (match && match[1]?.trim()) return match[1].trim();
+  return cleaned.length > 0 ? cleaned : null;
+};
+
+const extractContactName = (input: string): string | null => {
+  const cleaned = stripFillers(input);
+  return cleaned.length >= 2 ? cleaned : null;
+};
+
+const isValidFallback = (field: string, text: string): boolean => {
+  const clean = text.trim();
+  if (!clean) return false;
+  switch (field) {
+    case 'business_name': {
+      const hasLetters = /[a-zA-Z]/.test(clean);
+      const isGreeting = /^(hello|hi|hey|hola)\b/i.test(clean);
+      return hasLetters && !isGreeting;
+    }
+    case 'address_line':
+      return /\d/.test(clean);
+    case 'city':
+      return /^[a-zA-Z\s]{2,}$/.test(clean);
+    case 'state': {
+      const lower = clean.toLowerCase();
+      return /^[a-zA-Z]{2}$/.test(clean) || lower === 'california';
+    }
+    case 'zip':
+      return /^\d{5}$/.test(clean);
+    case 'gallons': {
+      if (isUnsureValue(clean)) return true;
+      if (!/^\d+$/.test(clean)) return false;
+      const n = Number(clean);
+      return n > 0 && n <= 20000;
+    }
+    case 'parking_distance': {
+      if (isUnsureValue(clean)) return true;
+      return /^\d+$/.test(clean);
+    }
+    case 'contact_phone': {
+      const digits = clean.replace(/\D/g, '');
+      return digits.length >= 10;
+    }
+    case 'contact_email':
+      return /@/.test(clean) && /\./.test(clean);
+    case 'contact_name':
+      return clean.length >= 2 && /[a-zA-Z]/.test(clean);
+    default:
+      return true;
+  }
+};
+
+const isInterjection = (text: string): boolean => {
+  const t = text.trim().toLowerCase();
+  if (!t) return false;
+  return /\b(hi|hello|hey|hola|good\s*morn|good\s*afternoon|good\s*evening|thanks|thank\s*you|thx|ty|ok|okay|cool|sure|got\s*it|yo|sup|gracias|buenas|buenos\s*dias|buenas\s*tardes)\b/.test(t);
+};
+
+const getAck = () => {
+  const acks = ['Got it 👍', 'Thanks!', 'Perfect.', 'All set.', 'Noted.'];
+  return acks[Math.floor(Math.random() * acks.length)];
+};
+
 export const ChatInterface: React.FC = () => {
   // Idempotent initial bot message guard
   const didInitRef = useRef(false);
@@ -79,7 +174,12 @@ export const ChatInterface: React.FC = () => {
   });
 
   const [input, setInput] = useState('');
+  // isLoading: UI-disable flag during request handling (blocks send button)
   const [isLoading, setIsLoading] = useState(false);
+  // isBotProcessing: drives the Thinking bubble; true only while bot is actively processing a user message
+  const [isBotProcessing, setIsBotProcessing] = useState(false);
+  // isBooting: brief intro/typing delay on initial load before first bot message
+  const [isBooting, setIsBooting] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [currentEstimate, setCurrentEstimate] = useState<EstimationResult | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
@@ -159,9 +259,8 @@ export const ChatInterface: React.FC = () => {
 
   const getSuggestions = () => {
     const nextField = getFirstMissingField(intake);
-    if (nextField === 'parking_distance') {
-      return ['50', '100', '150', '200', 'Unsure'];
-    }
+    if (nextField === 'gallons') return ['25', '50', '75', '100+', 'Unsure'];
+    if (nextField === 'parking_distance') return ['50', '100', '150', '200', 'Unsure'];
     return [];
   };
 
@@ -171,7 +270,13 @@ export const ChatInterface: React.FC = () => {
     const merged: IntakeState = { ...intakeRef.current };
     (Object.keys(merged) as IntakeField[]).forEach((key) => {
       const v = aiJson?.[key];
-      if (isNonEmptyValue(v)) merged[key] = String(v);
+      if (isNonEmptyValue(v)) {
+        if ((key === 'gallons' || key === 'parking_distance') && typeof v === 'string' && isUnsureValue(v)) {
+          merged[key] = 'UNSURE';
+        } else {
+          merged[key] = String(v);
+        }
+      }
     });
     console.debug('Intake state after merge:', merged);
     // Optional service-area gate: if state is provided and not CA, skip quoting but still capture lead.
@@ -188,10 +293,12 @@ export const ChatInterface: React.FC = () => {
       if (nextContact) pushModel(getQuestionForContactField(nextContact));
     }
     if (!nextField && !outOfArea) {
+      const unknownGallons = merged.gallons === 'UNSURE';
+      const unknownParking = merged.parking_distance === 'UNSURE';
       const estimationInputs: EstimationInputs = {
-        gallons: Number(merged.gallons) || 0,
+        gallons: unknownGallons ? 50 : Number(merged.gallons) || 0,
         systemType: merged.system_type as ServiceType,
-        parkingDistance: Number(merged.parking_distance) || 0,
+        parkingDistance: unknownParking ? 100 : Number(merged.parking_distance) || 0,
         frequency: Frequency.MONTHLY,
         customerLocation: {
           address: `${merged.address_line}, ${merged.city}, ${merged.state} ${merged.zip}`,
@@ -208,6 +315,9 @@ export const ChatInterface: React.FC = () => {
       const quoteId = generateQuoteId();
       setCurrentEstimate(estimate);
       pushModel('Thank you. Here is your estimate.');
+      if (unknownGallons || unknownParking) {
+        pushModel('Note: This is a ballpark estimate because gallons and/or parking distance are unknown. Final price may change after confirmation.');
+      }
       const nextContact = getFirstMissingContactField(contactRef.current);
       if (nextContact) pushModel(getQuestionForContactField(nextContact));
     }
@@ -251,13 +361,72 @@ const processMessage = async (text: string) => {
   console.count('processMessage');
   const cleanText = text.trim();
   if (!cleanText) return;
+  const sanitizedText = stripFillers(cleanText);
 
   if (isProcessingRef.current) return;
   isProcessingRef.current = true;
+  setIsBotProcessing(true);
+
+  const expectedField = getFirstMissingField(intakeRef.current);
+  const expectedContactField = getFirstMissingContactField(contactRef.current);
+  const expectedQuestion = expectedField
+    ? getQuestionForField(expectedField)
+    : expectedContactField
+      ? getQuestionForContactField(expectedContactField)
+      : null;
 
   setMessages(prev => [...prev, { role: 'user', text: cleanText }]);
   setInput('');
   setIsLoading(true);
+  console.debug('isLoading -> true');
+
+  // Deterministic pre-processing for free-text fields before interjection handling or Gemini.
+  if (expectedField === 'business_name') {
+    const extracted = extractBusinessName(sanitizedText);
+    if (extracted) {
+      pushModel(getAck());
+      const aiJson: any = { business_name: extracted };
+      orchestrateIntake(aiJson);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted business_name without interjection/Gemini');
+      return;
+    }
+  } else if (expectedField === 'address_line') {
+    if (sanitizedText.length >= 3) {
+      pushModel(getAck());
+      const aiJson: any = { address_line: sanitizedText };
+      orchestrateIntake(aiJson);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted address_line without interjection/Gemini');
+      return;
+    }
+  } else if (expectedContactField === 'contact_name') {
+    const extracted = extractContactName(sanitizedText);
+    if (extracted) {
+      pushModel(getAck());
+      const aiJson: any = { contact_name: extracted };
+      orchestrateContact(aiJson);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted contact_name without interjection/Gemini');
+      return;
+    }
+  }
+
+  if (isInterjection(cleanText) && expectedQuestion) {
+    console.debug('Interjection detected');
+    pushModel(`👋 Hey! Quick question: ${expectedQuestion}`);
+    setIsLoading(false);
+    setIsBotProcessing(false);
+    console.debug('isLoading -> false (interjection)');
+    isProcessingRef.current = false;
+    return;
+  }
 
   try {
     let aiJson: any = {};
@@ -267,6 +436,7 @@ const processMessage = async (text: string) => {
       console.error('Missing VITE_API_KEY (or API_KEY). Gemini is disabled in the browser build.');
       aiJson = {};
     } else {
+      console.log('hasVITE', !!import.meta.env.VITE_API_KEY);
       const ai = new GoogleGenAI({ apiKey });
 
       const systemPrompt = `You are an intake interpreter. You must ONLY return valid JSON (no prose, no questions, no markdown) matching this schema and using snake_case keys. Use null for unknown.
@@ -286,13 +456,21 @@ Schema:
   "contact_email": string | null
 }`;
 
-      const resp = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [{ role: 'user', parts: [{ text: cleanText }] }],
-        config: { systemInstruction: systemPrompt },
-      });
+      console.time('gemini');
+      console.debug('gemini:start');
+      const resp = await Promise.race([
+        ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: [{ role: 'user', parts: [{ text: cleanText }] }],
+          config: { systemInstruction: systemPrompt },
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Gemini timeout')), 8000)),
+      ]);
+      console.timeEnd('gemini');
+      console.debug('gemini:resolved');
 
       const raw = extractTextFromGeminiResponse(resp);
+      console.log('gemini raw length', raw?.length || 0);
       const aiText = stripFencedJson(raw || '');
 
       try {
@@ -303,41 +481,116 @@ Schema:
       }
 
       // Deterministic fallback: if AI omitted the *expected* next field, use the user's raw input for that field.
-      const expectedField = getFirstMissingField(intakeRef.current);
-      const expectedContactField = getFirstMissingContactField(contactRef.current);
       const intakeIncomplete = !!expectedField;
 
       if (intakeIncomplete && expectedField && !isNonEmptyValue(aiJson?.[expectedField])) {
-        aiJson[expectedField] = cleanText;
+        if (isValidFallback(expectedField, cleanText)) {
+          aiJson[expectedField] = isUnsureValue(cleanText) ? 'UNSURE' : cleanText;
+        } else {
+          if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
+          setIsLoading(false);
+          setIsBotProcessing(false);
+          isProcessingRef.current = false;
+          return;
+        }
       } else if (!intakeIncomplete && expectedContactField && !isNonEmptyValue(aiJson?.[expectedContactField])) {
-        aiJson[expectedContactField] = cleanText;
+        if (isValidFallback(expectedContactField, cleanText)) {
+          aiJson[expectedContactField] = cleanText;
+        } else {
+          if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
+          setIsLoading(false);
+          setIsBotProcessing(false);
+          isProcessingRef.current = false;
+          return;
+        }
       }
+
+      console.log('gemini parsed keys', Object.keys(aiJson || {}));
     }
 
     const nextField = getFirstMissingField(intakeRef.current);
     if (nextField) orchestrateIntake(aiJson);
     else orchestrateContact(aiJson);
   } catch (err) {
-    console.error('AI call failed:', err);
+    console.error('AI call failed:', err?.status || err?.message || err);
     const nextField = getFirstMissingField(intakeRef.current);
     if (nextField) orchestrateIntake({});
     else orchestrateContact({});
   } finally {
     setIsLoading(false);
+    setIsBotProcessing(false);
+    console.debug('isLoading -> false');
     isProcessingRef.current = false;
+    console.debug('processMessage:done');
   }
 };
 // On mount, if no messages, ask for the first missing field (once)
 useEffect(() => {
-  if (didInitRef.current) return;
-  didInitRef.current = true;
-
   const firstField = getFirstMissingField(intakeRef.current);
-  if (firstField) pushModel(getQuestionForField(firstField));
-}, []);
+  if (!firstField) return;
+
+  // Show typing bubble briefly, then ask first question. Guard inside timeout to avoid double push in StrictMode.
+  setIsBooting(true);
+  const timeoutId = setTimeout(() => {
+    if (didInitRef.current) return;
+    didInitRef.current = true;
+    setIsBooting(false);
+    const firstQuestion = getQuestionForField(firstField);
+    const intro = `Hi there! I'm the Greasy Agent. I'll collect a few quick details and give you a service estimate. ${firstQuestion}`;
+    pushModel(intro);
+  }, 800);
+
+  return () => {
+    clearTimeout(timeoutId);
+    if (!didInitRef.current) setIsBooting(false);
+  };
+}, [messages.length]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    if (distanceFromBottom < 80) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [messages, isLoading]);
 
   return (
-    <>
+    <div className="bg-white rounded-b-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col h-[calc(100vh-220px)] max-h-[580px] min-h-0 flex-1">
+      <div
+        ref={scrollContainerRef}
+        className="flex flex-col flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4 bg-white"
+      >
+        {messages.length === 0 ? (
+          <div className="text-sm text-slate-400 font-semibold">Share your site details to get an estimate.</div>
+        ) : (
+          messages.map((msg, idx) => (
+            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm font-semibold shadow-sm ${msg.role === 'user' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-900'}`}
+              >
+                {msg.text}
+              </div>
+            </div>
+          ))
+        )}
+
+        {isBotProcessing && (
+          <div className="flex justify-start">
+            <div className="max-w-[75%] rounded-2xl px-4 py-3 text-sm font-semibold shadow-sm bg-slate-100 text-slate-900">
+              <span className="inline-flex items-center gap-2">
+                <span className="inline-flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:-0.2s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:-0.1s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" />
+                </span>
+                <span className="text-slate-500">Thinking…</span>
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
       {!isLoading && getSuggestions().length > 0 && (
         <div className="px-6 py-3 border-t border-slate-100 bg-white/80 overflow-x-auto whitespace-nowrap no-scrollbar flex gap-2">
           {getSuggestions().map((chip, idx) => (
@@ -352,6 +605,7 @@ useEffect(() => {
           ))}
         </div>
       )}
+
       <form
         className="p-6 border-t border-slate-100 bg-white"
         onSubmit={e => {
@@ -391,11 +645,15 @@ useEffect(() => {
             disabled={isLoading || !(inputRef.current?.value?.trim() || input.trim())}
             className="bg-slate-950 text-white w-14 h-14 rounded-xl flex items-center justify-center shadow-xl hover:bg-black transition-all"
           >
-            <i className="fas fa-paper-plane text-amber-500" aria-label="Send"></i>
+            {isLoading ? (
+              <i className="fas fa-circle-notch fa-spin text-amber-500" aria-label="Loading"></i>
+            ) : (
+              <i className="fas fa-paper-plane text-amber-500" aria-label="Send"></i>
+            )}
           </button>
         </div>
       </form>
-    </>
+    </div>
   );
 };
 
