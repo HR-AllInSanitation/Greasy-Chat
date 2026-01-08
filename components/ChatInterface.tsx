@@ -178,8 +178,6 @@ export const ChatInterface: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   // isBotProcessing: drives the Thinking bubble; true only while bot is actively processing a user message
   const [isBotProcessing, setIsBotProcessing] = useState(false);
-  // isBooting: brief intro/typing delay on initial load before first bot message
-  const [isBooting, setIsBooting] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [currentEstimate, setCurrentEstimate] = useState<EstimationResult | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
@@ -200,7 +198,14 @@ export const ChatInterface: React.FC = () => {
     contactRef.current = contact;
   }, [contact]);
 
-  const didInitQuestionRef = useRef(false);
+  // Persist chat history for continuity across refreshes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('ais_chat_history', JSON.stringify(messages));
+    } catch {
+      // Ignore storage errors (e.g., private mode)
+    }
+  }, [messages]);
 
   const getFirstMissingField = (obj: IntakeState): IntakeField | null => {
     if (!obj.business_name.trim()) return 'business_name';
@@ -524,17 +529,15 @@ Schema:
     console.debug('processMessage:done');
   }
 };
-// On mount, if no messages, ask for the first missing field (once)
+// On mount, if no messages, ask for the first missing field (once). Skip when history already exists.
 useEffect(() => {
+  if (messages.length > 0) return;
   const firstField = getFirstMissingField(intakeRef.current);
   if (!firstField) return;
 
-  // Show typing bubble briefly, then ask first question. Guard inside timeout to avoid double push in StrictMode.
-  setIsBooting(true);
   const timeoutId = setTimeout(() => {
     if (didInitRef.current) return;
     didInitRef.current = true;
-    setIsBooting(false);
     const firstQuestion = getQuestionForField(firstField);
     const intro = `Hi there! I'm the Greasy Agent. I'll collect a few quick details and give you a service estimate. ${firstQuestion}`;
     pushModel(intro);
@@ -542,7 +545,6 @@ useEffect(() => {
 
   return () => {
     clearTimeout(timeoutId);
-    if (!didInitRef.current) setIsBooting(false);
   };
 }, [messages.length]);
 
