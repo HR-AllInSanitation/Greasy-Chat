@@ -89,16 +89,29 @@ const sendHqEmail = async (payload: any) => {
     : `New Estimate Request – ${intake?.business_name || 'Unknown'}`;
 
   const text = [
-    `Business: ${intake?.business_name || 'N/A'}`,
-    `Address: ${address || 'N/A'}`,
-    `Contact: ${contact?.name || contact?.contact_name || 'N/A'} (${contact?.phone || contact?.contact_phone || 'N/A'})`,
-    `Email: ${contact?.email || contact?.contact_email || 'N/A'}`,
-    `Estimate: ${amount || 'N/A'}${estimate?.ballpark ? ' (ballpark)' : ''}`,
-    `Gallons: ${intake?.gallons ?? 'N/A'}`,
-    `Parking Distance: ${intake?.parking_distance ?? 'N/A'}`,
-    `Last Cleaned: ${intake?.last_cleaned_at ?? 'N/A'}`,
-    `Needs UCO: ${intake?.needs_uco !== undefined ? String(intake.needs_uco) : 'N/A'}`,
-    `Move Forward: ${isReady ? 'Yes' : 'No/Unspecified'}`,
+    isReady
+      ? 'ACTION: Contact customer to schedule service.'
+      : 'ACTION: Follow up if customer decides to move forward.',
+    '',
+    'Business',
+    `- Name: ${intake?.business_name || 'N/A'}`,
+    `- Address: ${address || 'N/A'}`,
+    '',
+    'Estimate',
+    `- Amount: ${amount || 'N/A'}${estimate?.ballpark ? ' (ballpark)' : ''}`,
+    '',
+    'Intake Details',
+    `- Gallons: ${intake?.gallons ?? 'N/A'}`,
+    `- Parking Distance: ${intake?.parking_distance ?? 'N/A'}`,
+    `- Last Cleaned: ${intake?.last_cleaned_at ?? 'N/A'}`,
+    `- Needs UCO: ${intake?.needs_uco !== undefined ? String(intake.needs_uco) : 'N/A'}`,
+    '',
+    'Contact',
+    `- Name: ${contact?.name || contact?.contact_name || 'N/A'}`,
+    `- Phone: ${contact?.phone || contact?.contact_phone || 'N/A'}`,
+    `- Email: ${contact?.email || contact?.contact_email || 'N/A'}`,
+    '',
+    `Move Forward Intent: ${isReady ? 'Yes' : 'No/Unspecified'}`,
   ].join('\n');
 
   try {
