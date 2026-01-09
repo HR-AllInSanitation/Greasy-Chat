@@ -62,6 +62,73 @@ const sendCustomerEmail = async (payload: any) => {
   }
 };
 
+const sendHqEmail = async (payload: any) => {
+  const { intake, contact, estimate, pdfBytes } = payload || {};
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL || 'estimates@greasy-chat.com';
+  const to = (process.env.HQ_LEADS_EMAILS || '')
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean);
+
+  if (!apiKey) {
+    console.warn('RESEND_API_KEY not set; skipping HQ email');
+    return;
+  }
+  if (to.length === 0) {
+    console.warn('HQ_LEADS_EMAILS missing or empty; skipping HQ email');
+    return;
+  }
+
+  const amount = typeof estimate?.amount === 'number' ? `$${estimate.amount.toFixed(2)}` : String(estimate?.amount ?? '');
+  const addressParts = [intake?.address_line, intake?.city, intake?.state, intake?.zip].filter(Boolean);
+  const address = addressParts.join(', ');
+  const isReady = intake?.wants_to_move_forward === true;
+  const subject = isReady
+    ? `🔥 NEW LEAD – Ready to Move Forward – ${intake?.business_name || 'Unknown'}`
+    : `New Estimate Request – ${intake?.business_name || 'Unknown'}`;
+
+  const text = [
+    `Business: ${intake?.business_name || 'N/A'}`,
+    `Address: ${address || 'N/A'}`,
+    `Contact: ${contact?.name || contact?.contact_name || 'N/A'} (${contact?.phone || contact?.contact_phone || 'N/A'})`,
+    `Email: ${contact?.email || contact?.contact_email || 'N/A'}`,
+    `Estimate: ${amount || 'N/A'}${estimate?.ballpark ? ' (ballpark)' : ''}`,
+    `Gallons: ${intake?.gallons ?? 'N/A'}`,
+    `Parking Distance: ${intake?.parking_distance ?? 'N/A'}`,
+    `Last Cleaned: ${intake?.last_cleaned_at ?? 'N/A'}`,
+    `Needs UCO: ${intake?.needs_uco !== undefined ? String(intake.needs_uco) : 'N/A'}`,
+    `Move Forward: ${isReady ? 'Yes' : 'No/Unspecified'}`,
+  ].join('\n');
+
+  try {
+    const attachments = pdfBytes
+      ? [{ filename: 'Estimate.pdf', content: Buffer.from(pdfBytes).toString('base64') }]
+      : undefined;
+
+    const resp = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from,
+        to,
+        subject,
+        text,
+        attachments,
+      }),
+    });
+
+    if (!resp.ok) {
+      console.error('Resend HQ email failed', resp.status, await resp.text());
+    }
+  } catch (err: any) {
+    console.error('Resend HQ email error', err?.message || err);
+  }
+};
+
 const generateEstimatePdf = async (payload: any) => {
   const { intake, contact, estimate, source, createdAt } = payload || {};
   try {
@@ -163,6 +230,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     void (async () => {
       const pdfBytes = await generateEstimatePdf({ intake, contact, estimate, source, createdAt });
       await sendCustomerEmail({ intake, contact, estimate, pdfBytes });
+      await sendHqEmail({ intake, contact, estimate, pdfBytes });
     })();
 
     return res.status(200).json({ ok: true, forwarded: true });
