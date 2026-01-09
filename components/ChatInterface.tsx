@@ -15,6 +15,7 @@ type IntakeState = {
   system_type: string;
   gallons: string;
   parking_distance: string;
+  wants_to_move_forward: boolean | 'UNSURE';
 };
 
 type ContactState = {
@@ -129,6 +130,16 @@ const isInterjection = (text: string): boolean => {
   return /\b(hi|hello|hey|hola|good\s*morn|good\s*afternoon|good\s*evening|thanks|thank\s*you|thx|ty|ok|okay|cool|sure|got\s*it|yo|sup|gracias|buenas|buenos\s*dias|buenas\s*tardes)\b/.test(t);
 };
 
+const parseMoveForwardIntent = (text: string): boolean | 'UNSURE' | null => {
+  const t = text.trim().toLowerCase().replace(/[!,\.]/g, '');
+  if (!t) return null;
+  const yes = ['yes', 'y', 'yeah', 'yup', 'sure', 'ok', 'okay', 'affirmative', 'let us do it', "let's do it", 'move forward', 'proceed', 'book', 'schedule', 'yes move forward'];
+  const no = ['no', 'n', 'nope', 'not now', 'not right now', 'later', 'maybe later', 'hold off', 'pass', 'not right now', 'not rightnow', 'not right-now'];
+  if (yes.some(val => t === val || t.includes(val))) return true;
+  if (no.some(val => t === val || t.includes(val))) return false;
+  return null;
+};
+
 const getAck = () => {
   const acks = ['Got it 👍', 'Thanks!', 'Perfect.', 'All set.', 'Noted.'];
   return acks[Math.floor(Math.random() * acks.length)];
@@ -155,6 +166,7 @@ export const ChatInterface: React.FC = () => {
     system_type: '',
     gallons: '',
     parking_distance: '',
+    wants_to_move_forward: 'UNSURE',
   });
 
   const [contact, setContact] = useState<ContactState>({
@@ -185,6 +197,9 @@ export const ChatInterface: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isProcessingRef = useRef(false);
+  const hasSentEstimateRef = useRef(false);
+  const currentEstimateRef = useRef<EstimationResult | null>(null);
+  const hasAskedMoveForwardRef = useRef(false);
 
   // Keep latest state in refs to avoid stale closures
   const intakeRef = useRef<IntakeState>(intake);
@@ -197,6 +212,10 @@ export const ChatInterface: React.FC = () => {
   useEffect(() => {
     contactRef.current = contact;
   }, [contact]);
+
+  useEffect(() => {
+    currentEstimateRef.current = currentEstimate;
+  }, [currentEstimate]);
 
   // Persist chat history for continuity across refreshes
   useEffect(() => {
@@ -266,7 +285,34 @@ export const ChatInterface: React.FC = () => {
     const nextField = getFirstMissingField(intake);
     if (nextField === 'gallons') return ['25', '50', '75', '100+', 'Unsure'];
     if (nextField === 'parking_distance') return ['50', '100', '150', '200', 'Unsure'];
+    if (currentEstimate && intake.wants_to_move_forward === 'UNSURE') return ['Yes, move forward', 'Not right now'];
     return [];
+  };
+
+  const maybeSendEstimateLead = () => {
+    if (hasSentEstimateRef.current) return;
+    const estimate = currentEstimateRef.current;
+    if (!estimate) return;
+    if (getFirstMissingField(intakeRef.current) || getFirstMissingContactField(contactRef.current)) return;
+
+    hasSentEstimateRef.current = true;
+    const payload = {
+      intake: intakeRef.current,
+      contact: contactRef.current,
+      estimate,
+      source: 'greasy-agent',
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      void fetch('/api/estimate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(err => console.error('Failed to send estimate lead:', err));
+    } catch (err) {
+      console.error('Failed to send estimate lead:', err);
+    }
   };
 
   // Orchestrate intake after AI JSON is parsed
@@ -320,8 +366,13 @@ export const ChatInterface: React.FC = () => {
       const quoteId = generateQuoteId();
       setCurrentEstimate(estimate);
       pushModel('Thank you. Here is your estimate.');
+      pushModel('This is a preliminary estimate. Final pricing is confirmed after an on-site review.');
       if (unknownGallons || unknownParking) {
         pushModel('Note: This is a ballpark estimate because gallons and/or parking distance are unknown. Final price may change after confirmation.');
+      }
+      if (!hasAskedMoveForwardRef.current) {
+        hasAskedMoveForwardRef.current = true;
+        pushModel('Do you want to move forward?\n\nIf yes, our office will reach out to you to set up the service.');
       }
       const nextContact = getFirstMissingContactField(contactRef.current);
       if (nextContact) pushModel(getQuestionForContactField(nextContact));
@@ -341,7 +392,10 @@ export const ChatInterface: React.FC = () => {
     contactRef.current = merged;
     console.debug('Next missing contact field:', next);
     if (next) pushModel(getQuestionForContactField(next));
-    else pushModel('Thanks. Our office will reach out shortly to confirm the details.');
+    else {
+      pushModel('Thanks. Our office will reach out shortly to confirm the details.');
+      maybeSendEstimateLead();
+    }
   };
 
   const extractTextFromGeminiResponse = (resp: any): string => {
@@ -384,6 +438,19 @@ const processMessage = async (text: string) => {
   setInput('');
   setIsLoading(true);
   console.debug('isLoading -> true');
+
+  if (currentEstimateRef.current && intakeRef.current.wants_to_move_forward === 'UNSURE') {
+    const intent = parseMoveForwardIntent(cleanText);
+    if (intent !== null) {
+      setIntake(prev => ({ ...prev, wants_to_move_forward: intent }));
+      intakeRef.current = { ...intakeRef.current, wants_to_move_forward: intent };
+      pushModel(getAck());
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      return;
+    }
+  }
 
   // Deterministic pre-processing for free-text fields before interjection handling or Gemini.
   if (expectedField === 'business_name') {
@@ -556,6 +623,10 @@ useEffect(() => {
       container.scrollTop = container.scrollHeight;
     }
   }, [messages, isLoading]);
+
+  // CONTRACT:
+  // ChatInterface is responsible ONLY for data collection and UX.
+  // Side effects (webhooks, emails, PDFs, storage) must be handled externally.
 
   return (
     <div className="bg-white rounded-b-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col h-[calc(100vh-220px)] max-h-[580px] min-h-0 flex-1">
