@@ -140,94 +140,96 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 pt-12 lg:pt-16 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-        <div className="lg:col-span-7 space-y-16 order-2 lg:order-1">
-          <div className="space-y-10">
-            <div className="inline-flex items-center gap-3 bg-amber-50 text-amber-700 px-6 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest border border-amber-100">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-              </span>
-              Regional Dispatch Active
-            </div>
-            
-            <h2 className="text-6xl lg:text-8xl font-black text-slate-950 leading-[0.9] tracking-tighter">
-              Opening a New Restaurant <br/>
-              in Los Angeles? 
-            </h2>
-            
-            <p className="text-2xl text-slate-500 leading-relaxed max-w-xl font-medium">
-              Scale without interruptions. OUR <span className="text-amber-600 font-black uppercase tracking-tight">GREASY AGENT</span> calculates <span className="text-slate-950 font-bold">precise service estimates</span> keeping your facility health-code ready.
-            </p>
-
-            <div className="flex flex-wrap gap-6 pt-6">
-              <div className="flex items-center gap-5 bg-white px-8 py-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
-                  <i className="fas fa-check-double"></i>
+      <main className="flex-1 py-12 lg:pt-16 pb-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid lg:grid-cols-[1fr,420px] gap-12 items-start">
+            <div className="space-y-16">
+              <div className="space-y-10">
+                <div className="inline-flex items-center gap-3 bg-amber-50 text-amber-700 px-6 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest border border-amber-100">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                  </span>
+                  Regional Dispatch Active
                 </div>
-                <div>
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Growth Partnership</div>
-                  <div className="text-lg font-black text-slate-950">10% New Opening Discount</div>
-                </div>
-              </div>
-            </div>
-          </div>
+                
+                <h2 className="text-6xl lg:text-8xl font-black text-slate-950 leading-[0.9] tracking-tighter">
+                  Opening a New Restaurant <br/>
+                  in Los Angeles? 
+                </h2>
+                
+                <p className="text-2xl text-slate-500 leading-relaxed max-w-xl font-medium">
+                  Scale without interruptions. OUR <span className="text-amber-600 font-black uppercase tracking-tight">GREASY AGENT</span> calculates <span className="text-slate-950 font-bold">precise service estimates</span> keeping your facility health-code ready.
+                </p>
 
-          <div id="services" className="space-y-12 scroll-mt-32">
-            <div className="flex items-end justify-between border-b border-slate-100 pb-8">
-              <div>
-                <h3 className="text-4xl font-black text-slate-950 tracking-tighter uppercase">Our Core Solutions</h3>
-                <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.2em] mt-2">Compliance Focused Sanitation</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {services.map((service, idx) => (
-                <div
-                  key={idx}
-                  className="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 relative overflow-hidden cursor-pointer"
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('greasy-select-service', { detail: { service: service.title } }));
-                    window.dispatchEvent(new CustomEvent('ais-trigger-chat', { detail: { focusOnly: true } }));
-                  }}
-                >
-                  <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
-                    <i className={`fas ${service.icon} text-[80px]`}></i>
-                  </div>
-                  <div className="relative z-10">
-                    <div className="inline-flex items-center justify-center w-14 h-14 bg-slate-950 text-amber-500 rounded-2xl mb-6 shadow-lg group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
-                      <i className={`fas ${service.icon} text-xl`}></i>
+                <div className="flex flex-wrap gap-6 pt-6">
+                  <div className="flex items-center gap-5 bg-white px-8 py-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                      <i className="fas fa-check-double"></i>
                     </div>
-                    <div className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] mb-2">{service.tag}</div>
-                    <h4 className="text-xl font-black text-slate-950 mb-3 tracking-tight">{service.title}</h4>
-                    <p className="text-sm text-slate-500 font-bold leading-relaxed">{service.desc}</p>
+                    <div>
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Growth Partnership</div>
+                      <div className="text-lg font-black text-slate-950">10% New Opening Discount</div>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
+              </div>
 
-        <div id="estimator" className="lg:col-span-5 order-1 lg:order-2 scroll-mt-28">
-          <div className="sticky top-28 z-20">
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-tr from-amber-500 to-amber-200 rounded-[3rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-              <div className="relative bg-slate-950 text-white p-6 rounded-t-[2.5rem] shadow-2xl flex items-center justify-between border-b border-white/5">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-amber-500 text-slate-950 rounded-[1rem] flex items-center justify-center transform group-hover:rotate-6 transition-transform shadow-lg shadow-amber-500/20">
-                    <i className="fas fa-robot text-xl" aria-hidden="true"></i>
-                  </div>
+              <div id="services" className="space-y-12 scroll-mt-32">
+                <div className="flex items-end justify-between border-b border-slate-100 pb-8">
                   <div>
-                    <h3 className="font-black text-sm uppercase tracking-widest leading-none">THE GREASY AGENT</h3>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Optimizing Route...</span>
+                    <h3 className="text-4xl font-black text-slate-950 tracking-tighter uppercase">Our Core Solutions</h3>
+                    <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.2em] mt-2">Compliance Focused Sanitation</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {services.map((service, idx) => (
+                    <div
+                      key={idx}
+                      className="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 relative overflow-hidden cursor-pointer"
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('greasy-select-service', { detail: { service: service.title } }));
+                        window.dispatchEvent(new CustomEvent('ais-trigger-chat', { detail: { focusOnly: true } }));
+                      }}
+                    >
+                      <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+                        <i className={`fas ${service.icon} text-[80px]`}></i>
+                      </div>
+                      <div className="relative z-10">
+                        <div className="inline-flex items-center justify-center w-14 h-14 bg-slate-950 text-amber-500 rounded-2xl mb-6 shadow-lg group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
+                          <i className={`fas ${service.icon} text-xl`}></i>
+                        </div>
+                        <div className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] mb-2">{service.tag}</div>
+                        <h4 className="text-xl font-black text-slate-950 mb-3 tracking-tight">{service.title}</h4>
+                        <p className="text-sm text-slate-500 font-bold leading-relaxed">{service.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <aside id="estimator" className="lg:sticky lg:top-24 self-start">
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-tr from-amber-500 to-amber-200 rounded-[3rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+                <div className="relative bg-slate-950 text-white p-6 rounded-t-[2.5rem] shadow-2xl flex items-center justify-between border-b border-white/5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-amber-500 text-slate-950 rounded-[1rem] flex items-center justify-center transform group-hover:rotate-6 transition-transform shadow-lg shadow-amber-500/20">
+                      <i className="fas fa-robot text-xl" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                      <h3 className="font-black text-sm uppercase tracking-widest leading-none">THE GREASY AGENT</h3>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Optimizing Route...</span>
+                      </div>
                     </div>
                   </div>
                 </div>
+                <ChatInterface />
               </div>
-              <ChatInterface />
-            </div>
+            </aside>
           </div>
         </div>
       </main>
