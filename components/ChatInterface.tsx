@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { calculateServiceEstimate } from '../services/pricingEngine';
 import { EstimationInputs, EstimationResult, Frequency, LeadInfo, ServiceType } from '../types';
@@ -14,56 +14,54 @@ type IntakeState = {
   zip: string;
   system_type: string;
   gallons: string;
-      <div className="flex flex-col flex-1 min-h-0">
-        <div
-          ref={scrollContainerRef}
-          className="flex flex-col flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4 bg-white"
-        >
-          {messages.length === 0 ? (
-            <div className="text-sm text-slate-400 font-semibold">Share your site details to get an estimate.</div>
-          ) : (
-            messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm font-semibold shadow-sm ${msg.role === 'user' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-900'}`}
-                >
-                  {msg.text}
-                </div>
-              </div>
-            ))
-          )}
+  parking_distance: string;
+  wants_to_move_forward: boolean | 'UNSURE';
+};
 
-          {isBotProcessing && (
-            <div className="flex justify-start">
-              <div className="max-w-[75%] rounded-2xl px-4 py-3 text-sm font-semibold shadow-sm bg-slate-100 text-slate-900">
-                <span className="inline-flex items-center gap-2">
-                  <span className="inline-flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:-0.2s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:-0.1s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" />
-                  </span>
-                  <span className="text-slate-500">Thinking…</span>
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
+type ContactState = {
+  contact_name: string;
+  contact_phone: string;
+  contact_email: string;
+};
 
-        {!isLoading && getSuggestions().length > 0 && (
-          <div className="px-6 py-3 border-t border-slate-100 bg-white/80 overflow-x-auto whitespace-nowrap no-scrollbar flex gap-2">
-            {getSuggestions().map((chip, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => processMessage(chip)}
-                className="inline-block px-5 py-2.5 bg-white hover:bg-slate-950 hover:text-white text-slate-950 text-[10px] font-black uppercase tracking-widest rounded-full border border-slate-200 transition-all active:scale-95 shadow-sm"
-              >
-                {chip}
-              </button>
-            ))
-          </div>
-        )}
-      </div>
+type IntakeField = keyof IntakeState;
+type ContactField = keyof ContactState;
+
+interface Message {
+  role: 'user' | 'model';
+  text: string;
+  estimate?: EstimationResult;
+  quoteId?: string;
+}
+
+const isNonEmptyValue = (v: unknown) => {
+  if (v === null || v === undefined) return false;
+  if (typeof v === 'string') return v.trim().length > 0;
+  return true;
+};
+
+const isUnsureValue = (s: string): boolean => {
+  const t = s.trim().toLowerCase();
+  if (!t) return false;
+  return [
+    'unsure',
+    'not sure',
+    "im not sure",
+    "i'm not sure",
+    'dont know',
+    "don't know",
+    'i dont know',
+    "i don't know",
+    'not certain',
+    "im not certain",
+    "i'm not certain",
+    'no se',
+    'no sé',
+    'nose',
+    'ni idea',
+    'no estoy seguro',
+    'no estoy segura',
+    'incierto',
   ].includes(t);
 };
 
@@ -126,32 +124,6 @@ const isValidFallback = (field: string, text: string): boolean => {
   }
 };
 
-const isSufficientForField = (field: string, value: string): boolean => {
-  const clean = value.trim();
-  const lower = clean.toLowerCase();
-  switch (field) {
-    case 'business_name': {
-      const greetingOnly = ['hello', 'hi', 'hey'].includes(lower);
-      return clean.length > 0 && !greetingOnly;
-    }
-    case 'address_line': {
-      const hasDigit = /\d/.test(clean);
-      const hasLetterWord = /\b[a-zA-Z]+\b/.test(clean);
-      const longWithSpace = clean.length >= 8 && clean.includes(' ');
-      return (hasDigit && hasLetterWord) || longWithSpace;
-    }
-    case 'city': {
-      const alphaOnly = /^[a-zA-Z\s]+$/.test(clean);
-      const lenOk = clean.length >= 2 && clean.length <= 40;
-      const junkTokens = ['cheese', 'test', 'hello', 'hi', 'asdf', 'blah'];
-      if (!alphaOnly || !lenOk) return false;
-      return !junkTokens.includes(lower);
-    }
-    default:
-      return true;
-  }
-};
-
 const isInterjection = (text: string): boolean => {
   const t = text.trim().toLowerCase();
   if (!t) return false;
@@ -169,7 +141,7 @@ const parseMoveForwardIntent = (text: string): boolean | 'UNSURE' | null => {
 };
 
 const getAck = () => {
-  const acks = ['Perfect — thanks!', 'Got it 👍', 'Thanks, that helps.', 'Great, appreciate it.'];
+  const acks = ['Got it 👍', 'Thanks!', 'Perfect.', 'All set.', 'Noted.'];
   return acks[Math.floor(Math.random() * acks.length)];
 };
 
@@ -224,6 +196,7 @@ export const ChatInterface: React.FC = () => {
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isNearBottomRef = useRef(true);
   const isProcessingRef = useRef(false);
   const hasSentEstimateRef = useRef(false);
   const currentEstimateRef = useRef<EstimationResult | null>(null);
@@ -244,6 +217,13 @@ export const ChatInterface: React.FC = () => {
   useEffect(() => {
     currentEstimateRef.current = currentEstimate;
   }, [currentEstimate]);
+
+  const updateNearBottom = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceFromBottom < 80;
+  };
 
   // Persist chat history for continuity across refreshes
   useEffect(() => {
@@ -484,14 +464,6 @@ const processMessage = async (text: string) => {
   if (expectedField === 'business_name') {
     const extracted = extractBusinessName(sanitizedText);
     if (extracted) {
-      if (!isSufficientForField('business_name', extracted)) {
-        console.log(`[intake] insufficient field=business_name value="${extracted}"`);
-        if (expectedQuestion) pushModel(`Thanks, quick check: ${expectedQuestion}`);
-        setIsLoading(false);
-        setIsBotProcessing(false);
-        isProcessingRef.current = false;
-        return;
-      }
       pushModel(getAck());
       const aiJson: any = { business_name: extracted };
       orchestrateIntake(aiJson);
@@ -503,14 +475,6 @@ const processMessage = async (text: string) => {
     }
   } else if (expectedField === 'address_line') {
     if (sanitizedText.length >= 3) {
-      if (!isSufficientForField('address_line', sanitizedText)) {
-        console.log(`[intake] insufficient field=address_line value="${sanitizedText}"`);
-        if (expectedQuestion) pushModel(`Thanks, quick check: ${expectedQuestion}`);
-        setIsLoading(false);
-        setIsBotProcessing(false);
-        isProcessingRef.current = false;
-        return;
-      }
       pushModel(getAck());
       const aiJson: any = { address_line: sanitizedText };
       orchestrateIntake(aiJson);
@@ -600,30 +564,20 @@ Schema:
       const intakeIncomplete = !!expectedField;
 
       if (intakeIncomplete && expectedField && !isNonEmptyValue(aiJson?.[expectedField])) {
-        const fallbackValid = isValidFallback(expectedField, cleanText);
-        const fallbackSufficient = fallbackValid && isSufficientForField(expectedField, cleanText);
-        if (fallbackValid && fallbackSufficient) {
+        if (isValidFallback(expectedField, cleanText)) {
           aiJson[expectedField] = isUnsureValue(cleanText) ? 'UNSURE' : cleanText;
         } else {
-          if (fallbackValid && !fallbackSufficient) {
-            console.log(`[intake] insufficient field=${expectedField} value="${cleanText}"`);
-          }
-          if (expectedQuestion) pushModel(`Thanks, quick check: ${expectedQuestion}`);
+          if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
           setIsLoading(false);
           setIsBotProcessing(false);
           isProcessingRef.current = false;
           return;
         }
       } else if (!intakeIncomplete && expectedContactField && !isNonEmptyValue(aiJson?.[expectedContactField])) {
-        const fallbackValid = isValidFallback(expectedContactField, cleanText);
-        const fallbackSufficient = fallbackValid && isSufficientForField(expectedContactField, cleanText);
-        if (fallbackValid && fallbackSufficient) {
+        if (isValidFallback(expectedContactField, cleanText)) {
           aiJson[expectedContactField] = cleanText;
         } else {
-          if (fallbackValid && !fallbackSufficient) {
-            console.log(`[intake] insufficient field=${expectedContactField} value="${cleanText}"`);
-          }
-          if (expectedQuestion) pushModel(`Thanks, quick check: ${expectedQuestion}`);
+          if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
           setIsLoading(false);
           setIsBotProcessing(false);
           isProcessingRef.current = false;
@@ -669,23 +623,23 @@ useEffect(() => {
   };
 }, [messages.length]);
 
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-    if (distanceFromBottom < 80) {
-      container.scrollTop = container.scrollHeight;
-    }
-  }, [messages, isLoading]);
+  useLayoutEffect(() => {
+    requestAnimationFrame(() => {
+      const el = scrollContainerRef.current;
+      if (!el) return;
+      el.scrollTop = el.scrollHeight;
+    });
+  }, [messages]);
 
   // CONTRACT:
   // ChatInterface is responsible ONLY for data collection and UX.
   // Side effects (webhooks, emails, PDFs, storage) must be handled externally.
 
   return (
-    <div className="bg-white rounded-b-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col h-[calc(100vh-220px)] max-h-[580px] min-h-0 flex-1">
+    <div className="bg-white rounded-b-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col h-full min-h-0">
       <div
         ref={scrollContainerRef}
+        onScroll={updateNearBottom}
         className="flex flex-col flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4 bg-white"
       >
         {messages.length === 0 ? (
@@ -719,7 +673,7 @@ useEffect(() => {
       </div>
 
       {!isLoading && getSuggestions().length > 0 && (
-        <div className="px-6 py-3 border-t border-slate-100 bg-white/80 overflow-x-auto whitespace-nowrap no-scrollbar flex gap-2">
+        <div className="px-6 py-3 border-t border-slate-100 bg-white/80 overflow-x-auto whitespace-nowrap no-scrollbar flex gap-2 shrink-0">
           {getSuggestions().map((chip, idx) => (
             <button
               key={idx}
@@ -734,7 +688,7 @@ useEffect(() => {
       )}
 
       <form
-        className="p-6 border-t border-slate-100 bg-white"
+        className="p-6 border-t border-slate-100 bg-white shrink-0"
         onSubmit={e => {
           e.preventDefault();
           processMessage(inputRef.current?.value || '');

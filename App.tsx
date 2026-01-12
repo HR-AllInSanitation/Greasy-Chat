@@ -211,9 +211,9 @@ const App: React.FC = () => {
             </div>
 
             <aside id="estimator" className="lg:sticky lg:top-24 self-start">
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-tr from-amber-500 to-amber-200 rounded-[3rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-                <div className="relative bg-slate-950 text-white p-6 rounded-t-[2.5rem] shadow-2xl flex items-center justify-between border-b border-white/5">
+              <div className="relative group h-[calc(100vh-160px)] max-h-[680px] flex flex-col min-h-0">
+                <div className="absolute -inset-1 bg-gradient-to-tr from-amber-500 to-amber-200 rounded-[3rem] blur opacity-20 group-hover:opacity-40 transition duration-1000 pointer-events-none -z-10"></div>
+                <div className="relative bg-slate-950 text-white p-6 rounded-t-[2.5rem] shadow-2xl flex items-center justify-between border-b border-white/5 shrink-0">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-amber-500 text-slate-950 rounded-[1rem] flex items-center justify-center transform group-hover:rotate-6 transition-transform shadow-lg shadow-amber-500/20">
                       <i className="fas fa-robot text-xl" aria-hidden="true"></i>
@@ -227,7 +227,9 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <ChatInterface />
+                <div className="flex-1 min-h-0 overflow-hidden bg-white rounded-b-[2.5rem]">
+                  <ChatInterface />
+                </div>
               </div>
             </aside>
           </div>
