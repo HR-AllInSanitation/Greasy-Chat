@@ -127,7 +127,18 @@ const isValidFallback = (field: string, text: string): boolean => {
 const isInterjection = (text: string): boolean => {
   const t = text.trim().toLowerCase();
   if (!t) return false;
-  return /\b(hi|hello|hey|hola|good\s*morn|good\s*afternoon|good\s*evening|thanks|thank\s*you|thx|ty|ok|okay|cool|sure|got\s*it|yo|sup|gracias|buenas|buenos\s*dias|buenas\s*tardes)\b/.test(t);
+
+  // Punctuation-only / non-answer noise
+  if (/^[!?.,\s]+$/.test(t)) return true;
+
+  const normalized = t
+    .replace(/\s+/g, ' ')
+    .replace(/[!?.,]+$/g, '')
+    .trim();
+
+  return /^(hi|hello|hey|hola|yo|sup|ok|okay|k|what|wut|huh|thanks|thank you|gracias|buenas|buenos dias|buenas tardes|good morning|good afternoon|good evening)$/.test(
+    normalized,
+  );
 };
 
 const parseMoveForwardIntent = (text: string): boolean | 'UNSURE' | null => {
@@ -460,10 +471,20 @@ const processMessage = async (text: string) => {
     }
   }
 
+  if (isInterjection(cleanText) && expectedQuestion) {
+    console.debug('Interjection detected');
+    pushModel(`👋 Hey! Quick question: ${expectedQuestion}`);
+    setIsLoading(false);
+    setIsBotProcessing(false);
+    console.debug('isLoading -> false (interjection)');
+    isProcessingRef.current = false;
+    return;
+  }
+
   // Deterministic pre-processing for free-text fields before interjection handling or Gemini.
   if (expectedField === 'business_name') {
     const extracted = extractBusinessName(sanitizedText);
-    if (extracted) {
+    if (extracted && isValidFallback('business_name', extracted)) {
       pushModel(getAck());
       const aiJson: any = { business_name: extracted };
       orchestrateIntake(aiJson);
@@ -473,8 +494,15 @@ const processMessage = async (text: string) => {
       console.debug('Pre-accepted business_name without interjection/Gemini');
       return;
     }
+    if (expectedQuestion) {
+      pushModel(`Got it — quick check: ${expectedQuestion}`);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      return;
+    }
   } else if (expectedField === 'address_line') {
-    if (sanitizedText.length >= 3) {
+    if (isValidFallback('address_line', sanitizedText)) {
       pushModel(getAck());
       const aiJson: any = { address_line: sanitizedText };
       orchestrateIntake(aiJson);
@@ -484,9 +512,16 @@ const processMessage = async (text: string) => {
       console.debug('Pre-accepted address_line without interjection/Gemini');
       return;
     }
+    if (expectedQuestion) {
+      pushModel(`Got it — quick check: ${expectedQuestion}`);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      return;
+    }
   } else if (expectedContactField === 'contact_name') {
     const extracted = extractContactName(sanitizedText);
-    if (extracted) {
+    if (extracted && isValidFallback('contact_name', extracted)) {
       pushModel(getAck());
       const aiJson: any = { contact_name: extracted };
       orchestrateContact(aiJson);
@@ -494,6 +529,13 @@ const processMessage = async (text: string) => {
       setIsBotProcessing(false);
       isProcessingRef.current = false;
       console.debug('Pre-accepted contact_name without interjection/Gemini');
+      return;
+    }
+    if (expectedQuestion) {
+      pushModel(`Got it — quick check: ${expectedQuestion}`);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
       return;
     }
   }
