@@ -540,16 +540,6 @@ const processMessage = async (text: string) => {
     }
   }
 
-  if (isInterjection(cleanText) && expectedQuestion) {
-    console.debug('Interjection detected');
-    pushModel(`👋 Hey! Quick question: ${expectedQuestion}`);
-    setIsLoading(false);
-    setIsBotProcessing(false);
-    console.debug('isLoading -> false (interjection)');
-    isProcessingRef.current = false;
-    return;
-  }
-
   try {
     let aiJson: any = {};
 
@@ -747,7 +737,6 @@ useEffect(() => {
               }
             }}
             className="w-12 h-12 rounded-xl text-slate-300 hover:text-red-500 transition-all flex items-center justify-center"
-            disabled={isLoading}
           >
             <i className="fas fa-rotate-left" aria-label="Reset"></i>
           </button>
