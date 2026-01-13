@@ -212,6 +212,7 @@ export const ChatInterface: React.FC = () => {
   const hasSentEstimateRef = useRef(false);
   const currentEstimateRef = useRef<EstimationResult | null>(null);
   const hasAskedMoveForwardRef = useRef(false);
+  const didShowEstimateDeliveryIntroRef = useRef(false);
 
   // Keep latest state in refs to avoid stale closures
   const intakeRef = useRef<IntakeState>(intake);
@@ -394,7 +395,13 @@ export const ChatInterface: React.FC = () => {
         pushModel('Do you want to move forward?\n\nIf yes, our office will reach out to you to set up the service.');
       }
       const nextContact = getFirstMissingContactField(contactRef.current);
-      if (nextContact) pushModel(getQuestionForContactField(nextContact));
+      if (nextContact) {
+        if (!didShowEstimateDeliveryIntroRef.current) {
+          didShowEstimateDeliveryIntroRef.current = true;
+          pushModel('Perfect — where should we send your estimate (text + email)?');
+        }
+        pushModel(getQuestionForContactField(nextContact));
+      }
     }
   };
 
@@ -620,14 +627,24 @@ Schema:
       console.log('gemini parsed keys', Object.keys(aiJson || {}));
     }
 
-    const nextField = getFirstMissingField(intakeRef.current);
-    if (nextField) orchestrateIntake(aiJson);
+    if (expectedField) orchestrateIntake(aiJson);
     else orchestrateContact(aiJson);
   } catch (err) {
     console.error('AI call failed:', err?.status || err?.message || err);
-    const nextField = getFirstMissingField(intakeRef.current);
-    if (nextField) orchestrateIntake({});
-    else orchestrateContact({});
+
+    if (expectedField) {
+      if (isValidFallback(expectedField, cleanText)) {
+        orchestrateIntake({ [expectedField]: isUnsureValue(cleanText) ? 'UNSURE' : cleanText });
+        return;
+      }
+    } else if (expectedContactField) {
+      if (isValidFallback(expectedContactField, cleanText)) {
+        orchestrateContact({ [expectedContactField]: cleanText });
+        return;
+      }
+    }
+
+    if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
   } finally {
     setIsLoading(false);
     setIsBotProcessing(false);
