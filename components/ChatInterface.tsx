@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { calculateServiceEstimate } from '../services/pricingEngine';
+import { PRICING_RULES } from '../constants';
 import { EstimationInputs, EstimationResult, Frequency, LeadInfo, ServiceType } from '../types';
 
 const generateQuoteId = () =>
@@ -15,6 +16,8 @@ type IntakeState = {
   system_type: string;
   gallons: string;
   parking_distance: string;
+  last_service_months: string;
+  additional_services: string;
   wants_to_move_forward: boolean | 'UNSURE';
 };
 
@@ -86,15 +89,8 @@ const isValidFallback = (field: string, text: string): boolean => {
   const clean = text.trim();
   if (!clean) return false;
   switch (field) {
-    case 'business_name': {
-      const hasLetters = /[a-zA-Z]/.test(clean);
-      const isGreeting = /^(hello|hi|hey|hola)\b/i.test(clean);
-      return hasLetters && !isGreeting;
-    }
     case 'address_line':
       return /\d/.test(clean);
-    case 'city':
-      return /^[a-zA-Z\s]{2,}$/.test(clean);
     case 'state': {
       const lower = clean.toLowerCase();
       return /^[a-zA-Z]{2}$/.test(clean) || lower === 'california';
@@ -111,6 +107,10 @@ const isValidFallback = (field: string, text: string): boolean => {
       if (isUnsureValue(clean)) return true;
       return /^\d+$/.test(clean);
     }
+    case 'last_service_months':
+      return /^\d+$/.test(clean);
+    case 'additional_services':
+      return clean.length > 0 && !isInterjection(clean);
     case 'contact_phone': {
       const digits = clean.replace(/\D/g, '');
       return digits.length >= 10;
@@ -118,7 +118,17 @@ const isValidFallback = (field: string, text: string): boolean => {
     case 'contact_email':
       return /@/.test(clean) && /\./.test(clean);
     case 'contact_name':
+      if (isInterjection(clean)) return false;
       return clean.length >= 2 && /[a-zA-Z]/.test(clean);
+    case 'city':
+      if (isInterjection(clean)) return false;
+      return /^[a-zA-Z\s]{2,}$/.test(clean);
+    case 'business_name': {
+      const hasLetters = /[a-zA-Z]/.test(clean);
+      const isGreeting = /^(hello|hi|hey|hola)\b/i.test(clean);
+      if (isInterjection(clean)) return false;
+      return hasLetters && !isGreeting;
+    }
     default:
       return true;
   }
@@ -177,6 +187,8 @@ export const ChatInterface: React.FC = () => {
     system_type: '',
     gallons: '',
     parking_distance: '',
+    last_service_months: '',
+    additional_services: '',
     wants_to_move_forward: 'UNSURE',
   });
 
@@ -213,6 +225,8 @@ export const ChatInterface: React.FC = () => {
   const currentEstimateRef = useRef<EstimationResult | null>(null);
   const hasAskedMoveForwardRef = useRef(false);
   const didShowEstimateDeliveryIntroRef = useRef(false);
+  const phaseRef = useRef<'intake' | 'contact'>('intake');
+  const geminiDisabledRef = useRef(false);
 
   // Keep latest state in refs to avoid stale closures
   const intakeRef = useRef<IntakeState>(intake);
@@ -255,6 +269,8 @@ export const ChatInterface: React.FC = () => {
     if (!obj.system_type.trim()) return 'system_type';
     if (!obj.gallons.trim()) return 'gallons';
     if (!obj.parking_distance.trim()) return 'parking_distance';
+    if (!obj.last_service_months.trim()) return 'last_service_months';
+    if (!obj.additional_services.trim()) return 'additional_services';
     return null;
   };
 
@@ -283,6 +299,10 @@ export const ChatInterface: React.FC = () => {
         return 'How many gallons does the system hold?';
       case 'parking_distance':
         return 'What is the parking distance (in feet)?';
+      case 'last_service_months':
+        return 'How many months since your last service?';
+      case 'additional_services':
+        return 'Any additional services needed (jetting, filter change, etc.)?';
       default:
         return '';
     }
@@ -303,7 +323,26 @@ export const ChatInterface: React.FC = () => {
 
   const getSuggestions = () => {
     const nextField = getFirstMissingField(intake);
-    if (nextField === 'gallons') return ['25', '50', '75', '100+', 'Unsure'];
+    if (nextField === 'system_type') {
+      return [
+        { label: 'Grease Trap', value: ServiceType.GREASE_TRAP },
+        { label: 'Interceptor', value: ServiceType.INTERCEPTOR },
+        { label: 'Clarifier', value: ServiceType.CLARIFIER },
+        { label: 'Hydro Jet', value: ServiceType.HYDRO_JET },
+        { label: 'Used Cooking Oil', value: ServiceType.UCO },
+        { label: 'Fat/Bones', value: ServiceType.FAT_BONES },
+      ];
+    }
+    if (nextField === 'gallons') {
+      const smallTrapMax = PRICING_RULES.GREASE_TRAP.maxGallons;
+      const interceptorDefault = 1600; // safety default used in pricingEngine
+      return [
+        { label: `${smallTrapMax} gal`, value: String(smallTrapMax) },
+        { label: `${interceptorDefault} gal`, value: String(interceptorDefault) },
+        { label: 'Unsure', value: 'UNSURE' },
+      ];
+    }
+    if (nextField === 'last_service_months') return [{ label: '3 mo', value: '3' }, { label: '6 mo', value: '6' }, { label: '12 mo', value: '12' }, { label: 'Unsure', value: 'UNSURE' }];
     if (nextField === 'parking_distance') return ['50', '100', '150', '200', 'Unsure'];
     if (currentEstimate && intake.wants_to_move_forward === 'UNSURE') return ['Yes, move forward', 'Not right now'];
     return [];
@@ -338,6 +377,7 @@ export const ChatInterface: React.FC = () => {
   // Orchestrate intake after AI JSON is parsed
   const orchestrateIntake = (aiJson: any) => {
     console.count('orchestrateIntake');
+    console.debug('orchestrateIntake: nextIntake', getFirstMissingField(intakeRef.current), 'nextContact', getFirstMissingContactField(contactRef.current), 'hasSentEstimate', hasSentEstimateRef.current, 'hasAskedMoveForward', hasAskedMoveForwardRef.current);
     const merged: IntakeState = { ...intakeRef.current };
     (Object.keys(merged) as IntakeField[]).forEach((key) => {
       const v = aiJson?.[key];
@@ -359,54 +399,22 @@ export const ChatInterface: React.FC = () => {
     console.debug('Next missing field:', nextField, 'outOfArea:', outOfArea);
     if (nextField) pushModel(getQuestionForField(nextField));
     if (outOfArea) {
+      phaseRef.current = 'contact';
       const nextContact = getFirstMissingContactField(contactRef.current);
       pushModel('We currently service Los Angeles County, CA. If you’d like, leave your contact info and our office can advise next steps.');
       if (nextContact) pushModel(getQuestionForContactField(nextContact));
     }
     if (!nextField && !outOfArea) {
-      const unknownGallons = merged.gallons === 'UNSURE';
-      const unknownParking = merged.parking_distance === 'UNSURE';
-      const estimationInputs: EstimationInputs = {
-        gallons: unknownGallons ? 50 : Number(merged.gallons) || 0,
-        systemType: merged.system_type as ServiceType,
-        parkingDistance: unknownParking ? 100 : Number(merged.parking_distance) || 0,
-        frequency: Frequency.MONTHLY,
-        customerLocation: {
-          address: `${merged.address_line}, ${merged.city}, ${merged.state} ${merged.zip}`,
-        },
-        leadInfo: {
-          businessName: merged.business_name,
-          address: merged.address_line,
-          city: merged.city,
-          state: merged.state,
-          zip: merged.zip,
-        } as LeadInfo,
-      };
-      const estimate = calculateServiceEstimate(estimationInputs);
-      const quoteId = generateQuoteId();
-      setCurrentEstimate(estimate);
-      pushModel('Thank you. Here is your estimate.');
-      pushModel('This is a preliminary estimate. Final pricing is confirmed after an on-site review.');
-      if (unknownGallons || unknownParking) {
-        pushModel('Note: This is a ballpark estimate because gallons and/or parking distance are unknown. Final price may change after confirmation.');
-      }
-      if (!hasAskedMoveForwardRef.current) {
-        hasAskedMoveForwardRef.current = true;
-        pushModel('Do you want to move forward?\n\nIf yes, our office will reach out to you to set up the service.');
-      }
+      phaseRef.current = 'contact';
       const nextContact = getFirstMissingContactField(contactRef.current);
-      if (nextContact) {
-        if (!didShowEstimateDeliveryIntroRef.current) {
-          didShowEstimateDeliveryIntroRef.current = true;
-          pushModel('Perfect — where should we send your estimate (text + email)?');
-        }
-        pushModel(getQuestionForContactField(nextContact));
-      }
+      if (nextContact) pushModel(getQuestionForContactField(nextContact));
     }
   };
 
   const orchestrateContact = (aiJson: any) => {
     console.count('orchestrateContact');
+    console.debug('orchestrateContact: nextIntake', getFirstMissingField(intakeRef.current), 'nextContact', getFirstMissingContactField(contactRef.current), 'hasSentEstimate', hasSentEstimateRef.current, 'hasAskedMoveForward', hasAskedMoveForwardRef.current);
+    phaseRef.current = 'contact';
     const merged: ContactState = { ...contactRef.current };
     (Object.keys(merged) as ContactField[]).forEach((key) => {
       const v = aiJson?.[key];
@@ -419,7 +427,44 @@ export const ChatInterface: React.FC = () => {
     console.debug('Next missing contact field:', next);
     if (next) pushModel(getQuestionForContactField(next));
     else {
-      pushModel('Thanks. Our office will reach out shortly to confirm the details.');
+      const st = intakeRef.current.state.trim().toUpperCase();
+      const outOfArea = st.length > 0 && st !== 'CA' && st !== 'CALIFORNIA';
+      if (!outOfArea) {
+        const unknownGallons = intakeRef.current.gallons === 'UNSURE';
+        const unknownParking = intakeRef.current.parking_distance === 'UNSURE';
+        const estimationInputs: EstimationInputs = {
+          gallons: unknownGallons ? 50 : Number(intakeRef.current.gallons) || 0,
+          systemType: intakeRef.current.system_type as ServiceType,
+          parkingDistance: unknownParking ? 100 : Number(intakeRef.current.parking_distance) || 0,
+          frequency: Frequency.MONTHLY,
+          customerLocation: {
+            address: `${intakeRef.current.address_line}, ${intakeRef.current.city}, ${intakeRef.current.state} ${intakeRef.current.zip}`,
+          },
+          leadInfo: {
+            businessName: intakeRef.current.business_name,
+            address: intakeRef.current.address_line,
+            city: intakeRef.current.city,
+            state: intakeRef.current.state,
+            zip: intakeRef.current.zip,
+          } as LeadInfo,
+        };
+        const estimate = calculateServiceEstimate(estimationInputs);
+        setCurrentEstimate(estimate);
+        pushModel('Thank you. Here is your estimate.');
+        const formatted = formatEstimateForChat(estimate);
+        if (formatted) pushModel(formatted);
+        pushModel('This is a preliminary estimate. Final pricing is confirmed after an on-site review.');
+        if (unknownGallons || unknownParking) {
+          pushModel('Note: This is a ballpark estimate because gallons and/or parking distance are unknown. Final price may change after confirmation.');
+        }
+        if (!hasAskedMoveForwardRef.current) {
+          hasAskedMoveForwardRef.current = true;
+          pushModel('Do you want to move forward?\n\nIf yes, our office will reach out to you to set up the service.');
+        }
+        hasSentEstimateRef.current = true;
+      } else {
+        pushModel('Thanks. Our office will reach out shortly to confirm the details.');
+      }
       maybeSendEstimateLead();
     }
   };
@@ -441,9 +486,22 @@ export const ChatInterface: React.FC = () => {
     return fence ? fence[1].trim() : t;
   };
 
+  const formatEstimateForChat = (estimate: EstimationResult | null) => {
+    if (!estimate) return '';
+    const lines: string[] = [];
+    lines.push(`Estimate: $${estimate.minPrice} - $${estimate.maxPrice}`);
+    lines.push(`Distance: ${estimate.distance} mi (threshold ${estimate.breakdown.thresholdMi}mi, +$${estimate.breakdown.distanceFee} distance fee)`);
+    if (estimate.breakdown.hoseFee) lines.push(`Hose/run fee: $${estimate.breakdown.hoseFee}`);
+    lines.push(`Subtotal (pre-buffer): $${estimate.breakdown.subtotalBeforeBuffer}`);
+    if (estimate.appliedDiscount) lines.push(`Discount: ${estimate.appliedDiscount}% (${estimate.discountType})`);
+    if (estimate.notes?.length) lines.push(`Notes: ${estimate.notes.join(' ')}`);
+    return lines.join('\n');
+  };
+
   // IMPORTANT: The local, Gemini-independent flow below is intentional and must NOT be removed.
 const processMessage = async (text: string) => {
   console.count('processMessage');
+  console.debug('processMessage:start nextIntake', getFirstMissingField(intakeRef.current), 'nextContact', getFirstMissingContactField(contactRef.current), 'hasSentEstimate', hasSentEstimateRef.current, 'hasAskedMoveForward', hasAskedMoveForwardRef.current);
   const cleanText = text.trim();
   if (!cleanText) return;
   const sanitizedText = stripFillers(cleanText);
@@ -452,8 +510,9 @@ const processMessage = async (text: string) => {
   isProcessingRef.current = true;
   setIsBotProcessing(true);
 
-  const expectedField = getFirstMissingField(intakeRef.current);
-  const expectedContactField = getFirstMissingContactField(contactRef.current);
+  const inContactPhase = phaseRef.current === 'contact';
+  const expectedField = inContactPhase ? null : getFirstMissingField(intakeRef.current);
+  const expectedContactField = expectedField ? null : getFirstMissingContactField(contactRef.current);
   const expectedQuestion = expectedField
     ? getQuestionForField(expectedField)
     : expectedContactField
@@ -526,6 +585,23 @@ const processMessage = async (text: string) => {
       isProcessingRef.current = false;
       return;
     }
+  } else if (expectedField === 'system_type') {
+    if (cleanText) {
+      pushModel(getAck());
+      orchestrateIntake({ system_type: cleanText });
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted system_type without interjection/Gemini');
+      return;
+    }
+    if (expectedQuestion) {
+      pushModel(`Got it — quick check: ${expectedQuestion}`);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      return;
+    }
   } else if (expectedContactField === 'contact_name') {
     const extracted = extractContactName(sanitizedText);
     if (extracted && isValidFallback('contact_name', extracted)) {
@@ -545,18 +621,100 @@ const processMessage = async (text: string) => {
       isProcessingRef.current = false;
       return;
     }
+  } else if (expectedField === 'gallons') {
+    if (isUnsureValue(cleanText)) {
+      pushModel(getAck());
+      orchestrateIntake({ gallons: 'UNSURE' });
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted gallons unsure without Gemini');
+      return;
+    }
+    if (/^\d+$/.test(cleanText)) {
+      pushModel(getAck());
+      orchestrateIntake({ gallons: cleanText });
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted gallons without Gemini');
+      return;
+    }
+    if (expectedQuestion) {
+      pushModel(`Got it — quick check: ${expectedQuestion}`);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      return;
+    }
+  } else if (expectedField === 'last_service_months') {
+    if (/^\d+$/.test(cleanText) || isUnsureValue(cleanText)) {
+      const val = isUnsureValue(cleanText) ? 'UNSURE' : cleanText;
+      pushModel(getAck());
+      orchestrateIntake({ last_service_months: val });
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted last_service_months without Gemini');
+      return;
+    }
+    if (expectedQuestion) {
+      pushModel(`Got it — quick check: ${expectedQuestion}`);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      return;
+    }
+  } else if (expectedContactField === 'contact_phone') {
+    const digits = cleanText.replace(/\D/g, '');
+    if (digits.length >= 10) {
+      pushModel(getAck());
+      const aiJson: any = { contact_phone: digits };
+      orchestrateContact(aiJson);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted contact_phone without interjection/Gemini');
+      return;
+    }
+    pushModel('I didn’t catch that. Please enter a 10-digit phone number (numbers only).');
+    setIsLoading(false);
+    setIsBotProcessing(false);
+    isProcessingRef.current = false;
+    return;
+  } else if (expectedContactField === 'contact_email') {
+    if (isValidFallback('contact_email', cleanText)) {
+      pushModel(getAck());
+      const aiJson: any = { contact_email: cleanText };
+      orchestrateContact(aiJson);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted contact_email without interjection/Gemini');
+      return;
+    }
+    pushModel('That doesn’t look like an email. Please type it like name@domain.com.');
+    setIsLoading(false);
+    setIsBotProcessing(false);
+    isProcessingRef.current = false;
+    return;
   }
 
   try {
     let aiJson: any = {};
 
     const apiKey = import.meta.env.VITE_API_KEY || import.meta.env.API_KEY || '';
-    if (!apiKey) {
-      console.error('Missing VITE_API_KEY (or API_KEY). Gemini is disabled in the browser build.');
+    if (!apiKey || geminiDisabledRef.current) {
+      if (!geminiDisabledRef.current) {
+        console.error('Missing VITE_API_KEY (or API_KEY) or Gemini disabled. Gemini is disabled in the browser build.');
+      }
+      geminiDisabledRef.current = true;
       aiJson = {};
     } else {
       console.log('hasVITE', !!import.meta.env.VITE_API_KEY);
       const ai = new GoogleGenAI({ apiKey });
+
+      const timerLabel = `gemini-${Date.now()}`;
 
       const systemPrompt = `You are an intake interpreter. You must ONLY return valid JSON (no prose, no questions, no markdown) matching this schema and using snake_case keys. Use null for unknown.
 
@@ -570,23 +728,29 @@ Schema:
   "system_type": string | null,
   "gallons": string | null,
   "parking_distance": string | null,
+  "last_service_months": string | null,
+  "additional_services": string | null,
   "contact_name": string | null,
   "contact_phone": string | null,
   "contact_email": string | null
 }`;
 
-      console.time('gemini');
+      console.time(timerLabel);
       console.debug('gemini:start');
-      const resp = await Promise.race([
-        ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
-          contents: [{ role: 'user', parts: [{ text: cleanText }] }],
-          config: { systemInstruction: systemPrompt },
-        }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Gemini timeout')), 8000)),
-      ]);
-      console.timeEnd('gemini');
-      console.debug('gemini:resolved');
+      let resp: any;
+      try {
+        resp = await Promise.race([
+          ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: [{ role: 'user', parts: [{ text: cleanText }] }],
+            config: { systemInstruction: systemPrompt },
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Gemini timeout')), 8000)),
+        ]);
+        console.debug('gemini:resolved');
+      } finally {
+        console.timeEnd(timerLabel);
+      }
 
       const raw = extractTextFromGeminiResponse(resp);
       console.log('gemini raw length', raw?.length || 0);
@@ -629,8 +793,12 @@ Schema:
 
     if (expectedField) orchestrateIntake(aiJson);
     else orchestrateContact(aiJson);
-  } catch (err) {
-    console.error('AI call failed:', err?.status || err?.message || err);
+  } catch (err: any) {
+    const status = err?.status || err?.code || err?.message;
+    console.error('AI call failed:', status || err);
+    if (status === 401 || status === 403) {
+      geminiDisabledRef.current = true;
+    }
 
     if (expectedField) {
       if (isValidFallback(expectedField, cleanText)) {
@@ -638,6 +806,29 @@ Schema:
         return;
       }
     } else if (expectedContactField) {
+      if (expectedContactField === 'contact_phone') {
+        const digits = cleanText.replace(/\D/g, '');
+        if (digits.length >= 10) {
+          orchestrateContact({ contact_phone: digits });
+          return;
+        }
+        pushModel('I didn’t catch that. Please enter a 10-digit phone number (numbers only).');
+        setIsLoading(false);
+        setIsBotProcessing(false);
+        isProcessingRef.current = false;
+        return;
+      }
+      if (expectedContactField === 'contact_email') {
+        if (isValidFallback('contact_email', cleanText)) {
+          orchestrateContact({ contact_email: cleanText });
+          return;
+        }
+        pushModel('That doesn’t look like an email. Please type it like name@domain.com.');
+        setIsLoading(false);
+        setIsBotProcessing(false);
+        isProcessingRef.current = false;
+        return;
+      }
       if (isValidFallback(expectedContactField, cleanText)) {
         orchestrateContact({ [expectedContactField]: cleanText });
         return;
@@ -723,16 +914,20 @@ useEffect(() => {
 
       {!isLoading && getSuggestions().length > 0 && (
         <div className="px-6 py-3 border-t border-slate-100 bg-white/80 overflow-x-auto whitespace-nowrap no-scrollbar flex gap-2 shrink-0">
-          {getSuggestions().map((chip, idx) => (
+          {getSuggestions().map((chip: any, idx) => {
+            const label = typeof chip === 'string' ? chip : chip.label;
+            const value = typeof chip === 'string' ? chip : chip.value;
+            return (
             <button
               key={idx}
               type="button"
-              onClick={() => processMessage(chip)}
+              onClick={() => processMessage(value)}
               className="inline-block px-5 py-2.5 bg-white hover:bg-slate-950 hover:text-white text-slate-950 text-[10px] font-black uppercase tracking-widest rounded-full border border-slate-200 transition-all active:scale-95 shadow-sm"
             >
-              {chip}
+              {label}
             </button>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -750,6 +945,7 @@ useEffect(() => {
             onClick={() => {
               if (window.confirm('Reset?')) {
                 sessionStorage.removeItem('ais_chat_history');
+                phaseRef.current = 'intake';
                 window.location.reload();
               }
             }}
