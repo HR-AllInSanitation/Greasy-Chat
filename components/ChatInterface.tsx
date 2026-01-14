@@ -1,7 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { calculateServiceEstimate } from '../services/pricingEngine';
-import { PRICING_RULES } from '../constants';
 import { EstimationInputs, EstimationResult, Frequency, LeadInfo, ServiceType } from '../types';
 
 const generateQuoteId = () =>
@@ -70,7 +69,17 @@ const isUnsureValue = (s: string): boolean => {
 
 const stripFillers = (input: string): string => {
   const trimmed = input.trim();
+  // Do not strip short tokens or 2-letter state codes (e.g., CA) to avoid wiping valid answers.
+  if (trimmed.length <= 3 || /^[a-zA-Z]{2}$/.test(trimmed)) return trimmed;
   return trimmed.replace(/^\b(?:sure|okay|ok|yeah|hey|hello|hi|well|um|uh|yo|sup)[,\s]*/i, '').trim();
+};
+
+const normalizeStateInput = (text: string): string | null => {
+  const t = text.trim().toUpperCase();
+  if (!t) return null;
+  if (t === 'CA' || t === 'CALIFORNIA') return 'CA';
+  if (/^[A-Z]{2}$/.test(t)) return t;
+  return null;
 };
 
 const extractBusinessName = (input: string): string | null => {
@@ -334,15 +343,16 @@ export const ChatInterface: React.FC = () => {
       ];
     }
     if (nextField === 'gallons') {
-      const smallTrapMax = PRICING_RULES.GREASE_TRAP.maxGallons;
-      const interceptorDefault = 1600; // safety default used in pricingEngine
       return [
-        { label: `${smallTrapMax} gal`, value: String(smallTrapMax) },
-        { label: `${interceptorDefault} gal`, value: String(interceptorDefault) },
+        { label: '300 gal', value: '300' },
+        { label: '600 gal', value: '600' },
+        { label: '1000 gal', value: '1000' },
+        { label: '1600 gal', value: '1600' },
+        { label: '2500+ gal', value: '2500' },
         { label: 'Unsure', value: 'UNSURE' },
       ];
     }
-    if (nextField === 'last_service_months') return [{ label: '3 mo', value: '3' }, { label: '6 mo', value: '6' }, { label: '12 mo', value: '12' }, { label: 'Unsure', value: 'UNSURE' }];
+    if (nextField === 'last_service_months') return [{ label: '0–3 mo', value: '3' }, { label: '4–6 mo', value: '6' }, { label: '7–12 mo', value: '12' }, { label: '13+ mo', value: '24' }];
     if (nextField === 'parking_distance') return ['50', '100', '150', '200', 'Unsure'];
     if (currentEstimate && intake.wants_to_move_forward === 'UNSURE') return ['Yes, move forward', 'Not right now'];
     return [];
@@ -451,6 +461,7 @@ export const ChatInterface: React.FC = () => {
         const estimate = calculateServiceEstimate(estimationInputs);
         setCurrentEstimate(estimate);
         pushModel('Thank you. Here is your estimate.');
+        pushModel(`Estimated price: $${estimate.minPrice} - $${estimate.maxPrice}`);
         const formatted = formatEstimateForChat(estimate);
         if (formatted) pushModel(formatted);
         pushModel('This is a preliminary estimate. Final pricing is confirmed after an on-site review.');
@@ -500,14 +511,13 @@ export const ChatInterface: React.FC = () => {
 
   // IMPORTANT: The local, Gemini-independent flow below is intentional and must NOT be removed.
 const processMessage = async (text: string) => {
-  console.count('processMessage');
-  console.debug('processMessage:start nextIntake', getFirstMissingField(intakeRef.current), 'nextContact', getFirstMissingContactField(contactRef.current), 'hasSentEstimate', hasSentEstimateRef.current, 'hasAskedMoveForward', hasAskedMoveForwardRef.current);
   const cleanText = text.trim();
   if (!cleanText) return;
-  const sanitizedText = stripFillers(cleanText);
-
   if (isProcessingRef.current) return;
   isProcessingRef.current = true;
+  console.count('processMessage');
+  console.debug('processMessage:start nextIntake', getFirstMissingField(intakeRef.current), 'nextContact', getFirstMissingContactField(contactRef.current), 'hasSentEstimate', hasSentEstimateRef.current, 'hasAskedMoveForward', hasAskedMoveForwardRef.current);
+  const sanitizedText = stripFillers(cleanText);
   setIsBotProcessing(true);
 
   const inContactPhase = phaseRef.current === 'contact';
@@ -602,6 +612,22 @@ const processMessage = async (text: string) => {
       isProcessingRef.current = false;
       return;
     }
+  } else if (expectedField === 'state') {
+    const norm = normalizeStateInput(cleanText);
+    if (norm) {
+      pushModel(getAck());
+      orchestrateIntake({ state: norm });
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted state without Gemini');
+      return;
+    }
+    pushModel('Please enter a 2-letter state code (e.g., CA).');
+    setIsLoading(false);
+    setIsBotProcessing(false);
+    isProcessingRef.current = false;
+    return;
   } else if (expectedContactField === 'contact_name') {
     const extracted = extractContactName(sanitizedText);
     if (extracted && isValidFallback('contact_name', extracted)) {
@@ -762,40 +788,54 @@ Schema:
         console.error('AI JSON parse failed:', err, aiText);
         aiJson = {};
       }
-
-      // Deterministic fallback: if AI omitted the *expected* next field, use the user's raw input for that field.
-      const intakeIncomplete = !!expectedField;
-
-      if (intakeIncomplete && expectedField && !isNonEmptyValue(aiJson?.[expectedField])) {
-        if (isValidFallback(expectedField, cleanText)) {
-          aiJson[expectedField] = isUnsureValue(cleanText) ? 'UNSURE' : cleanText;
-        } else {
-          if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
-          setIsLoading(false);
-          setIsBotProcessing(false);
-          isProcessingRef.current = false;
-          return;
-        }
-      } else if (!intakeIncomplete && expectedContactField && !isNonEmptyValue(aiJson?.[expectedContactField])) {
-        if (isValidFallback(expectedContactField, cleanText)) {
-          aiJson[expectedContactField] = cleanText;
-        } else {
-          if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
-          setIsLoading(false);
-          setIsBotProcessing(false);
-          isProcessingRef.current = false;
-          return;
-        }
-      }
-
-      console.log('gemini parsed keys', Object.keys(aiJson || {}));
     }
+
+    // Deterministic fallback: if AI omitted the *expected* next field, use the user's raw input for that field.
+    const intakeIncomplete = !!expectedField;
+
+    if (intakeIncomplete && expectedField && !isNonEmptyValue(aiJson?.[expectedField])) {
+      if (isValidFallback(expectedField, cleanText)) {
+        if (expectedField === 'state') {
+          const normState = normalizeStateInput(cleanText);
+          if (!normState) {
+            if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
+            setIsLoading(false);
+            setIsBotProcessing(false);
+            isProcessingRef.current = false;
+            return;
+          }
+          aiJson[expectedField] = normState;
+        } else {
+          aiJson[expectedField] = isUnsureValue(cleanText) ? 'UNSURE' : cleanText;
+        }
+      } else {
+        if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
+        setIsLoading(false);
+        setIsBotProcessing(false);
+        isProcessingRef.current = false;
+        return;
+      }
+    } else if (!intakeIncomplete && expectedContactField && !isNonEmptyValue(aiJson?.[expectedContactField])) {
+      if (isValidFallback(expectedContactField, cleanText)) {
+        aiJson[expectedContactField] = cleanText;
+      } else {
+        if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
+        setIsLoading(false);
+        setIsBotProcessing(false);
+        isProcessingRef.current = false;
+        return;
+      }
+    }
+
+    console.log('gemini parsed keys', Object.keys(aiJson || {}));
 
     if (expectedField) orchestrateIntake(aiJson);
     else orchestrateContact(aiJson);
   } catch (err: any) {
     const status = err?.status || err?.code || err?.message;
-    console.error('AI call failed:', status || err);
+    if (!geminiDisabledRef.current || (status !== 401 && status !== 403)) {
+      console.error('AI call failed:', status || err);
+    }
     if (status === 401 || status === 403) {
       geminiDisabledRef.current = true;
     }
