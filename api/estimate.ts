@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 const sendCustomerEmail = async (payload: any) => {
@@ -199,19 +198,27 @@ const generateEstimatePdf = async (payload: any) => {
   }
 };
 
-// Minimal serverless endpoint to receive completed chat estimates.
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+// Minimal serverless endpoint to receive completed chat estimates (Web Fetch API compatible).
+export default async function handler(req: Request): Promise<Response> {
+  const json = (status: number, data: any) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+    return json(405, { ok: false, error: 'Method not allowed' });
   }
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      // If parsing fails, keep body as {} to preserve prior behavior
+      body = {};
+    }
+
     const { intake, contact, estimate, source, createdAt } = body || {};
 
     if (!intake || !contact || !estimate) {
-      return res.status(400).json({ ok: false, error: 'intake, contact, and estimate are required' });
+      return json(400, { ok: false, error: 'intake, contact, and estimate are required' });
     }
 
     // Log the received payload for observability/debugging
@@ -220,7 +227,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const webhookUrl = process.env.OFFICE_WEBHOOK_URL;
     if (!webhookUrl) {
       console.warn('OFFICE_WEBHOOK_URL is not set; skipping webhook forward');
-      return res.status(200).json({ ok: true, forwarded: false });
+      return json(200, { ok: true, forwarded: false });
     }
 
     try {
@@ -232,11 +239,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (!response.ok) {
         console.error('Webhook responded with non-OK status', response.status, await response.text());
-        return res.status(200).json({ ok: false, error: 'Webhook call failed' });
+        return json(200, { ok: false, error: 'Webhook call failed' });
       }
     } catch (err: any) {
       console.error('Webhook call errored', err?.message || err);
-      return res.status(200).json({ ok: false, error: 'Webhook call errored' });
+      return json(200, { ok: false, error: 'Webhook call errored' });
     }
 
     // Fire-and-forget PDF + email; do not affect response
@@ -246,9 +253,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await sendHqEmail({ intake, contact, estimate, pdfBytes });
     })();
 
-    return res.status(200).json({ ok: true, forwarded: true });
+    return json(200, { ok: true, forwarded: true });
   } catch (err: any) {
     console.error('Unexpected error in /api/estimate', err?.message || err);
-    return res.status(500).json({ ok: false, error: 'Internal error' });
+    return json(500, { ok: false, error: 'Internal error' });
   }
 }
