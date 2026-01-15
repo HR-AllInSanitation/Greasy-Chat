@@ -83,6 +83,9 @@ const sendHqEmail = async (payload: any) => {
   const addressParts = [intake?.address_line, intake?.city, intake?.state, intake?.zip].filter(Boolean);
   const address = addressParts.join(', ');
   const isReady = intake?.wants_to_move_forward === true;
+  const distanceMiles = estimate?.distanceMiles ?? estimate?.distance;
+  const distanceSource = estimate?.distanceSource;
+  const assumptions = Array.isArray(estimate?.assumptions) ? estimate.assumptions : [];
   const subject = isReady
     ? `🔥 NEW LEAD – Ready to Move Forward – ${intake?.business_name || 'Unknown'}`
     : `New Estimate Request – ${intake?.business_name || 'Unknown'}`;
@@ -98,6 +101,8 @@ const sendHqEmail = async (payload: any) => {
     '',
     'Estimate',
     `- Amount: ${amount || 'N/A'}${estimate?.ballpark ? ' (ballpark)' : ''}`,
+    distanceMiles ? `- Distance: ${distanceMiles} mi${distanceSource ? ` (${distanceSource})` : ''}` : null,
+    assumptions.length ? `- Assumptions: ${assumptions.join(' ')}` : null,
     '',
     'Intake Details',
     `- Gallons: ${intake?.gallons ?? 'N/A'}`,

@@ -41,6 +41,8 @@ export interface EstimationResult {
   minPrice: number;
   maxPrice: number;
   distance: number; // Miles from Sylmar base
+  distanceSource?: string;
+  assumptions?: string[];
   appliedDiscount: number;
   discountType: string;
   notes: string[];

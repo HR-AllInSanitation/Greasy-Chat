@@ -368,7 +368,12 @@ export const ChatInterface: React.FC = () => {
     const payload = {
       intake: intakeRef.current,
       contact: contactRef.current,
-      estimate,
+      estimate: {
+        ...estimate,
+        distanceMiles: estimate.distance,
+        distanceSource: estimate.distanceSource || 'computed',
+        assumptions: estimate.assumptions || [],
+      },
       source: 'greasy-agent',
       createdAt: new Date().toISOString(),
     };
@@ -502,6 +507,9 @@ export const ChatInterface: React.FC = () => {
     const lines: string[] = [];
     lines.push(`Estimate: $${estimate.minPrice} - $${estimate.maxPrice}`);
     lines.push(`Distance: ${estimate.distance} mi (threshold ${estimate.breakdown.thresholdMi}mi, +$${estimate.breakdown.distanceFee} distance fee)`);
+    if (estimate.distanceSource === 'assumed_25mi') {
+      lines.push('Assumption: Distance assumed at 25mi from Sylmar HQ until address verification.');
+    }
     if (estimate.breakdown.hoseFee) lines.push(`Hose/run fee: $${estimate.breakdown.hoseFee}`);
     lines.push(`Subtotal (pre-buffer): $${estimate.breakdown.subtotalBeforeBuffer}`);
     if (estimate.appliedDiscount) lines.push(`Discount: ${estimate.appliedDiscount}% (${estimate.discountType})`);

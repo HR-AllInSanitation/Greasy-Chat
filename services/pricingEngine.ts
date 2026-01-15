@@ -16,9 +16,11 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
   const { serviceType, frequency, isOpeningSoon, parkingDistance, gallons, location } = inputs;
   
   let distance = 0;
+  let distanceSource: 'computed' | 'assumed_25mi' = 'computed';
   let requiresVerification = false;
   const unverifiedDetails: string[] = [];
   const notes: string[] = [];
+  const assumptions: string[] = [];
 
   // 1. Distance Calculation from Sylmar HQ
   if (location?.latitude && location?.longitude) {
@@ -27,6 +29,8 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
     requiresVerification = true;
     unverifiedDetails.push('Exact mileage from Sylmar HQ');
     distance = 25; // Default for radius estimation
+    distanceSource = 'assumed_25mi';
+    assumptions.push('Distance assumed at 25mi from Sylmar HQ until address verification.');
   }
 
   let baseMin = 0;
@@ -74,6 +78,16 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
     if (isClarifier) notes.push("Clarifier specialized waste components included.");
   }
 
+  const fallbackFloors: Partial<Record<ServiceType, number>> = {
+    [ServiceType.GREASE_TRAP]: PRICING_RULES.GREASE_TRAP.baseRate,
+    [ServiceType.INTERCEPTOR]: PRICING_RULES.INTERCEPTOR.minCharge,
+    [ServiceType.CLARIFIER]: PRICING_RULES.CLARIFIER.minCharge,
+  };
+  const floor = fallbackFloors[serviceType];
+  if (floor && baseMin < floor) {
+    baseMin = floor;
+  }
+
   // 3. Distance Fee Calculation
   const distanceFee = Math.max(0, distance - thresholdMi) * surchargePerMi;
   baseMin += distanceFee;
@@ -112,6 +126,8 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
     minPrice: Math.round(baseMin),
     maxPrice: Math.round(baseMin * VARIANCE_BUFFER), // Applies to GRAN TOTAL FINAL
     distance: Math.round(distance * 10) / 10,
+    distanceSource,
+    assumptions,
     appliedDiscount,
     discountType,
     notes,
