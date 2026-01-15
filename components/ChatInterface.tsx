@@ -14,81 +14,14 @@ type IntakeState = {
   zip: string;
   system_type: string;
   gallons: string;
+  capacity_tier: string;
+  capacity_unsure: boolean;
+  manual_quote: boolean;
   parking_distance: string;
   last_service_months: string;
   additional_services: string;
   wants_to_move_forward: boolean | 'UNSURE';
 };
-
-type ContactState = {
-  contact_name: string;
-  contact_phone: string;
-  contact_email: string;
-};
-
-type IntakeField = keyof IntakeState;
-type ContactField = keyof ContactState;
-
-interface Message {
-  role: 'user' | 'model';
-  text: string;
-  estimate?: EstimationResult;
-  quoteId?: string;
-}
-
-const isNonEmptyValue = (v: unknown) => {
-  if (v === null || v === undefined) return false;
-  if (typeof v === 'string') return v.trim().length > 0;
-  return true;
-};
-
-const isUnsureValue = (s: string): boolean => {
-  const t = s.trim().toLowerCase();
-  if (!t) return false;
-  return [
-    'unsure',
-    'not sure',
-    "im not sure",
-    "i'm not sure",
-    'dont know',
-    "don't know",
-    'i dont know',
-    "i don't know",
-    'not certain',
-    "im not certain",
-    "i'm not certain",
-    'no se',
-    'no sé',
-    'nose',
-    'ni idea',
-    'no estoy seguro',
-    'no estoy segura',
-    'incierto',
-  ].includes(t);
-};
-
-const stripFillers = (input: string): string => {
-  const trimmed = input.trim();
-  // Do not strip short tokens or 2-letter state codes (e.g., CA) to avoid wiping valid answers.
-  if (trimmed.length <= 3 || /^[a-zA-Z]{2}$/.test(trimmed)) return trimmed;
-  return trimmed.replace(/^\b(?:sure|okay|ok|yeah|hey|hello|hi|well|um|uh|yo|sup)[,\s]*/i, '').trim();
-};
-
-const normalizeStateInput = (text: string): string | null => {
-  const t = text.trim().toUpperCase();
-  if (!t) return null;
-  if (t === 'CA' || t === 'CALIFORNIA') return 'CA';
-  if (/^[A-Z]{2}$/.test(t)) return t;
-  return null;
-};
-
-const extractBusinessName = (input: string): string | null => {
-  const cleaned = stripFillers(input);
-  const match = cleaned.match(/^(?:it['’]?s|its)\s+(.+)/i);
-  if (match && match[1]?.trim()) return match[1].trim();
-  return cleaned.length > 0 ? cleaned : null;
-};
-
 const extractContactName = (input: string): string | null => {
   const cleaned = stripFillers(input);
   return cleaned.length >= 2 ? cleaned : null;
@@ -201,6 +134,9 @@ export const ChatInterface: React.FC = () => {
     zip: '',
     system_type: '',
     gallons: '',
+    capacity_tier: '',
+    capacity_unsure: false,
+    manual_quote: false,
     parking_distance: '',
     last_service_months: '',
     additional_services: '',
@@ -282,7 +218,8 @@ export const ChatInterface: React.FC = () => {
     if (!obj.state.trim()) return 'state';
     if (!obj.zip.trim()) return 'zip';
     if (!obj.system_type.trim()) return 'system_type';
-    if (!obj.gallons.trim()) return 'gallons';
+    const isGreaseTrap = obj.system_type === ServiceType.GREASE_TRAP;
+    if (!isGreaseTrap && !obj.gallons.trim()) return 'gallons';
     if (!obj.parking_distance.trim()) return 'parking_distance';
     if (!obj.last_service_months.trim()) return 'last_service_months';
     if (!obj.additional_services.trim()) return 'additional_services';
@@ -340,7 +277,7 @@ export const ChatInterface: React.FC = () => {
     const nextField = getFirstMissingField(intake);
     if (nextField === 'system_type') {
       return [
-        { label: 'Grease Trap', value: ServiceType.GREASE_TRAP },
+        { label: 'Grease Trap (Indoor)', value: ServiceType.GREASE_TRAP },
         { label: 'Interceptor', value: ServiceType.INTERCEPTOR },
         { label: 'Clarifier', value: ServiceType.CLARIFIER },
       ];
@@ -349,14 +286,15 @@ export const ChatInterface: React.FC = () => {
       return ['Hydrojetting', 'Grease Break Down', 'Lid Removal'];
     }
     if (nextField === 'gallons') {
-      return [
-        { label: '300 gal', value: '300' },
-        { label: '600 gal', value: '600' },
-        { label: '1000 gal', value: '1000' },
-        { label: '1600 gal', value: '1600' },
-        { label: '2500+ gal', value: '2500' },
-        { label: 'Unsure', value: 'UNSURE' },
-      ];
+      const st = intake.system_type as ServiceType;
+      if (st === ServiceType.INTERCEPTOR || st === ServiceType.CLARIFIER) {
+        return [
+          { label: 'Up to 1,600 gal', value: '1600' },
+          { label: 'Up to 2,500 gal', value: '2500' },
+          { label: 'Not sure', value: 'UNSURE' },
+        ];
+      }
+      return [];
     }
     if (nextField === 'last_service_months') return [{ label: '0–3 mo', value: '3' }, { label: '4–6 mo', value: '6' }, { label: '7–12 mo', value: '12' }, { label: '13+ mo', value: '24' }];
     if (nextField === 'parking_distance') return ['50', '100', '150', '200', 'Unsure'];
@@ -379,66 +317,43 @@ export const ChatInterface: React.FC = () => {
         distanceMiles: estimate.distance,
         distanceSource: estimate.distanceSource || 'computed',
         assumptions: estimate.assumptions || [],
-        radiusBand: estimate.radiusBand,
-        distanceAssumed: estimate.distanceAssumed,
-        tierUsed: estimate.tierUsed,
-        gallonsUncertain: estimate.gallonsUncertain,
-        addOns: estimate.addOns,
-        unknownAddOns: estimate.unknownAddOns,
-        manualQuote: estimate.manualQuote,
-        baseServiceLabel: estimate.baseServiceLabel,
-        baseServicePrice: estimate.baseServicePrice,
-        totalPrice: estimate.totalPrice,
-      },
-      source: 'greasy-agent',
-      createdAt: new Date().toISOString(),
-    };
-
-    try {
-      void fetch('/api/estimate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).catch(err => console.error('Failed to send estimate lead:', err));
-    } catch (err) {
-      console.error('Failed to send estimate lead:', err);
-    }
-  };
-
-  // Orchestrate intake after AI JSON is parsed
-  const orchestrateIntake = (aiJson: any) => {
-    console.count('orchestrateIntake');
-    console.debug('orchestrateIntake: nextIntake', getFirstMissingField(intakeRef.current), 'nextContact', getFirstMissingContactField(contactRef.current), 'hasSentEstimate', hasSentEstimateRef.current, 'hasAskedMoveForward', hasAskedMoveForwardRef.current);
-    const merged: IntakeState = { ...intakeRef.current };
-    (Object.keys(merged) as IntakeField[]).forEach((key) => {
-      const v = aiJson?.[key];
-      if (isNonEmptyValue(v)) {
-        if ((key === 'gallons' || key === 'parking_distance') && typeof v === 'string' && isUnsureValue(v)) {
-          merged[key] = 'UNSURE';
-        } else if (key === 'wants_to_move_forward') {
-          merged[key] = v === true || v === 'true' ? true : v === false || v === 'false' ? false : 'UNSURE';
-        } else {
-          merged[key] = String(v);
-        }
       }
-    });
-    console.debug('Intake state after merge:', merged);
-    // Optional service-area gate: if state is provided and not CA, skip quoting but still capture lead.
-    const st = merged.state.trim().toUpperCase();
-    const outOfArea = st.length > 0 && st !== 'CA' && st !== 'CALIFORNIA';
-    const nextField = outOfArea ? null : getFirstMissingField(merged);
-    setIntake(merged);
-    intakeRef.current = merged;
-    console.debug('Next missing field:', nextField, 'outOfArea:', outOfArea);
-    if (nextField) pushModel(getQuestionForField(nextField));
-    if (outOfArea) {
-      phaseRef.current = 'contact';
-      const nextContact = getFirstMissingContactField(contactRef.current);
-      pushModel('We currently service Los Angeles County, CA. If you’d like, leave your contact info and our office can advise next steps.');
-      if (nextContact) pushModel(getQuestionForContactField(nextContact));
+    } else if (expectedField === 'state') {
+      const norm = normalizeStateInput(cleanText);
+      if (norm) {
+        pushModel(getAck());
+        orchestrateIntake({ state: norm });
+        setIsLoading(false);
+        setIsBotProcessing(false);
+        isProcessingRef.current = false;
+        console.debug('Pre-accepted state without Gemini');
+        return;
+      }
+      pushModel('Please enter a 2-letter state code (e.g., CA).');
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      return;
+    } else if (expectedContactField === 'contact_name') {
+      const extracted = extractContactName(sanitizedText);
+      if (extracted && isValidFallback('contact_name', extracted)) {
+        pushModel(getAck());
+        const aiJson: any = { contact_name: extracted };
+        orchestrateContact(aiJson);
+        setIsLoading(false);
+        setIsBotProcessing(false);
+        isProcessingRef.current = false;
+        console.debug('Pre-accepted contact_name without interjection/Gemini');
+        return;
+      }
+      if (expectedQuestion) {
+        pushModel(`Got it — quick check: ${expectedQuestion}`);
+        setIsLoading(false);
+        setIsBotProcessing(false);
+        isProcessingRef.current = false;
+        return;
+      }
     }
-    if (!nextField && !outOfArea) {
-      phaseRef.current = 'contact';
       const nextContact = getFirstMissingContactField(contactRef.current);
       if (nextContact) pushModel(getQuestionForContactField(nextContact));
     }
@@ -465,13 +380,29 @@ export const ChatInterface: React.FC = () => {
       if (!outOfArea) {
         const unknownGallons = intakeRef.current.gallons === 'UNSURE';
         const unknownParking = intakeRef.current.parking_distance === 'UNSURE';
+        const serviceType = intakeRef.current.system_type as ServiceType;
+        const isInterceptorFamily = serviceType === ServiceType.INTERCEPTOR || serviceType === ServiceType.CLARIFIER;
+        const capacityUnsure = intakeRef.current.capacity_unsure;
+        const manualQuoteFlag = intakeRef.current.manual_quote;
+        let gallonsValue = unknownGallons ? 0 : Number(intakeRef.current.gallons) || 0;
+        if (isInterceptorFamily) {
+          if (manualQuoteFlag) {
+            gallonsValue = 2600;
+          } else if (intakeRef.current.capacity_tier === 'UP_TO_1600') {
+            gallonsValue = 1600;
+          } else if (intakeRef.current.capacity_tier === 'UP_TO_2500') {
+            gallonsValue = 2500;
+          } else if (capacityUnsure) {
+            gallonsValue = 0;
+          }
+        }
         const estimationInputs: EstimationInputs = {
-          serviceType: intakeRef.current.system_type as ServiceType,
+          serviceType,
           tierKey: 'matrix',
           frequency: Frequency.MONTHLY,
           isOpeningSoon: false,
           parkingDistance: unknownParking ? 100 : Number(intakeRef.current.parking_distance) || 0,
-          gallons: unknownGallons ? 0 : Number(intakeRef.current.gallons) || 0,
+          gallons: gallonsValue,
           additionalServices: parseAdditionalServices(intakeRef.current.additional_services),
         };
         const estimate = calculateServiceEstimate(estimationInputs);
@@ -597,32 +528,77 @@ const processMessage = async (text: string) => {
     }
   } else if (expectedField === 'address_line') {
     if (isValidFallback('address_line', sanitizedText)) {
+    const textLower = cleanText.toLowerCase();
+    const isNotSure = isUnsureValue(cleanText) || textLower === 'not sure';
       pushModel(getAck());
-      const aiJson: any = { address_line: sanitizedText };
-      orchestrateIntake(aiJson);
+    if (st === ServiceType.GREASE_TRAP) {
+      pushModel(getAck());
+      orchestrateIntake({ gallons: '0' });
       setIsLoading(false);
       setIsBotProcessing(false);
       isProcessingRef.current = false;
-      console.debug('Pre-accepted address_line without interjection/Gemini');
       return;
     }
+
+    const setCapacity = (tier: 'UP_TO_1600' | 'UP_TO_2500', gallonsVal: string, unsure: boolean, manual: boolean) => {
+      orchestrateIntake({
+        gallons: gallonsVal,
+        capacity_tier: tier,
+        capacity_unsure: unsure,
+        manual_quote: manual,
+      });
+    };
+
+    if (isNotSure) {
+      pushModel(getAck());
+      setCapacity('UP_TO_1600', 'UNSURE', true, false);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted capacity unsure without Gemini');
+      return;
+    }
+
+    if (textLower.includes('1,600') || textLower.includes('1600')) {
+      pushModel(getAck());
+      setCapacity('UP_TO_1600', '1600', false, false);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted capacity 1600 tier');
+      return;
+    }
+
+    if (textLower.includes('2,500') || textLower.includes('2500')) {
+      pushModel(getAck());
+      setCapacity('UP_TO_2500', '2500', false, false);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted capacity 2500 tier');
+      return;
+    }
+
+    if (/^\d+$/.test(cleanText)) {
+      const n = Number(cleanText);
+      let tier: 'UP_TO_1600' | 'UP_TO_2500' = n <= 1600 ? 'UP_TO_1600' : 'UP_TO_2500';
+      const manual = n > 2500;
+      if (manual) tier = 'UP_TO_2500';
+      pushModel(getAck());
+      setCapacity(tier, cleanText, false, manual);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted numeric capacity');
+      return;
+    }
+
     if (expectedQuestion) {
       pushModel(`Got it — quick check: ${expectedQuestion}`);
       setIsLoading(false);
       setIsBotProcessing(false);
       isProcessingRef.current = false;
       return;
-    }
-  } else if (expectedField === 'system_type') {
-    if (cleanText) {
-      pushModel(getAck());
-      orchestrateIntake({ system_type: cleanText });
-      setIsLoading(false);
-      setIsBotProcessing(false);
-      isProcessingRef.current = false;
-      console.debug('Pre-accepted system_type without interjection/Gemini');
-      return;
-    }
     if (expectedQuestion) {
       pushModel(`Got it — quick check: ${expectedQuestion}`);
       setIsLoading(false);

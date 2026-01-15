@@ -55,6 +55,9 @@ export interface EstimationResult {
   baseServiceLabel?: string;
   baseServicePrice?: number;
   totalPrice?: number;
+  capacity_tier?: string;
+  capacity_unsure?: boolean;
+  manual_quote?: boolean;
   appliedDiscount: number;
   discountType: string;
   notes: string[];
