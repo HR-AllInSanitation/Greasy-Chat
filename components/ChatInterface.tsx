@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { calculateServiceEstimate } from '../services/pricingEngine';
-import { EstimationInputs, EstimationResult, Frequency, LeadInfo, ServiceType } from '../types';
+import { EstimationInputs, EstimationResult, Frequency, ServiceType } from '../types';
 
 const generateQuoteId = () =>
   `QT-${Math.random().toString(36).substring(2, 7).toUpperCase()}-${Date.now().toString().slice(-4)}`;
@@ -99,7 +99,7 @@ const isValidFallback = (field: string, text: string): boolean => {
   if (!clean) return false;
   switch (field) {
     case 'address_line':
-      return /\d/.test(clean);
+      return /\d/.test(clean) && clean.split(/\s+/).length >= 3;
     case 'state': {
       const lower = clean.toLowerCase();
       return /^[a-zA-Z]{2}$/.test(clean) || lower === 'california';
@@ -174,6 +174,12 @@ const getAck = () => {
   const acks = ['Got it 👍', 'Thanks!', 'Perfect.', 'All set.', 'Noted.'];
   return acks[Math.floor(Math.random() * acks.length)];
 };
+
+const parseAdditionalServices = (raw: string): string[] =>
+  raw
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
 
 export const ChatInterface: React.FC = () => {
   // Idempotent initial bot message guard
@@ -340,7 +346,7 @@ export const ChatInterface: React.FC = () => {
       ];
     }
     if (nextField === 'additional_services') {
-      return ['Hydrojetting', 'Grease Break Down'];
+      return ['Hydrojetting', 'Grease Break Down', 'Lid Removal'];
     }
     if (nextField === 'gallons') {
       return [
@@ -373,6 +379,16 @@ export const ChatInterface: React.FC = () => {
         distanceMiles: estimate.distance,
         distanceSource: estimate.distanceSource || 'computed',
         assumptions: estimate.assumptions || [],
+        radiusBand: estimate.radiusBand,
+        distanceAssumed: estimate.distanceAssumed,
+        tierUsed: estimate.tierUsed,
+        gallonsUncertain: estimate.gallonsUncertain,
+        addOns: estimate.addOns,
+        unknownAddOns: estimate.unknownAddOns,
+        manualQuote: estimate.manualQuote,
+        baseServiceLabel: estimate.baseServiceLabel,
+        baseServicePrice: estimate.baseServicePrice,
+        totalPrice: estimate.totalPrice,
       },
       source: 'greasy-agent',
       createdAt: new Date().toISOString(),
@@ -399,6 +415,8 @@ export const ChatInterface: React.FC = () => {
       if (isNonEmptyValue(v)) {
         if ((key === 'gallons' || key === 'parking_distance') && typeof v === 'string' && isUnsureValue(v)) {
           merged[key] = 'UNSURE';
+        } else if (key === 'wants_to_move_forward') {
+          merged[key] = v === true || v === 'true' ? true : v === false || v === 'false' ? false : 'UNSURE';
         } else {
           merged[key] = String(v);
         }
@@ -448,31 +466,20 @@ export const ChatInterface: React.FC = () => {
         const unknownGallons = intakeRef.current.gallons === 'UNSURE';
         const unknownParking = intakeRef.current.parking_distance === 'UNSURE';
         const estimationInputs: EstimationInputs = {
-          gallons: unknownGallons ? 50 : Number(intakeRef.current.gallons) || 0,
-          systemType: intakeRef.current.system_type as ServiceType,
-          parkingDistance: unknownParking ? 100 : Number(intakeRef.current.parking_distance) || 0,
+          serviceType: intakeRef.current.system_type as ServiceType,
+          tierKey: 'matrix',
           frequency: Frequency.MONTHLY,
-          customerLocation: {
-            address: `${intakeRef.current.address_line}, ${intakeRef.current.city}, ${intakeRef.current.state} ${intakeRef.current.zip}`,
-          },
-          leadInfo: {
-            businessName: intakeRef.current.business_name,
-            address: intakeRef.current.address_line,
-            city: intakeRef.current.city,
-            state: intakeRef.current.state,
-            zip: intakeRef.current.zip,
-          } as LeadInfo,
+          isOpeningSoon: false,
+          parkingDistance: unknownParking ? 100 : Number(intakeRef.current.parking_distance) || 0,
+          gallons: unknownGallons ? 0 : Number(intakeRef.current.gallons) || 0,
+          additionalServices: parseAdditionalServices(intakeRef.current.additional_services),
         };
         const estimate = calculateServiceEstimate(estimationInputs);
         setCurrentEstimate(estimate);
         pushModel('Thank you. Here is your estimate.');
-        pushModel(`Estimated price: $${estimate.minPrice} - $${estimate.maxPrice}`);
         const formatted = formatEstimateForChat(estimate);
         if (formatted) pushModel(formatted);
-        pushModel('This is a preliminary estimate. Final pricing is confirmed after an on-site review.');
-        if (unknownGallons || unknownParking) {
-          pushModel('Note: This is a ballpark estimate because gallons and/or parking distance are unknown. Final price may change after confirmation.');
-        }
+        pushModel('Final pricing is confirmed after office verification.');
         if (!hasAskedMoveForwardRef.current) {
           hasAskedMoveForwardRef.current = true;
           pushModel('Do you want to move forward?\n\nIf yes, our office will reach out to you to set up the service.');
@@ -504,16 +511,19 @@ export const ChatInterface: React.FC = () => {
 
   const formatEstimateForChat = (estimate: EstimationResult | null) => {
     if (!estimate) return '';
-    const lines: string[] = [];
-    lines.push(`Estimate: $${estimate.minPrice} - $${estimate.maxPrice}`);
-    lines.push(`Distance: ${estimate.distance} mi (threshold ${estimate.breakdown.thresholdMi}mi, +$${estimate.breakdown.distanceFee} distance fee)`);
-    if (estimate.distanceSource === 'assumed_25mi') {
-      lines.push('Assumption: Distance assumed at 25mi from Sylmar HQ until address verification.');
+    if (estimate.manualQuote) {
+      return 'This job requires office review. We’ll contact you shortly.';
     }
-    if (estimate.breakdown.hoseFee) lines.push(`Hose/run fee: $${estimate.breakdown.hoseFee}`);
-    lines.push(`Subtotal (pre-buffer): $${estimate.breakdown.subtotalBeforeBuffer}`);
-    if (estimate.appliedDiscount) lines.push(`Discount: ${estimate.appliedDiscount}% (${estimate.discountType})`);
-    if (estimate.notes?.length) lines.push(`Notes: ${estimate.notes.join(' ')}`);
+    const lines: string[] = [];
+    const toMoney = (n: number | undefined | null) => typeof n === 'number' && !Number.isNaN(n) ? n.toFixed(2) : '0.00';
+    if (estimate.baseServiceLabel && typeof estimate.baseServicePrice === 'number') {
+      lines.push(`${estimate.baseServiceLabel}: $${toMoney(estimate.baseServicePrice)}`);
+    }
+    (estimate.addOns || []).forEach(add => {
+      lines.push(`+ ${add.name.replace(/\b\w/g, c => c.toUpperCase())}: $${toMoney(add.price)}`);
+    });
+    const total = typeof estimate.totalPrice === 'number' ? estimate.totalPrice : estimate.minPrice;
+    lines.push(`Total estimate: $${toMoney(total)}`);
     return lines.join('\n');
   };
 
@@ -737,7 +747,8 @@ const processMessage = async (text: string) => {
   try {
     let aiJson: any = {};
 
-    const apiKey = import.meta.env.VITE_API_KEY || import.meta.env.API_KEY || '';
+    const env = (import.meta as any).env || {};
+    const apiKey = env.VITE_API_KEY || env.API_KEY || '';
     if (!apiKey || geminiDisabledRef.current) {
       if (!geminiDisabledRef.current) {
         console.error('Missing VITE_API_KEY (or API_KEY) or Gemini disabled. Gemini is disabled in the browser build.');
@@ -745,7 +756,7 @@ const processMessage = async (text: string) => {
       geminiDisabledRef.current = true;
       aiJson = {};
     } else {
-      console.log('hasVITE', !!import.meta.env.VITE_API_KEY);
+      console.log('hasVITE', !!env.VITE_API_KEY);
       const ai = new GoogleGenAI({ apiKey });
 
       const timerLabel = `gemini-${Date.now()}`;
@@ -802,8 +813,9 @@ Schema:
     const intakeIncomplete = !!expectedField;
 
     if (intakeIncomplete && expectedField && !isNonEmptyValue(aiJson?.[expectedField])) {
-      if (isValidFallback(expectedField, cleanText)) {
-        if (expectedField === 'state') {
+      const fieldKey = expectedField as IntakeField;
+      if (isValidFallback(fieldKey, cleanText)) {
+        if (fieldKey === 'state') {
           const normState = normalizeStateInput(cleanText);
           if (!normState) {
             if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
@@ -812,9 +824,9 @@ Schema:
             isProcessingRef.current = false;
             return;
           }
-          aiJson[expectedField] = normState;
+          aiJson[fieldKey] = normState;
         } else {
-          aiJson[expectedField] = isUnsureValue(cleanText) ? 'UNSURE' : cleanText;
+          aiJson[fieldKey] = isUnsureValue(cleanText) ? 'UNSURE' : cleanText;
         }
       } else {
         if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);

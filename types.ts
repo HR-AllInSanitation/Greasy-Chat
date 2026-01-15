@@ -30,6 +30,7 @@ export interface EstimationInputs {
   parkingDistance: number;
   gallons?: number; 
   monthsSinceLastService?: number;
+  additionalServices?: string[];
   location?: {
     latitude: number;
     longitude: number;
@@ -43,6 +44,17 @@ export interface EstimationResult {
   distance: number; // Miles from Sylmar base
   distanceSource?: string;
   assumptions?: string[];
+  distanceMiles?: number;
+  radiusBand?: string;
+  distanceAssumed?: boolean;
+  tierUsed?: string;
+  gallonsUncertain?: boolean;
+  addOns?: { name: string; price: number }[];
+  unknownAddOns?: string[];
+  manualQuote?: boolean;
+  baseServiceLabel?: string;
+  baseServicePrice?: number;
+  totalPrice?: number;
   appliedDiscount: number;
   discountType: string;
   notes: string[];

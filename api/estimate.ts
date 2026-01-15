@@ -15,7 +15,19 @@ const sendCustomerEmail = async (payload: any) => {
     return;
   }
 
-  const amount = typeof estimate?.amount === 'number' ? `$${estimate.amount.toFixed(2)}` : String(estimate?.amount ?? '');
+  const manualQuote = estimate?.manualQuote === true;
+  const rawAmount = manualQuote
+    ? null
+    : typeof estimate?.totalPrice === 'number'
+      ? estimate.totalPrice
+      : typeof estimate?.minPrice === 'number'
+        ? estimate.minPrice
+        : estimate?.amount;
+  const amount = manualQuote
+    ? 'Manual review required'
+    : typeof rawAmount === 'number'
+      ? `$${rawAmount.toFixed(2)}`
+      : String(rawAmount ?? '');
   const addressParts = [intake?.address_line, intake?.city, intake?.state, intake?.zip].filter(Boolean);
   const address = addressParts.join(', ');
   const disclaimer = 'This estimate is a preliminary range and is subject to verification by our operations team. Final pricing may vary based on on-site conditions and job requirements, including but not limited to additional hose length, actual waste volume, access constraints, blockages, hydro-jetting needs, or other services required to properly complete the work.';
@@ -79,13 +91,31 @@ const sendHqEmail = async (payload: any) => {
     return;
   }
 
-  const amount = typeof estimate?.amount === 'number' ? `$${estimate.amount.toFixed(2)}` : String(estimate?.amount ?? '');
+  const manualQuote = estimate?.manualQuote === true;
+  const rawAmount = manualQuote
+    ? null
+    : typeof estimate?.totalPrice === 'number'
+      ? estimate.totalPrice
+      : typeof estimate?.minPrice === 'number'
+        ? estimate.minPrice
+        : estimate?.amount;
+  const amount = manualQuote
+    ? 'Manual review required'
+    : typeof rawAmount === 'number'
+      ? `$${rawAmount.toFixed(2)}`
+      : String(rawAmount ?? '');
   const addressParts = [intake?.address_line, intake?.city, intake?.state, intake?.zip].filter(Boolean);
   const address = addressParts.join(', ');
   const isReady = intake?.wants_to_move_forward === true;
   const distanceMiles = estimate?.distanceMiles ?? estimate?.distance;
   const distanceSource = estimate?.distanceSource;
   const assumptions = Array.isArray(estimate?.assumptions) ? estimate.assumptions : [];
+  const radiusBand = estimate?.radiusBand;
+  const distanceAssumed = estimate?.distanceAssumed;
+  const tierUsed = estimate?.tierUsed;
+  const gallonsUncertain = estimate?.gallonsUncertain;
+  const addOns = Array.isArray(estimate?.addOns) ? estimate.addOns : [];
+  const unknownAddOns = Array.isArray(estimate?.unknownAddOns) ? estimate.unknownAddOns : [];
   const subject = isReady
     ? `🔥 NEW LEAD – Ready to Move Forward – ${intake?.business_name || 'Unknown'}`
     : `New Estimate Request – ${intake?.business_name || 'Unknown'}`;
@@ -101,8 +131,15 @@ const sendHqEmail = async (payload: any) => {
     '',
     'Estimate',
     `- Amount: ${amount || 'N/A'}${estimate?.ballpark ? ' (ballpark)' : ''}`,
-    distanceMiles ? `- Distance: ${distanceMiles} mi${distanceSource ? ` (${distanceSource})` : ''}` : null,
-    assumptions.length ? `- Assumptions: ${assumptions.join(' ')}` : null,
+    distanceMiles ? `- Distance: ${distanceMiles} mi${distanceSource ? ` (${distanceSource})` : ''}` : '',
+    radiusBand ? `- Radius Band: ${radiusBand}` : '',
+    distanceAssumed ? '- Distance Assumed: yes' : '',
+    tierUsed ? `- Tier Used: ${tierUsed}` : '',
+    gallonsUncertain ? '- Gallons Uncertain: yes' : '',
+    addOns.length ? `- Add-ons: ${addOns.map(a => `${a.name} ($${a.price})`).join(', ')}` : '',
+    unknownAddOns.length ? `- Unrecognized add-ons: ${unknownAddOns.join(', ')}` : '',
+    manualQuote ? '- Manual Quote: REQUIRED' : '',
+    assumptions.length ? `- Assumptions: ${assumptions.join(' ')}` : '',
     '',
     'Intake Details',
     `- Gallons: ${intake?.gallons ?? 'N/A'}`,
@@ -174,7 +211,12 @@ const generateEstimatePdf = async (payload: any) => {
     y -= 8;
 
     drawText('Estimate', { bold: true });
-    const amount = typeof estimate?.amount === 'number' ? `$${estimate.amount.toFixed(2)}` : String(estimate?.amount ?? 'N/A');
+    const rawAmount = typeof estimate?.totalPrice === 'number'
+      ? estimate.totalPrice
+      : typeof estimate?.minPrice === 'number'
+        ? estimate.minPrice
+        : estimate?.amount;
+    const amount = typeof rawAmount === 'number' ? `$${rawAmount.toFixed(2)}` : String(rawAmount ?? 'N/A');
     drawText(`Amount (estimate): ${amount}`);
     if (estimate?.ballpark) {
       drawText('Note: This is a ballpark estimate pending confirmation.');
