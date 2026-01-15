@@ -303,7 +303,7 @@ export const ChatInterface: React.FC = () => {
       case 'zip':
         return 'What is the ZIP code?';
       case 'system_type':
-        return 'What is the system type? (Grease trap, interceptor, etc.)';
+        return 'What system do you have?';
       case 'gallons':
         return 'How many gallons does the system hold?';
       case 'parking_distance':
@@ -337,10 +337,10 @@ export const ChatInterface: React.FC = () => {
         { label: 'Grease Trap', value: ServiceType.GREASE_TRAP },
         { label: 'Interceptor', value: ServiceType.INTERCEPTOR },
         { label: 'Clarifier', value: ServiceType.CLARIFIER },
-        { label: 'Hydro Jet', value: ServiceType.HYDRO_JET },
-        { label: 'Used Cooking Oil', value: ServiceType.UCO },
-        { label: 'Fat/Bones', value: ServiceType.FAT_BONES },
       ];
+    }
+    if (nextField === 'additional_services') {
+      return ['Hydrojetting', 'Grease Break Down'];
     }
     if (nextField === 'gallons') {
       return [
