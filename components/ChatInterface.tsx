@@ -282,7 +282,8 @@ export const ChatInterface: React.FC = () => {
     if (!obj.state.trim()) return 'state';
     if (!obj.zip.trim()) return 'zip';
     if (!obj.system_type.trim()) return 'system_type';
-    if (!obj.gallons.trim()) return 'gallons';
+    const isGreaseTrap = obj.system_type === ServiceType.GREASE_TRAP;
+    if (!isGreaseTrap && !obj.gallons.trim()) return 'gallons';
     if (!obj.parking_distance.trim()) return 'parking_distance';
     if (!obj.last_service_months.trim()) return 'last_service_months';
     if (!obj.additional_services.trim()) return 'additional_services';
@@ -340,7 +341,7 @@ export const ChatInterface: React.FC = () => {
     const nextField = getFirstMissingField(intake);
     if (nextField === 'system_type') {
       return [
-        { label: 'Grease Trap', value: ServiceType.GREASE_TRAP },
+        { label: 'Grease Trap (Indoor)', value: ServiceType.GREASE_TRAP },
         { label: 'Interceptor', value: ServiceType.INTERCEPTOR },
         { label: 'Clarifier', value: ServiceType.CLARIFIER },
       ];
