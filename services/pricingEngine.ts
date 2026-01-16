@@ -34,10 +34,10 @@ const INTERCEPTOR_BANDS: { max: number; tier1600: number; tier2500: number }[] =
 ];
 
 const ADD_ON_PRICES: Record<string, number> = {
-  'grease break down': 300,
-  'grease breakdown': 300,
   'hydrojetting': 600,
   'hydro jetting': 600,
+  'grease break down': 300,
+  'grease breakdown': 300,
   'lid removal': 250,
 };
 
@@ -72,7 +72,7 @@ const normalizeAddOnKey = (name: string): string | null => {
 };
 
 export function calculateServiceEstimate(inputs: EstimationInputs): EstimationResult {
-  const { serviceType, gallons, location, additionalServices } = inputs;
+  const { serviceType, gallons, location, additionalServices, capacityTier, capacityUnsure, manualQuoteFlag } = inputs;
 
   let distanceMiles = 0;
   let distanceSource: 'computed' | 'assumed_25mi' = 'computed';
@@ -125,9 +125,11 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
 
   let baseServicePrice = 0;
   let baseServiceLabel = '';
-  let manualQuote = false;
+  let manualQuote = manualQuoteFlag === true;
   let tierUsed = '';
   let gallonsUncertain = false;
+  let capacityTierUsed: 'UP_TO_1600' | 'UP_TO_2500' | '' = '';
+  const capacityUnsureFlag = capacityUnsure === true;
 
   if (serviceType === ServiceType.GREASE_TRAP) {
     baseServicePrice = GREASE_TRAP_BANDS.find(b => b.max === band.bandMax)?.price ?? 0;
@@ -135,23 +137,36 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
   } else if (serviceType === ServiceType.INTERCEPTOR || serviceType === ServiceType.CLARIFIER) {
     const rawGallons = typeof gallons === 'number' ? gallons : 0;
     const isClarifier = serviceType === ServiceType.CLARIFIER;
-    const uncertain = !gallons || gallons <= 0;
+    const uncertain = !gallons || gallons <= 0 || capacityUnsureFlag;
     gallonsUncertain = uncertain;
-    if (uncertain) {
-      tierUsed = '<=1600';
-      notes.push('Gallons provided as UNSURE; priced at <=1600 tier.');
-    }
+
     if (rawGallons > 2500) {
       manualQuote = true;
-      notes.push('Capacity exceeds 2500 gallons; manual quote required.');
+      capacityTierUsed = 'UP_TO_2500';
+      tierUsed = '<=2500';
+      notes.push('Capacity exceeds 2,500 gallons; manual quote required.');
     } else {
-      if (!tierUsed) tierUsed = rawGallons > 1600 ? '<=2500' : '<=1600';
+      if (uncertain) {
+        tierUsed = '<=1600';
+        capacityTierUsed = 'UP_TO_1600';
+        notes.push('Capacity unsure — defaulted to up to 1,600 for estimate.');
+      } else if (capacityTier === 'UP_TO_2500' || rawGallons > 1600) {
+        tierUsed = '<=2500';
+        capacityTierUsed = 'UP_TO_2500';
+      } else {
+        tierUsed = '<=1600';
+        capacityTierUsed = 'UP_TO_1600';
+      }
+
       const row = INTERCEPTOR_BANDS.find(b => b.max === band.bandMax);
       if (row) {
-        baseServicePrice = tierUsed === '<=2500' ? row.tier2500 : row.tier1600;
-        const label = tierUsed === '<=2500' ? 'up to 2,500 gal' : 'up to 1,600 gal';
+        baseServicePrice = capacityTierUsed === 'UP_TO_2500' ? row.tier2500 : row.tier1600;
+        const label = capacityTierUsed === 'UP_TO_2500' ? 'up to 2,500 gal' : 'up to 1,600 gal';
         baseServiceLabel = `${isClarifier ? 'Clarifier' : 'Interceptor'} Pumping (${label})`;
       }
+    }
+    if (!capacityTierUsed) {
+      capacityTierUsed = (capacityTier === 'UP_TO_2500' || rawGallons > 1600) ? 'UP_TO_2500' : 'UP_TO_1600';
     }
     if (isClarifier) {
       notes.push('Clarifier priced using interceptor table; verify.');
@@ -188,14 +203,19 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
     distance: Math.round(distanceMiles * 10) / 10,
     distanceMiles: Math.round(distanceMiles * 10) / 10,
     radiusBand: band.label,
+    radius_band: band.label,
     distanceSource,
     distanceAssumed: distanceSource !== 'computed',
     assumptions,
     tierUsed,
     gallonsUncertain,
     addOns,
+    add_ons: addOns,
     unknownAddOns,
     manualQuote,
+    manual_quote: manualQuote,
+    capacity_tier: capacityTierUsed,
+    capacity_unsure: capacityUnsureFlag,
     baseServiceLabel,
     baseServicePrice,
     totalPrice,

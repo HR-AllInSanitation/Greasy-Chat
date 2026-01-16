@@ -31,6 +31,9 @@ export interface EstimationInputs {
   gallons?: number; 
   monthsSinceLastService?: number;
   additionalServices?: string[];
+  capacityTier?: 'UP_TO_1600' | 'UP_TO_2500';
+  capacityUnsure?: boolean;
+  manualQuoteFlag?: boolean;
   location?: {
     latitude: number;
     longitude: number;
@@ -46,6 +49,7 @@ export interface EstimationResult {
   assumptions?: string[];
   distanceMiles?: number;
   radiusBand?: string;
+  radius_band?: string;
   distanceAssumed?: boolean;
   tierUsed?: string;
   gallonsUncertain?: boolean;
@@ -58,6 +62,7 @@ export interface EstimationResult {
   capacity_tier?: string;
   capacity_unsure?: boolean;
   manual_quote?: boolean;
+  add_ons?: { name: string; price: number }[];
   appliedDiscount: number;
   discountType: string;
   notes: string[];

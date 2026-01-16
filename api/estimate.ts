@@ -110,12 +110,15 @@ const sendHqEmail = async (payload: any) => {
   const distanceMiles = estimate?.distanceMiles ?? estimate?.distance;
   const distanceSource = estimate?.distanceSource;
   const assumptions = Array.isArray(estimate?.assumptions) ? estimate.assumptions : [];
-  const radiusBand = estimate?.radiusBand;
+  const radiusBand = estimate?.radiusBand || (estimate as any)?.radius_band;
   const distanceAssumed = estimate?.distanceAssumed;
   const tierUsed = estimate?.tierUsed;
-  const gallonsUncertain = estimate?.gallonsUncertain;
-  const addOns = Array.isArray(estimate?.addOns) ? estimate.addOns : [];
+  const capacityTier = (estimate as any)?.capacity_tier || tierUsed;
+  const capacityUnsure = (estimate as any)?.capacity_unsure === true || estimate?.gallonsUncertain === true;
+  const addOnsRaw = Array.isArray(estimate?.addOns) ? estimate.addOns : Array.isArray((estimate as any)?.add_ons) ? (estimate as any).add_ons : [];
+  const addOns = addOnsRaw as { name: string; price: number }[];
   const unknownAddOns = Array.isArray(estimate?.unknownAddOns) ? estimate.unknownAddOns : [];
+  const manualQuoteFlag = manualQuote || (estimate as any)?.manual_quote === true;
   const subject = isReady
     ? `🔥 NEW LEAD – Ready to Move Forward – ${intake?.business_name || 'Unknown'}`
     : `New Estimate Request – ${intake?.business_name || 'Unknown'}`;
@@ -134,11 +137,12 @@ const sendHqEmail = async (payload: any) => {
     distanceMiles ? `- Distance: ${distanceMiles} mi${distanceSource ? ` (${distanceSource})` : ''}` : '',
     radiusBand ? `- Radius Band: ${radiusBand}` : '',
     distanceAssumed ? '- Distance Assumed: yes' : '',
+    capacityTier ? `- Capacity Tier: ${capacityTier}` : '',
+    capacityUnsure ? '- Capacity Unsure: yes (defaulted to up to 1,600)' : '',
     tierUsed ? `- Tier Used: ${tierUsed}` : '',
-    gallonsUncertain ? '- Gallons Uncertain: yes' : '',
     addOns.length ? `- Add-ons: ${addOns.map(a => `${a.name} ($${a.price})`).join(', ')}` : '',
     unknownAddOns.length ? `- Unrecognized add-ons: ${unknownAddOns.join(', ')}` : '',
-    manualQuote ? '- Manual Quote: REQUIRED' : '',
+    manualQuoteFlag ? '- Manual Quote: REQUIRED' : '',
     assumptions.length ? `- Assumptions: ${assumptions.join(' ')}` : '',
     '',
     'Intake Details',
