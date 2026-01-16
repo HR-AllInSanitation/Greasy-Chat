@@ -318,7 +318,7 @@ export const ChatInterface: React.FC = () => {
       case 'last_service_months':
         return 'How many months since your last service?';
       case 'additional_services':
-        return 'Any additional services needed (jetting, filter change, etc.)?';
+        return 'Any additional services?';
       default:
         return '';
     }
