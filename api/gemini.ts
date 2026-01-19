@@ -2,20 +2,21 @@
 
 export const config = { runtime: 'nodejs18.x' };
 
+
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
 
+  let model = (process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest').trim();
   try {
     if (req.method !== 'POST') {
-      res.status(405).json({ ok: false, error: 'Method not allowed' });
+      res.status(405).json({ ok: false, error: 'Method not allowed', modelUsed: model });
       return;
     }
 
     const apiKey = (process.env.GEMINI_API_KEY || '').trim();
-    const model = (process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest').trim();
 
     if (!apiKey) {
-      res.status(200).json({ ok: false, disabled: true, error: 'Missing GEMINI_API_KEY' });
+      res.status(200).json({ ok: false, disabled: true, error: 'Missing GEMINI_API_KEY', modelUsed: model });
       return;
     }
 
@@ -51,7 +52,7 @@ export default async function handler(req: any, res: any) {
       const status = r.status;
       const disabled = status === 401 || status === 403;
       const msg = json?.error?.message || `Gemini error (${status})`;
-      res.status(200).json({ ok: false, disabled, status, error: msg });
+      res.status(200).json({ ok: false, disabled, status, error: msg, modelUsed: model });
       return;
     }
 
@@ -60,8 +61,8 @@ export default async function handler(req: any, res: any) {
       ? parts.map((p: any) => p?.text).filter(Boolean).join('')
       : '';
 
-    res.status(200).json({ ok: true, text: outText });
+    res.status(200).json({ ok: true, text: outText, modelUsed: model });
   } catch (err: any) {
-    res.status(200).json({ ok: false, disabled: false, error: err?.message || String(err) });
+    res.status(200).json({ ok: false, disabled: false, error: err?.message || String(err), modelUsed: model });
   }
 }
