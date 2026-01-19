@@ -1,4 +1,4 @@
-export const config = { runtime: 'nodejs18.x' };
+export const config = { runtime: 'nodejs' };
 
 function getBuildId() {
   const sha = process.env.VERCEL_GIT_COMMIT_SHA;
@@ -10,7 +10,7 @@ function getBuildId() {
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
   const buildId = getBuildId();
-  const runtimeHint = 'nodejs18.x';
+  const runtimeHint = 'nodejs';
   const apiKey = (process.env.GEMINI_API_KEY || '').trim();
   if (req.method !== 'POST') {
     res.status(405).json({ ok: false, error: 'Method not allowed', buildId, runtimeHint });

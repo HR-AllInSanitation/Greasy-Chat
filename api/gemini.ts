@@ -1,6 +1,6 @@
 
 
-export const config = { runtime: 'nodejs18.x' };
+export const config = { runtime: 'nodejs' };
 
 
 
@@ -15,7 +15,7 @@ export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
 
   const buildId = getBuildId();
-  const runtimeHint = 'nodejs18.x';
+  const runtimeHint = 'nodejs';
   let model = (process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest').trim();
   const hasKey = !!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0;
   const hasModelEnv = !!process.env.GEMINI_MODEL && process.env.GEMINI_MODEL.trim().length > 0;
