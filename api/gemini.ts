@@ -12,7 +12,7 @@ export default async function handler(req: any, res: any) {
     }
 
     const apiKey = (process.env.GEMINI_API_KEY || '').trim();
-    const model = (process.env.GEMINI_MODEL || 'gemini-1.5-flash').trim();
+    const model = (process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest').trim();
 
     if (!apiKey) {
       res.status(200).json({ ok: false, disabled: true, error: 'Missing GEMINI_API_KEY' });
