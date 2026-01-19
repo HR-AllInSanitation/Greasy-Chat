@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { GoogleGenAI } from '@google/genai';
+
 import { calculateServiceEstimate } from '../services/pricingEngine';
 import { EstimationInputs, EstimationResult, Frequency, ServiceType } from '../types';
 
@@ -237,6 +237,7 @@ export const ChatInterface: React.FC = () => {
   const isNearBottomRef = useRef(true);
   const isProcessingRef = useRef(false);
   const hasSentEstimateRef = useRef(false);
+  const hasSentLeadRef = useRef(false);
   const currentEstimateRef = useRef<EstimationResult | null>(null);
   const hasAskedMoveForwardRef = useRef(false);
   const didShowEstimateDeliveryIntroRef = useRef(false);
@@ -366,12 +367,12 @@ export const ChatInterface: React.FC = () => {
   };
 
   const maybeSendEstimateLead = () => {
-    if (hasSentEstimateRef.current) return;
+    if (hasSentLeadRef.current) return;
     const estimate = currentEstimateRef.current;
     if (!estimate) return;
     if (getFirstMissingField(intakeRef.current) || getFirstMissingContactField(contactRef.current)) return;
 
-    hasSentEstimateRef.current = true;
+    hasSentLeadRef.current = true;
 
     const systemLabel = intakeRef.current.system_type === ServiceType.GREASE_TRAP
       ? 'Grease Trap (Indoor)'
@@ -769,64 +770,35 @@ const processMessage = async (text: string) => {
   try {
     let aiJson: any = {};
 
-    const env = (import.meta as any).env || {};
-    const apiKey = env.VITE_API_KEY || env.API_KEY || '';
-    if (!apiKey || geminiDisabledRef.current) {
-      if (!geminiDisabledRef.current) {
-        console.error('Missing VITE_API_KEY (or API_KEY) or Gemini disabled. Gemini is disabled in the browser build.');
-      }
-      geminiDisabledRef.current = true;
-      aiJson = {};
-    } else {
-      console.log('hasVITE', !!env.VITE_API_KEY);
-      const ai = new GoogleGenAI({ apiKey });
-
-      const timerLabel = `gemini-${Date.now()}`;
-
-      const systemPrompt = `You are an intake interpreter. You must ONLY return valid JSON (no prose, no questions, no markdown) matching this schema and using snake_case keys. Use null for unknown.
-
-Schema:
-{
-  "business_name": string | null,
-  "address_line": string | null,
-  "city": string | null,
-  "state": string | null,
-  "zip": string | null,
-  "system_type": string | null,
-  "gallons": string | null,
-  "parking_distance": string | null,
-  "last_service_months": string | null,
-  "additional_services": string | null,
-  "contact_name": string | null,
-  "contact_phone": string | null,
-  "contact_email": string | null
-}`;
-
-      console.time(timerLabel);
-      console.debug('gemini:start');
-      let resp: any;
+    aiJson = {};
+    if (!geminiDisabledRef.current) {
       try {
-        resp = await Promise.race([
-          ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: [{ role: 'user', parts: [{ text: cleanText }] }],
-            config: { systemInstruction: systemPrompt },
-          }),
+        const systemPrompt = `You are an intake interpreter. You must ONLY return valid JSON (no prose, no questions, no markdown) matching this schema and using snake_case keys. Use null for unknown.\n\nSchema:\n{\n  \"business_name\": string | null,\n  \"address_line\": string | null,\n  \"city\": string | null,\n  \"state\": string | null,\n  \"zip\": string | null,\n  \"system_type\": string | null,\n  \"gallons\": string | null,\n  \"parking_distance\": string | null,\n  \"last_service_months\": string | null,\n  \"additional_services\": string | null,\n  \"contact_name\": string | null,\n  \"contact_phone\": string | null,\n  \"contact_email\": string | null\n}`;
+        const resp = await Promise.race([
+          fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: cleanText, systemPrompt }),
+          }).then(r => r.json()),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Gemini timeout')), 8000)),
         ]);
-        console.debug('gemini:resolved');
-      } finally {
-        console.timeEnd(timerLabel);
-      }
-
-      const raw = extractTextFromGeminiResponse(resp);
-      console.log('gemini raw length', raw?.length || 0);
-      const aiText = stripFencedJson(raw || '');
-
-      try {
-        aiJson = aiText ? JSON.parse(aiText) : {};
-      } catch (err) {
-        console.error('AI JSON parse failed:', err, aiText);
+        if (!resp || !resp.ok) {
+          if (resp && resp.disabled) {
+            geminiDisabledRef.current = true;
+          }
+          aiJson = {};
+        } else {
+          try {
+            aiJson = resp.text ? JSON.parse(resp.text) : {};
+          } catch (err) {
+            console.error('AI JSON parse failed:', err, resp.text);
+            aiJson = {};
+          }
+        }
+      } catch (err: any) {
+        if (err && (err.status === 401 || err.status === 403)) {
+          geminiDisabledRef.current = true;
+        }
         aiJson = {};
       }
     }
