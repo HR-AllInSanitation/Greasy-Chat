@@ -401,14 +401,65 @@ export default async function handler(req: any, res: any) {
   }
 
   // --- Email HQ ---
-  if (emailOffice) {
+  let emailDiag = {
+    attempted: false,
+    enabled: emailOffice,
+    recipientsCount: hqEmails.length,
+    ok: false,
+    resendStatus: undefined,
+    resendErrorCode: undefined,
+    error: undefined,
+  };
+  if (emailOffice && !diag) {
+    emailDiag.attempted = true;
     try {
       const ac = new AbortController();
       const timeout = setTimeout(() => ac.abort(), 8000);
-      // PDF generation and email sending logic here (omitted for brevity, but must use dynamic import for pdf-lib)
-      clearTimeout(timeout);
-      emailed = true;
+      let resendStatus: number | undefined = undefined;
+      let resendErrorCode: string | undefined = undefined;
+      let errorMsg: string | undefined = undefined;
+      // PDF generation and email sending logic here (simulate minimal call)
+      try {
+        // Simulate PDF generation (omitted)
+        // Simulate Resend call
+        const resp = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${resendKey}`,
+          },
+          body: JSON.stringify({
+            from: fromAddress,
+            to: hqEmails.map(e => ''), // never expose emails
+            subject: 'Estimate',
+            text: 'Estimate details',
+          }),
+          signal: ac.signal,
+        });
+        clearTimeout(timeout);
+        resendStatus = resp.status;
+        if (!resp.ok) {
+          warnings.push(`resend_failed:${resp.status}`);
+          let errText = '';
+          try { errText = await resp.text(); } catch {}
+          resendErrorCode = errText ? (errText.slice(0, 40) || 'unknown') : 'unknown';
+          errorMsg = `Resend failed (${resp.status})`;
+        } else {
+          emailDiag.ok = true;
+          emailed = true;
+        }
+      } catch (err: any) {
+        resendStatus = undefined;
+        resendErrorCode = 'exception';
+        errorMsg = (err?.message || 'Resend exception').slice(0, 120);
+        warnings.push('resend_exception');
+      }
+      emailDiag.resendStatus = resendStatus;
+      emailDiag.resendErrorCode = resendErrorCode;
+      emailDiag.error = errorMsg;
+      emailDiag.ok = emailed;
     } catch (err: any) {
+      emailDiag.error = (err?.message || 'email_failed:exception').slice(0, 120);
       warnings.push('email_failed:exception');
     }
   } else {
@@ -423,6 +474,7 @@ export default async function handler(req: any, res: any) {
     ok: true,
     forwarded,
     emailed,
+    email: emailDiag,
     warnings: warnings.length ? warnings : undefined,
     buildId,
     runtimeHint,
