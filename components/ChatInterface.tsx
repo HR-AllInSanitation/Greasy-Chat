@@ -989,6 +989,7 @@ useEffect(() => {
         className="p-6 border-t border-slate-100 bg-white shrink-0"
         onSubmit={e => {
           e.preventDefault();
+          if (isLoading) return; // guard
           processMessage(inputRef.current?.value || '');
         }}
       >
@@ -1022,7 +1023,7 @@ useEffect(() => {
             title="Send"
             type="submit"
             disabled={isLoading || !(inputRef.current?.value?.trim() || input.trim())}
-            className="bg-slate-950 text-white w-14 h-14 rounded-xl flex items-center justify-center shadow-xl hover:bg-black transition-all"
+            className={`bg-slate-950 text-white w-14 h-14 rounded-xl flex items-center justify-center shadow-xl hover:bg-black transition-all ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
             {isLoading ? (
               <i className="fas fa-circle-notch fa-spin text-amber-500" aria-label="Loading"></i>

@@ -128,10 +128,16 @@ const App: React.FC = () => {
           </div>
           
           <div className="hidden lg:flex items-center gap-10 text-[12px] font-black text-slate-500 uppercase tracking-widest">
-            <button onClick={() => scrollToSection('services')} className="hover:text-amber-600 transition-colors">Services</button>
+            <button type="button" onClick={() => scrollToSection('services')} className="hover:text-amber-600 transition-colors">Services</button>
             <div className="h-4 w-px bg-slate-200"></div>
             <button 
-              onClick={() => triggerChatAction(undefined, true)}
+              type="button"
+              onClick={() => {
+                if (didDispatchRef.current) return; // debounce/guard
+                didDispatchRef.current = true;
+                triggerChatAction(undefined, true);
+                setTimeout(() => { didDispatchRef.current = false; }, 1200); // reset guard
+              }}
               className="bg-amber-500 text-slate-950 px-10 py-4 rounded-full hover:bg-amber-400 transition-all font-black shadow-lg shadow-amber-200/50"
             >
               Instant Estimate
@@ -268,7 +274,13 @@ const App: React.FC = () => {
                 <h5 className="text-amber-500 font-black uppercase text-[9px] tracking-[0.3em]">Regional Dispatch</h5>
                 <a href="tel:8186984252" className="text-4xl lg:text-5xl font-black text-white tracking-tighter hover:text-amber-500 transition-colors block">818.698.4252</a>
                 <button 
-                  onClick={() => triggerChatAction("I'd like to request a regional callback for a site survey.")}
+                  type="button"
+                  onClick={() => {
+                    if (didDispatchRef.current) return; // debounce/guard
+                    didDispatchRef.current = true;
+                    triggerChatAction("I'd like to request a regional callback for a site survey.");
+                    setTimeout(() => { didDispatchRef.current = false; }, 1200);
+                  }}
                   className="w-full bg-amber-500 text-slate-950 font-black py-4 rounded-xl hover:bg-amber-400 transition-all uppercase tracking-[0.2em] text-[11px]"
                 >
                   Request Callback
