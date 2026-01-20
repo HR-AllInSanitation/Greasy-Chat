@@ -277,25 +277,64 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  // --- Safe body parsing with 3s timeout ---
+  // --- Node-compatible body parsing with 3s timeout ---
   let body: any = {};
   let bodyType = 'unknown';
   let receivedKeys: string[] = [];
-  let raw = '';
   let bodyWarning = '';
   try {
-    raw = typeof req.body === 'string' ? req.body : await Promise.race([
-      req.text?.(),
-      (async () => new Promise(r => setTimeout(() => r('TIMEOUT'), 3000)))()
-    ]);
-    if (raw === 'TIMEOUT') throw new Error('body timeout');
-    if (raw && raw.trim().startsWith('{')) {
-      body = JSON.parse(raw);
-      bodyType = 'json';
+    if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
+      body = req.body;
+      bodyType = 'object';
+    } else if (typeof req.body === 'string' || Buffer.isBuffer(req.body)) {
+      let raw = typeof req.body === 'string' ? req.body : req.body.toString('utf8');
+      try {
+        body = JSON.parse(raw);
+        bodyType = 'object';
+      } catch (err) {
+        bodyType = 'parse-error';
+        bodyWarning = 'Invalid JSON in string/Buffer body';
+        body = {};
+      }
     } else {
-      bodyType = typeof raw;
+      // Read from stream with 3s timeout
+      bodyType = 'stream';
+      const raw = await new Promise<string>((resolve, reject) => {
+        let data = '';
+        let timedOut = false;
+        const timer = setTimeout(() => {
+          timedOut = true;
+          reject(new Error('body timeout'));
+        }, 3000);
+        req.on('data', (chunk: Buffer|string) => {
+          if (timedOut) return;
+          data += chunk.toString('utf8');
+        });
+        req.on('end', () => {
+          if (timedOut) return;
+          clearTimeout(timer);
+          resolve(data);
+        });
+        req.on('error', (err: any) => {
+          if (timedOut) return;
+          clearTimeout(timer);
+          reject(err);
+        });
+      });
+      try {
+        body = JSON.parse(raw);
+        bodyType = 'object';
+      } catch (err) {
+        bodyType = 'parse-error';
+        bodyWarning = 'Invalid JSON in stream body';
+        body = {};
+      }
     }
-    receivedKeys = body && typeof body === 'object' ? Object.keys(body) : [];
+    if (body && typeof body === 'object' && !Array.isArray(body)) {
+      receivedKeys = Object.keys(body);
+    } else {
+      receivedKeys = [];
+    }
   } catch (err: any) {
     body = {};
     bodyType = 'parse-error';
