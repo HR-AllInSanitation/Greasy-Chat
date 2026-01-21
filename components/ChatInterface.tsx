@@ -182,6 +182,22 @@ const parseAdditionalServices = (raw: string): string[] =>
     .filter(Boolean);
 
 export const ChatInterface: React.FC = () => {
+    // Track selected core service label
+    const selectedServiceLabelRef = useRef<string | null>(null);
+
+    // Listen for greasy-select-service event
+    useEffect(() => {
+      const handler = (e: any) => {
+        const label = e?.detail?.label;
+        if (!label) return;
+        selectedServiceLabelRef.current = String(label);
+        pushModel(`Entiendo que te interesa "${label}". Déjame tu nombre, teléfono y email para que la oficina te contacte con los detalles.`);
+        phaseRef.current = 'contact';
+        inputRef.current?.focus?.();
+      };
+      window.addEventListener('greasy-select-service', handler);
+      return () => window.removeEventListener('greasy-select-service', handler);
+    }, []);
   // Idempotent initial bot message guard
   const didInitRef = useRef(false);
 
@@ -378,6 +394,17 @@ export const ChatInterface: React.FC = () => {
       ? 'Grease Trap (Indoor)'
       : undefined;
 
+    // Ensure meta exists and extend
+    let meta: any = {};
+    if (estimate && (estimate as any).meta && typeof (estimate as any).meta === 'object') {
+      meta = { ...(estimate as any).meta };
+    }
+    if (selectedServiceLabelRef.current) {
+      meta.service = selectedServiceLabelRef.current;
+      meta.source = 'core-services';
+    } else {
+      meta.source = meta.source ?? 'greasy-agent';
+    }
     const payload = {
       intake: {
         ...intakeRef.current,
@@ -406,7 +433,7 @@ export const ChatInterface: React.FC = () => {
         baseServicePrice: estimate.baseServicePrice,
         totalPrice: estimate.totalPrice,
       },
-      source: 'greasy-agent',
+      meta,
       createdAt: new Date().toISOString(),
     };
 
@@ -414,7 +441,10 @@ export const ChatInterface: React.FC = () => {
 
     if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
       const success = navigator.sendBeacon('/api/estimate', new Blob([body], { type: 'application/json' }));
-      if (success) return;
+      if (success) {
+        selectedServiceLabelRef.current = null;
+        return;
+      }
     }
 
     try {
@@ -422,7 +452,11 @@ export const ChatInterface: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,
-      }).catch(err => console.error('Failed to send estimate lead:', err));
+      })
+        .then(res => {
+          if (res.ok) selectedServiceLabelRef.current = null;
+        })
+        .catch(err => console.error('Failed to send estimate lead:', err));
     } catch (err) {
       console.error('Failed to send estimate lead:', err);
     }

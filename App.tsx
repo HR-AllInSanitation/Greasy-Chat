@@ -191,11 +191,13 @@ const App: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {services.map((service, idx) => (
-                    <div
+                    <button
                       key={idx}
-                      className="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 relative overflow-hidden cursor-pointer"
+                      type="button"
+                      aria-label={`Solicitar ${service.title}`}
+                      className="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 relative overflow-hidden cursor-pointer text-left w-full"
                       onClick={() => {
-                        window.dispatchEvent(new CustomEvent('greasy-select-service', { detail: { service: service.title } }));
+                        window.dispatchEvent(new CustomEvent('greasy-select-service', { detail: { label: service.title } }));
                         window.dispatchEvent(new CustomEvent('ais-trigger-chat', { detail: { focusOnly: true } }));
                       }}
                     >
@@ -210,7 +212,7 @@ const App: React.FC = () => {
                         <h4 className="text-xl font-black text-slate-950 mb-3 tracking-tight">{service.title}</h4>
                         <p className="text-sm text-slate-500 font-bold leading-relaxed">{service.desc}</p>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
