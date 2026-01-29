@@ -1177,6 +1177,8 @@ useEffect(() => {
   // Side effects (webhooks, emails, PDFs, storage) must be handled externally.
   return (
     <div
+      data-testid={IS_E2E ? 'chat-shell' : undefined}
+      data-glowing={IS_E2E ? (isGlowing ? '1' : '0') : undefined}
       className={`${isGlowing ? 'ring-2 ring-blue-400 shadow-lg' : ''} bg-white rounded-b-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col h-full min-h-0 transition-shadow transition-colors duration-300`}
     >
       <div
