@@ -5,8 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:strict": "vite --strictPort --port 3000",
+    "prebuild": "node -e \"if (process.env.VITE_E2E) { console.error('VITE_E2E must not be set when building'); process.exit(1); }\"",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:smoke": "playwright test --config=playwright.config.ts",
+    "ports:check": "lsof -iTCP -sTCP:LISTEN -n -P | grep -E ':(3000|3002|3003|4173|5173)' || true",
+    "ports:kill:vite": "ps -ax -o pid=,command= | grep '[v]ite' | awk '{print $1}' | xargs -r kill",
+    "ports:kill:repo": "node scripts/kill-ports.mjs",
+    "dev:clean": "npm run ports:kill:repo && npm run dev:strict",
+    "build:verify:prod": "npm run build && (rg -n '__setContactState|__triggerLeadSend|__lastLeadPayload|data-testid=\\\"chat-shell\\\"|data-glowing|VITE_E2E' dist && exit 1 || true) && (rg -n 'data-testid' dist && exit 1 || true)",
+    "ci:prod": "npm run build:verify:prod && npx tsc --noEmit --pretty false"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
@@ -16,6 +25,7 @@
     "recharts": "^3.6.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.0",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "puppeteer": "^24.34.0",
