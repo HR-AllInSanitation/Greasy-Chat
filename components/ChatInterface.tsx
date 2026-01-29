@@ -1175,12 +1175,10 @@ useEffect(() => {
   // CONTRACT:
   // ChatInterface is responsible ONLY for data collection and UX.
   // Side effects (webhooks, emails, PDFs, storage) must be handled externally.
-  return (
-    <div
-      data-testid={IS_E2E ? 'chat-shell' : undefined}
-      data-glowing={IS_E2E ? (isGlowing ? '1' : '0') : undefined}
-      className={`${isGlowing ? 'ring-2 ring-blue-400 shadow-lg' : ''} bg-white rounded-b-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col h-full min-h-0 transition-shadow transition-colors duration-300`}
-    >
+  const shellClass = `${isGlowing ? 'ring-2 ring-blue-400 shadow-lg' : ''} bg-white rounded-b-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col h-full min-h-0 transition-shadow transition-colors duration-300`;
+
+  const shellContent = (
+    <>
       <div
         ref={scrollContainerRef}
         onScroll={updateNearBottom}
@@ -1233,14 +1231,14 @@ useEffect(() => {
             const label = typeof chip === 'string' ? chip : chip.label;
             const value = typeof chip === 'string' ? chip : chip.value;
             return (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => processMessage(value)}
-              className="inline-block px-5 py-2.5 bg-white hover:bg-slate-950 hover:text-white text-slate-950 text-[10px] font-black uppercase tracking-widest rounded-full border border-slate-200 transition-all active:scale-95 shadow-sm"
-            >
-              {label}
-            </button>
+              <button
+                key={idx}
+                type="button"
+                onClick={() => processMessage(value)}
+                className="inline-block px-5 py-2.5 bg-white hover:bg-slate-950 hover:text-white text-slate-950 text-[10px] font-black uppercase tracking-widest rounded-full border border-slate-200 transition-all active:scale-95 shadow-sm"
+              >
+                {label}
+              </button>
             );
           })}
         </div>
@@ -1294,6 +1292,16 @@ useEffect(() => {
           </button>
         </div>
       </form>
+    </>
+  );
+
+  return IS_E2E ? (
+    <div data-testid="chat-shell" data-glowing={isGlowing ? '1' : '0'} className={shellClass}>
+      {shellContent}
+    </div>
+  ) : (
+    <div className={shellClass}>
+      {shellContent}
     </div>
   );
 };
