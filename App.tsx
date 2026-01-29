@@ -11,19 +11,19 @@ const App: React.FC = () => {
 
   const services = [
     {
-      title: "Grease Trap Cleaning",
-      desc: "Specialized indoor service for units up to 50 gallons. Includes full scrape and debris removal.",
+      title: "Grease Trap / Interceptor Pumping",
+      desc: "Specialized indoor and exterior grease system maintenance with full scrape and high-volume extraction.",
       icon: "fa-faucet",
-      tag: "Indoor"
+      tag: "Indoor/Exterior"
     },
     {
-      title: "Interceptor Pumping",
-      desc: "Large scale exterior grease interceptor maintenance with high-volume vacuum extraction.",
-      icon: "fa-truck-field",
-      tag: "Exterior"
+      title: "Septic / Holding Tank Pumping",
+      desc: "Scheduled or emergency pumping for septic and holding tanks to keep sites compliant and odor-free.",
+      icon: "fa-water",
+      tag: "Septic"
     },
     {
-      title: "Hydro Jetting",
+      title: "Main Sewer Line Jetting / Hydro Jetting",
       desc: "High-pressure line clearing to eliminate stubborn FOG (Fat, Oil, Grease) build-up.",
       icon: "fa-water-ladder",
       tag: "Emergency"
@@ -194,9 +194,12 @@ const App: React.FC = () => {
                     <button
                       key={idx}
                       type="button"
-                      aria-label={`Solicitar ${service.title}`}
+                      aria-label={`Request ${service.title}`}
                       className="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 relative overflow-hidden cursor-pointer text-left w-full"
                       onClick={() => {
+                        if (service.title === 'Grease Trap / Interceptor Pumping') {
+                          window.dispatchEvent(new CustomEvent('greasy-agent:glow'));
+                        }
                         window.dispatchEvent(new CustomEvent('greasy-select-service', { detail: { label: service.title } }));
                         window.dispatchEvent(new CustomEvent('ais-trigger-chat', { detail: { focusOnly: true } }));
                       }}

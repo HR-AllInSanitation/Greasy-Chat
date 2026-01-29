@@ -1,7 +1,41 @@
+/// <reference types="vite/client" />
+
+declare const __OFFICE_PHONE__: string;
+declare const __IS_E2E__: boolean;
+
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { calculateServiceEstimate } from '../services/pricingEngine';
 import { EstimationInputs, EstimationResult, Frequency, ServiceType } from '../types';
+
+const OFFICE_PHONE = typeof __OFFICE_PHONE__ === 'string' ? __OFFICE_PHONE__ : '';
+if (import.meta.env.DEV && !OFFICE_PHONE.trim()) {
+  console.warn('VITE_OFFICE_PHONE is empty; the tel CTA will not render in contact-only flows.');
+}
+
+const getOfficePhoneValue = (): string => OFFICE_PHONE;
+
+const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+const IS_LOCAL = ['localhost', '127.0.0.1'].includes(hostname);
+let HAS_WARNED_E2E_PROD = false;
+const IS_E2E = import.meta.env.DEV && __IS_E2E__ && IS_LOCAL;
+if (import.meta.env.PROD && __IS_E2E__ && !HAS_WARNED_E2E_PROD) {
+  HAS_WARNED_E2E_PROD = true;
+  console.warn('VITE_E2E is set in production; test hooks remain disabled.');
+}
+
+const isContactOnlyService = (label?: string | null) => label === 'Septic / Holding Tank Pumping' || label === 'Main Sewer Line Jetting / Hydro Jetting';
+
+const normalizePhoneForTel = (raw: string): string | null => {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const hasLeadingPlus = trimmed.startsWith('+');
+  const digits = trimmed.replace(/\D/g, '');
+  if (digits.length < 7) return null;
+  const normalized = `${hasLeadingPlus ? '+' : ''}${digits}`;
+  if (!/^\+?\d{7,15}$/.test(normalized)) return null;
+  return normalized;
+};
 
 const generateQuoteId = () =>
   `QT-${Math.random().toString(36).substring(2, 7).toUpperCase()}-${Date.now().toString().slice(-4)}`;
@@ -34,7 +68,49 @@ interface Message {
   text: string;
   estimate?: EstimationResult;
   quoteId?: string;
+  link?: MessageLink;
 }
+
+type MessageLink = {
+  href: string;
+  label: string;
+};
+
+type MoveForward = true | false | 'UNSURE' | null;
+
+const normalizeMoveForward = (raw: unknown): MoveForward => {
+  if (raw === true) return true;
+  if (raw === false) return false;
+  if (typeof raw === 'string') {
+    const t = raw.trim().toLowerCase();
+    if (t === 'true') return true;
+    if (t === 'false') return false;
+    if (t === 'unsure') return 'UNSURE';
+  }
+  return null;
+};
+
+const getHandoffLink = (serviceLabel?: string | null): MessageLink | null => {
+  const officePhone = getOfficePhoneValue().trim();
+  if (!officePhone || !isContactOnlyService(serviceLabel)) return null;
+  const normalizedPhone = normalizePhoneForTel(officePhone);
+  if (!normalizedPhone) return null;
+  const telHref = `tel:${normalizedPhone}`;
+  return { href: telHref, label: `Call/Text: ${normalizedPhone}` };
+};
+
+const getHandoffMessage = (opts: { serviceLabel?: string | null; moveForward?: MoveForward; needsOfficeReview?: boolean }): string => {
+  const label = opts.serviceLabel ? ` for "${opts.serviceLabel}"` : '';
+  const urgencyLink = getHandoffLink(opts.serviceLabel);
+  const urgencyLine = urgencyLink ? ` If this is urgent, ${urgencyLink.label}.` : '';
+  if (opts.moveForward === true) {
+    return `Perfect — we sent this to our office${label}. You’ll hear back by the next business day.${urgencyLine}`;
+  }
+  if (opts.needsOfficeReview) {
+    return `Thanks — request received${label}. We sent this to our office for a quick review. You’ll hear back by the next business day.${urgencyLine}`;
+  }
+  return `Thanks — request received${label}. We sent this to our office. You’ll hear back by the next business day.${urgencyLine}`;
+};
 
 const isNonEmptyValue = (v: unknown) => {
   if (v === null || v === undefined) return false;
@@ -171,7 +247,7 @@ const parseMoveForwardIntent = (text: string): boolean | 'UNSURE' | null => {
 };
 
 const getAck = () => {
-  const acks = ['Got it 👍', 'Thanks!', 'Perfect.', 'All set.', 'Noted.'];
+  const acks = ['Got it 👍', 'Thanks!', 'Perfect.', 'Confirmed!', 'Received!'];
   return acks[Math.floor(Math.random() * acks.length)];
 };
 
@@ -182,32 +258,100 @@ const parseAdditionalServices = (raw: string): string[] =>
     .filter(Boolean);
 
 export const ChatInterface: React.FC = () => {
-    // Track selected core service label
-    const selectedServiceLabelRef = useRef<string | null>(null);
+  // Track selected core service label
+  const selectedServiceLabelRef = useRef<string | null>(null);
+  const [isGlowing, setIsGlowing] = useState(false);
 
-    // Listen for greasy-select-service event
-    useEffect(() => {
-      const handler = (e: any) => {
-        const label = e?.detail?.label;
-        if (!label) return;
-        selectedServiceLabelRef.current = String(label);
-        pushModel(`Entiendo que te interesa "${label}". Déjame tu nombre, teléfono y email para que la oficina te contacte con los detalles.`);
-        phaseRef.current = 'contact';
+  // Listen for greasy-select-service event
+  useEffect(() => {
+    const handler = (e: any) => {
+      const label = e?.detail?.label;
+      if (!label) return;
+      const previous = selectedServiceLabelRef.current;
+      const normalizedLabel = String(label);
+      const changed = !!previous && previous !== normalizedLabel;
+      const isEstimatorLabel = normalizedLabel === 'Grease Trap / Interceptor Pumping';
+      const isContactOnlyLabel = isContactOnlyService(normalizedLabel);
+
+      // Dedupe: if same selection, just focus and bail
+      if (previous === normalizedLabel) {
         inputRef.current?.focus?.();
-      };
-      window.addEventListener('greasy-select-service', handler);
-      return () => window.removeEventListener('greasy-select-service', handler);
-    }, []);
+        return;
+      }
+
+      selectedServiceLabelRef.current = normalizedLabel;
+
+      if (changed) {
+        pushModel(`Updated — noted request for "${normalizedLabel}".`);
+      }
+
+      if (isEstimatorLabel) {
+        phaseRef.current = 'intake';
+        const updatedIntake = { ...intakeRef.current, system_type: ServiceType.GREASE_TRAP } as IntakeState;
+        intakeRef.current = updatedIntake;
+        setIntake(updatedIntake);
+        const next = getFirstMissingField(updatedIntake);
+        if (next) pushModel(getQuestionForField(next));
+        inputRef.current?.focus?.();
+        return;
+      }
+
+      // Contact-only or other core services
+      phaseRef.current = 'contact';
+      if (!changed) {
+        pushModel(`Got it — you're interested in "${normalizedLabel}". Please reply with your name, phone number, and email (you can send all three in one message).`);
+      }
+
+      if (isContactOnlyLabel) {
+        const manual = makeManualQuoteEstimate();
+        setCurrentEstimate(manual);
+        currentEstimateRef.current = manual;
+      }
+
+      const nextContact = getFirstMissingContactField(contactRef.current);
+      if (nextContact) pushModel(getQuestionForContactField(nextContact));
+      inputRef.current?.focus?.();
+    };
+    window.addEventListener('greasy-select-service', handler);
+    return () => window.removeEventListener('greasy-select-service', handler);
+  }, []);
+
+  useEffect(() => {
+    let glowTimeout: ReturnType<typeof setTimeout> | null = null;
+    const handler = () => {
+      setIsGlowing(true);
+      if (glowTimeout) clearTimeout(glowTimeout);
+      glowTimeout = setTimeout(() => setIsGlowing(false), 1200);
+    };
+    window.addEventListener('greasy-agent:glow', handler);
+    return () => {
+      window.removeEventListener('greasy-agent:glow', handler);
+      if (glowTimeout) clearTimeout(glowTimeout);
+    };
+  }, []);
   // Idempotent initial bot message guard
   const didInitRef = useRef(false);
 
   // Helper to append a model message only if not identical to last model message
-  const pushModel = (text: string) => {
+  const pushModel = (text: string, link?: MessageLink) => {
     setMessages(prevMsgs => {
       const last = prevMsgs[prevMsgs.length - 1];
-      if (last && last.role === 'model' && last.text.trim() === text.trim()) return prevMsgs;
-      return [...prevMsgs, { role: 'model', text }];
+      const sameText = last && last.role === 'model' && last.text.trim() === text.trim();
+      const sameLink = link ? last?.link?.href === link.href && last?.link?.label === link.label : !last?.link;
+      if (sameText && sameLink) return prevMsgs;
+      const next: Message = { role: 'model', text };
+      if (link) next.link = link;
+      return [...prevMsgs, next];
     });
+  };
+
+  const hasSentHandoffRef = useRef(false);
+  const sendHandoffOnce = (opts: { serviceLabel?: string | null; moveForward?: MoveForward; needsOfficeReview?: boolean }) => {
+    if (hasSentHandoffRef.current) return;
+    const link = getHandoffLink(opts.serviceLabel ?? null) || undefined;
+    const msg = getHandoffMessage(opts);
+    if (msg && msg.trim()) pushModel(msg, link);
+    hasSentHandoffRef.current = true;
   };
   const [intake, setIntake] = useState<IntakeState>({
     business_name: '',
@@ -283,6 +427,14 @@ export const ChatInterface: React.FC = () => {
     isNearBottomRef.current = distanceFromBottom < 80;
   };
 
+  const scrollToBottom = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
+  };
+
   // Persist chat history for continuity across refreshes
   useEffect(() => {
     try {
@@ -354,6 +506,33 @@ export const ChatInterface: React.FC = () => {
     }
   };
 
+  const isIntakeComplete = (state?: IntakeState) => !getFirstMissingField(state ?? intakeRef.current);
+  const isContactComplete = (state?: ContactState) => !getFirstMissingContactField(state ?? contactRef.current);
+  const canShowMoveForwardPrompt = (estimate?: EstimationResult | null, intakeState?: IntakeState, contactState?: ContactState) => {
+    const hasEstimate = !!(estimate ?? currentEstimateRef.current);
+    const isCoreServiceFlow = !!selectedServiceLabelRef.current;
+    return hasEstimate && !isCoreServiceFlow && isIntakeComplete(intakeState) && isContactComplete(contactState);
+  };
+
+  const makeManualQuoteEstimate = (): EstimationResult => ({
+    minPrice: 0,
+    maxPrice: 0,
+    distance: 0,
+    appliedDiscount: 0,
+    discountType: '',
+    notes: [],
+    hydroJetRequired: false,
+    breakdown: {
+      thresholdMi: 0,
+      surchargePerMi: 0,
+      milesFromHQ: 0,
+      distanceFee: 0,
+      hoseFee: 0,
+      subtotalBeforeBuffer: 0,
+    },
+    manualQuote: true,
+  });
+
   const getSuggestions = () => {
     const nextField = getFirstMissingField(intake);
     if (nextField === 'system_type') {
@@ -378,15 +557,28 @@ export const ChatInterface: React.FC = () => {
     }
     if (nextField === 'last_service_months') return [{ label: '0–3 mo', value: '3' }, { label: '4–6 mo', value: '6' }, { label: '7–12 mo', value: '12' }, { label: '13+ mo', value: '24' }];
     if (nextField === 'parking_distance') return ['50', '100', '150', '200', 'Unsure'];
-    if (currentEstimate && intake.wants_to_move_forward === 'UNSURE') return ['Yes, move forward', 'Not right now'];
+    if (canShowMoveForwardPrompt(currentEstimate, intake, contact) && intake.wants_to_move_forward === 'UNSURE') return ['Yes, move forward', 'Not right now'];
     return [];
   };
 
   const maybeSendEstimateLead = () => {
     if (hasSentLeadRef.current) return;
-    const estimate = currentEstimateRef.current;
+    const serviceLabel = selectedServiceLabelRef.current;
+    const isContactOnlyCore = isContactOnlyService(serviceLabel);
+    let estimate = currentEstimateRef.current;
+    if (!estimate && isContactOnlyCore) {
+      const manual = makeManualQuoteEstimate();
+      setCurrentEstimate(manual);
+      currentEstimateRef.current = manual;
+      estimate = manual;
+    }
+    const needsOfficeReview = !!(estimate && (estimate.manualQuote || (estimate as any).officeReview || (estimate as any).ballpark));
+    const moveForward = normalizeMoveForward(intakeRef.current?.wants_to_move_forward);
     if (!estimate) return;
-    if (getFirstMissingField(intakeRef.current) || getFirstMissingContactField(contactRef.current)) return;
+    const missingIntake = getFirstMissingField(intakeRef.current);
+    const missingContact = getFirstMissingContactField(contactRef.current);
+    if (missingContact) return;
+    if (missingIntake && !(estimate.manualQuote && selectedServiceLabelRef.current)) return;
 
     hasSentLeadRef.current = true;
 
@@ -437,11 +629,16 @@ export const ChatInterface: React.FC = () => {
       createdAt: new Date().toISOString(),
     };
 
+    if (IS_E2E && typeof window !== 'undefined') {
+      (window as any).__lastLeadPayload = payload;
+    }
+
     const body = JSON.stringify(payload);
 
     if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
       const success = navigator.sendBeacon('/api/estimate', new Blob([body], { type: 'application/json' }));
       if (success) {
+        sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
         selectedServiceLabelRef.current = null;
         return;
       }
@@ -454,13 +651,25 @@ export const ChatInterface: React.FC = () => {
         body,
       })
         .then(res => {
-          if (res.ok) selectedServiceLabelRef.current = null;
+          if (res.ok) {
+            sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
+            selectedServiceLabelRef.current = null;
+          }
         })
         .catch(err => console.error('Failed to send estimate lead:', err));
     } catch (err) {
       console.error('Failed to send estimate lead:', err);
     }
   };
+
+  useEffect(() => {
+    if (!IS_E2E || typeof window === 'undefined') return;
+    (window as any).__setContactState = (data: Partial<ContactState>) => {
+      contactRef.current = { ...contactRef.current, ...data } as ContactState;
+      setContact(contactRef.current);
+    };
+    (window as any).__triggerLeadSend = () => maybeSendEstimateLead();
+  }, []);
 
   // Orchestrate intake after AI JSON is parsed
   const orchestrateIntake = (aiJson: any) => {
@@ -533,17 +742,23 @@ export const ChatInterface: React.FC = () => {
         };
         const estimate = calculateServiceEstimate(estimationInputs);
         setCurrentEstimate(estimate);
-        pushModel('Thank you. Here is your estimate.');
-        const formatted = formatEstimateForChat(estimate);
-        if (formatted) pushModel(formatted);
-        pushModel('Final pricing is confirmed after office verification.');
-        if (!hasAskedMoveForwardRef.current) {
-          hasAskedMoveForwardRef.current = true;
-          pushModel('Do you want to move forward?\n\nIf yes, our office will reach out to you to set up the service.');
+        currentEstimateRef.current = estimate;
+        const needsOfficeReview = !!(estimate.manualQuote || (estimate as any).officeReview || (estimate as any).ballpark);
+        if (!needsOfficeReview) {
+          const formatted = formatEstimateForChat(estimate);
+          if (formatted) {
+            pushModel(`ESTIMATE SUMMARY\n\n${formatted}`);
+            scrollToBottom();
+          }
+          pushModel('Final pricing is confirmed after office verification.');
+          if (!hasAskedMoveForwardRef.current && canShowMoveForwardPrompt(estimate)) {
+            hasAskedMoveForwardRef.current = true;
+            pushModel('Do you want to move forward?\n\nIf yes, our office will reach out to you to set up the service.');
+          }
         }
         hasSentEstimateRef.current = true;
       } else {
-        pushModel('Thanks. Our office will reach out shortly to confirm the details.');
+        // Out of area; rely on lead handoff for follow-up
       }
       maybeSendEstimateLead();
     }
@@ -568,9 +783,7 @@ export const ChatInterface: React.FC = () => {
 
   const formatEstimateForChat = (estimate: EstimationResult | null) => {
     if (!estimate) return '';
-    if (estimate.manualQuote) {
-      return 'This job requires office review. We’ll contact you shortly.';
-    }
+    if (estimate.manualQuote) return '';
     const lines: string[] = [];
     const toMoney = (n: number | undefined | null) => typeof n === 'number' && !Number.isNaN(n) ? n.toFixed(2) : '0.00';
     if (estimate.baseServiceLabel && typeof estimate.baseServicePrice === 'number') {
@@ -962,9 +1175,10 @@ useEffect(() => {
   // CONTRACT:
   // ChatInterface is responsible ONLY for data collection and UX.
   // Side effects (webhooks, emails, PDFs, storage) must be handled externally.
-
   return (
-    <div className="bg-white rounded-b-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col h-full min-h-0">
+    <div
+      className={`${isGlowing ? 'ring-2 ring-blue-400 shadow-lg' : ''} bg-white rounded-b-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col h-full min-h-0 transition-shadow transition-colors duration-300`}
+    >
       <div
         ref={scrollContainerRef}
         onScroll={updateNearBottom}
@@ -976,9 +1190,20 @@ useEffect(() => {
           messages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm font-semibold shadow-sm ${msg.role === 'user' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-900'}`}
+                className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm font-semibold shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-900'}`}
               >
-                {msg.text}
+                <div>{msg.text}</div>
+                {msg.role === 'model' && msg.link ? (
+                  <div className="mt-3">
+                    <a
+                      href={msg.link.href}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-amber-50 text-amber-700 text-[11px] font-black uppercase tracking-widest border border-amber-100 hover:bg-amber-100 shadow-sm"
+                    >
+                      <i className="fas fa-phone" aria-hidden="true"></i>
+                      <span>{msg.link.label}</span>
+                    </a>
+                  </div>
+                ) : null}
               </div>
             </div>
           ))
