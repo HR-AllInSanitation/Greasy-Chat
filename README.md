@@ -18,3 +18,23 @@ View your app in AI Studio: https://ai.studio/apps/drive/1rSBqWvIRzc49aWlNDfPYoi
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## SOP: dev and smoke tests
+
+- Dev (auto port selection): `npm run dev`
+- Dev (strict port 3000): `npm run dev:strict`
+- Smoke tests: `npm run test:smoke`
+
+## Cleanup if ports are stuck
+
+- Check listeners on 3000/3002/3003/4173/5173: `npm run ports:check`
+- Kill only vite dev servers: `npm run ports:kill:vite`
+
+## Configuration guard
+
+- Env vars:
+   - `VITE_OFFICE_PHONE` (e.g. `+16612009126`) — set in Vercel project env for Production/Preview/Dev.
+   - `VITE_E2E` — **never** set in Production/Preview/Build; only local E2E runs use it.
+- For prod safety, `npm run build` fails if `VITE_E2E` is set; `build:verify:prod` also checks bundles for test hooks/attrs.
+- If `VITE_OFFICE_PHONE` is empty in dev, the CTA will not render; set it locally to exercise the handoff link.
+- If you hit exit 137 / OOM or have stray dev servers, run `npm run dev:clean` (kills repo ports then starts dev:strict). Avoid running multiple dev servers concurrently.
