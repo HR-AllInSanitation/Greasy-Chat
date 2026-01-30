@@ -94,6 +94,21 @@ const SHEET_HEADERS = [
   'Wants To Move Forward',
 ];
 
+const isTruthyFlag = (value: any): boolean => {
+  if (value === true) return true;
+  if (typeof value === 'string') {
+    const trimmed = value.trim().toLowerCase();
+    return trimmed === 'true' || trimmed === 'yes' || trimmed === '1';
+  }
+  if (typeof value === 'number') return value === 1;
+  return false;
+};
+
+const wantsToMoveForwardFlag = (intake: any): boolean => {
+  if (!intake || typeof intake !== 'object') return false;
+  return isTruthyFlag(intake.wants_to_move_forward) || isTruthyFlag(intake.wantsToMoveForward);
+};
+
 const buildSheetRow = (intake: any, contact: any, estimate: any, meta: any) => {
   const nowIso = new Date().toISOString();
   const createdAt = meta?.createdAt || meta?.created_at || nowIso;
@@ -120,7 +135,8 @@ const buildSheetRow = (intake: any, contact: any, estimate: any, meta: any) => {
   const contactEmail = contact?.email || contact?.contact_email || '';
   const contactPhone = contact?.phone || contact?.contact_phone || '';
   const needsUco = intake?.needs_uco === true ? 'TRUE' : intake?.needs_uco === false ? 'FALSE' : '';
-  const wantsMoveForward = intake?.wants_to_move_forward ?? '';
+  const wantsMoveForwardFlagged = wantsToMoveForwardFlag(intake);
+  const wantsMoveForward = wantsMoveForwardFlagged ? 'TRUE' : intake?.wants_to_move_forward ?? intake?.wantsToMoveForward ?? '';
 
   return [
     nowIso,
@@ -163,16 +179,44 @@ const maskEmail = (value?: string) => {
   return `${user.slice(0, 2)}***@${domain}`;
 };
 
+const isValidEmail = (value?: string): boolean => {
+  if (typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  // Lightweight email shape check; avoids sending obvious invalid addresses to Resend
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+};
+
+const getResendFrom = (): { resolvedFrom: string; fromDomain: string } => {
+  const raw = (process.env.RESEND_FROM || '').trim();
+  if (!raw) {
+    throw new Error('RESEND_FROM is missing');
+  }
+
+  const match = raw.match(/<\s*([^>]+)\s*>$/);
+  const emailPart = match ? match[1].trim() : raw;
+
+  if (!isValidEmail(emailPart)) {
+    throw new Error('RESEND_FROM must be a valid email or "Name <email@domain>"');
+  }
+
+  const fromDomain = emailPart.split('@')[1] || '';
+  if (!fromDomain) {
+    throw new Error('RESEND_FROM domain is missing');
+  }
+
+  return { resolvedFrom: raw, fromDomain: fromDomain.toLowerCase() };
+};
+
 const maskPhone = (value?: string) => {
   if (typeof value !== 'string') return value;
   if (value.length <= 4) return `${value[0] || ''}***`;
   return `${value.slice(0, 2)}***${value.slice(-2)}`;
 };
 
-const sendCustomerEmail = async (payload: any): Promise<ResendResult> => {
+const sendCustomerEmail = async (payload: any, from: string): Promise<ResendResult> => {
   const { intake, contact, estimate, pdfBytes, meta } = payload || {};
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL || 'estimates@greasy-chat.com';
   const to = contact?.email || contact?.contact_email;
 
   if (!apiKey) {
@@ -200,7 +244,7 @@ const sendCustomerEmail = async (payload: any): Promise<ResendResult> => {
   const addressParts = [intake?.address_line, intake?.city, intake?.state, intake?.zip].filter(Boolean);
   const address = addressParts.join(', ');
   const disclaimer = 'This estimate is a preliminary range and is subject to verification by our operations team. Final pricing may vary based on on-site conditions and job requirements, including but not limited to additional hose length, actual waste volume, access constraints, blockages, hydro-jetting needs, or other services required to properly complete the work.';
-  const cta = intake?.wants_to_move_forward === true
+  const cta = wantsToMoveForwardFlag(intake)
     ? 'Our office will reach out to you shortly to move forward.'
     : 'Reply to this email if you would like to move forward.';
 
@@ -228,10 +272,9 @@ const sendCustomerEmail = async (payload: any): Promise<ResendResult> => {
   }
 };
 
-const sendHqEmail = async (payload: any, toList: string[]): Promise<ResendResult> => {
+const sendHqEmail = async (payload: any, toList: string[], from: string): Promise<ResendResult> => {
   const { intake, contact, estimate, pdfBytes, meta } = payload || {};
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL || 'estimates@greasy-chat.com';
   const to = toList.filter(Boolean);
   const officePhone = process.env.VITE_OFFICE_PHONE || process.env.OFFICE_PHONE || '';
 
@@ -259,7 +302,7 @@ const sendHqEmail = async (payload: any, toList: string[]): Promise<ResendResult
       : String(rawAmount ?? '');
   const addressParts = [intake?.address_line, intake?.city, intake?.state, intake?.zip].filter(Boolean);
   const address = addressParts.join(', ');
-  const isReady = intake?.wants_to_move_forward === true;
+  const isReady = wantsToMoveForwardFlag(intake);
   const distanceMiles = estimate?.distanceMiles ?? estimate?.distance;
   const distanceSource = estimate?.distanceSource;
   const assumptions = Array.isArray(estimate?.assumptions) ? estimate.assumptions : [];
@@ -395,6 +438,8 @@ const generateEstimatePdf = async (payload: any) => {
 export default async function handler(req: any, res: any) {
   const runtimeHint = 'nodejs';
   const buildId = typeof BUILD_ID !== 'undefined' ? BUILD_ID : 'DEV';
+  const gitSha = process.env.VERCEL_GIT_COMMIT_SHA || null;
+  const gitRef = process.env.VERCEL_GIT_COMMIT_REF || null;
   const urlObj = new URL(req.url, 'http://localhost');
   const diag = urlObj.searchParams.get('diag') === '1';
   res.setHeader('Content-Type', 'application/json');
@@ -402,11 +447,11 @@ export default async function handler(req: any, res: any) {
 
   // --- Early returns ---
   if (req.method !== 'POST') {
-    res.status(405).json({ ok: false, error: 'Method not allowed', buildId, runtimeHint });
+    res.status(405).json({ ok: false, error: 'Method not allowed', buildId, runtimeHint, git: { sha: gitSha, ref: gitRef } });
     return;
   }
   if (diag) {
-    res.status(200).json({ ok: true, diag: true, buildId, runtimeHint });
+    res.status(200).json({ ok: true, diag: true, buildId, runtimeHint, git: { sha: gitSha, ref: gitRef } });
     return;
   }
 
@@ -489,7 +534,7 @@ export default async function handler(req: any, res: any) {
   if (!metaObj.createdAt) metaObj.createdAt = new Date().toISOString();
   if (!metaObj.source) metaObj.source = 'greasy-agent';
   if (!intake || !contact || !estimate) {
-    res.status(400).json({ ok: false, error: 'intake, contact, and estimate are required', buildId, runtimeHint, bodyType, receivedKeys, bodyWarning });
+    res.status(400).json({ ok: false, error: 'intake, contact, and estimate are required', buildId, runtimeHint, git: { sha: gitSha, ref: gitRef }, bodyType, receivedKeys, bodyWarning });
     return;
   }
 
@@ -501,17 +546,37 @@ export default async function handler(req: any, res: any) {
   const requiredHqEmails = ['kenneth@luxuryflush.com', 'info@allinsanitation.com'];
   const envHqEmails = hqEmailsRaw.split(',').map(e => e.trim()).filter(Boolean);
   const hqEmails = Array.from(new Set([...requiredHqEmails, ...envHqEmails]));
-  const fromAddress = process.env.RESEND_FROM || process.env.RESEND_FROM_EMAIL || '';
   const hasResendKey = !!resendKey;
   const hasOfficeEmails = hqEmails.length > 0;
   const hasScriptUrl = !!officeWebhookUrl;
 
-  const moveForward = intake?.wants_to_move_forward === true;
+  let resolvedFrom = '';
+  let fromDomain = '';
+  try {
+    const fromInfo = getResendFrom();
+    resolvedFrom = fromInfo.resolvedFrom;
+    fromDomain = fromInfo.fromDomain;
+  } catch (err: any) {
+    console.error('RESEND_FROM_INVALID', { error: (err?.message || 'unknown').slice(0, 200) });
+    res.status(500).json({
+      ok: false,
+      error: 'RESEND_FROM is required',
+      hint: 'Set RESEND_FROM to larestaurantservices sender',
+      buildId,
+      runtimeHint,
+      resolvedFrom: null,
+      fromDomain: null,
+      git: { sha: gitSha, ref: gitRef },
+    });
+    return;
+  }
+
+  const moveForward = wantsToMoveForwardFlag(intake);
   const customerEmail = contact?.email || contact?.contact_email;
-  const resolvedFrom = fromAddress || process.env.RESEND_FROM_EMAIL || 'estimates@greasy-chat.com';
   logJson('EMAIL_ENV', {
     hasKey: hasResendKey,
     from: resolvedFrom || null,
+    fromDomain: fromDomain || null,
     hqRecipientsCount: hqEmails.length,
     customerEmailPresent: !!customerEmail,
     wantsToMoveForward: moveForward,
@@ -519,10 +584,12 @@ export default async function handler(req: any, res: any) {
 
   // --- Determine actions ---
   const forwardToSheet = scriptUrlValid;
-  const emailOffice = hasResendKey && hasOfficeEmails && !!fromAddress;
+  const emailOffice = hasResendKey && hasOfficeEmails;
   const warnings: string[] = [];
   let forwarded = false;
   let emailed = false;
+  let customerEmailAttempted = false;
+  let customerSkipReason: string | undefined;
 
   const sheetPayloadKeyCounts = {
     intake: Object.keys(intake || {}).length,
@@ -623,18 +690,24 @@ export default async function handler(req: any, res: any) {
     attempted: false,
     enabled: emailOffice,
     recipientsCount: hqEmails.length,
+    resolvedFrom,
+    fromDomain,
     ok: false,
     resendStatus: undefined as number | undefined,
     resendErrorCode: undefined as string | undefined,
     error: undefined as string | undefined,
     customer: undefined as ResendResult | undefined,
+    customerEmailAttempted: false,
+    customerSkipReason: undefined as string | undefined,
+    customerResendStatus: undefined as number | undefined,
+    customerResendErrorCode: undefined as string | undefined,
   };
 
   if (emailOffice && !diag) {
     emailDiag.attempted = true;
     try {
       logJson('EMAIL_SEND_HQ_START', { to: hqEmails, from: resolvedFrom, quoteId: metaObj.quoteId });
-      const hqResult = await sendHqEmail({ intake, contact, estimate, meta: metaObj }, hqEmails);
+      const hqResult = await sendHqEmail({ intake, contact, estimate, meta: metaObj }, hqEmails, resolvedFrom);
       emailDiag.ok = hqResult.ok;
       emailDiag.resendStatus = hqResult.status;
       emailDiag.resendErrorCode = hqResult.errorCode;
@@ -652,36 +725,60 @@ export default async function handler(req: any, res: any) {
     }
 
     if (moveForward) {
-      const customerEmail = contact?.email || contact?.contact_email;
-      if (!customerEmail) {
+      const customerEmailRaw = contact?.email || contact?.contact_email;
+      const customerEmailNormalized = typeof customerEmailRaw === 'string' ? customerEmailRaw.trim() : '';
+      if (!customerEmailNormalized) {
         warnings.push('customer_email_skipped_missing_contact');
         logJson('EMAIL_SEND_CUSTOMER_SKIPPED', { reason: 'missing_email', quoteId: metaObj.quoteId });
+        customerSkipReason = 'missing_email';
+      } else if (!isValidEmail(customerEmailNormalized)) {
+        warnings.push('customer_email_skipped_invalid_email');
+        logJson('EMAIL_SEND_CUSTOMER_SKIPPED', { reason: 'invalid_email', quoteId: metaObj.quoteId, email: maskEmail(customerEmailNormalized) });
+        customerSkipReason = 'invalid_email';
       } else {
+        customerEmailAttempted = true;
+        const contactForEmail = { ...contact, email: customerEmailNormalized, contact_email: customerEmailNormalized };
         try {
-          logJson('EMAIL_SEND_CUSTOMER_START', { to: customerEmail, from: resolvedFrom, quoteId: metaObj.quoteId });
-          const customerResult = await sendCustomerEmail({ intake, contact, estimate, meta: metaObj });
+          logJson('EMAIL_SEND_CUSTOMER_START', { to: customerEmailNormalized, from: resolvedFrom, quoteId: metaObj.quoteId });
+          const customerResult = await sendCustomerEmail({ intake, contact: contactForEmail, estimate, meta: metaObj }, resolvedFrom);
           emailDiag.customer = customerResult;
-          logJson('EMAIL_SEND_CUSTOMER_RESULT', { to: customerEmail, from: resolvedFrom, status: customerResult.status ?? null, ok: customerResult.ok, messageId: customerResult.messageId || null, errorCode: customerResult.errorCode || null, quoteId: metaObj.quoteId });
+          emailDiag.customerResendStatus = customerResult.status;
+          emailDiag.customerResendErrorCode = customerResult.errorCode;
+          logJson('EMAIL_SEND_CUSTOMER_RESULT', { to: customerEmailNormalized, from: resolvedFrom, status: customerResult.status ?? null, ok: customerResult.ok, messageId: customerResult.messageId || null, errorCode: customerResult.errorCode || null, quoteId: metaObj.quoteId });
           if (!customerResult.ok) {
             warnings.push(customerResult.errorCode || 'customer_email_failed');
-            console.error('RESEND_CUSTOMER_ERR', { to: customerEmail, from: resolvedFrom, errorCode: customerResult.errorCode, quoteId: metaObj.quoteId });
+            console.error('RESEND_CUSTOMER_ERR', { to: customerEmailNormalized, from: resolvedFrom, errorCode: customerResult.errorCode, quoteId: metaObj.quoteId });
           }
         } catch (err: any) {
           warnings.push('customer_email_exception');
-          console.error('RESEND_CUSTOMER_ERR', { to: customerEmail, from: resolvedFrom, error: (err?.message || 'customer_email_exception').slice(0, 120), quoteId: metaObj.quoteId });
+          customerSkipReason = 'exception';
+          console.error('RESEND_CUSTOMER_ERR', { to: customerEmailNormalized, from: resolvedFrom, error: (err?.message || 'customer_email_exception').slice(0, 120), quoteId: metaObj.quoteId });
         }
       }
     } else {
       warnings.push('customer_email_skipped_move_forward_false');
       logJson('EMAIL_SEND_CUSTOMER_SKIPPED', { reason: 'move_forward_false', quoteId: metaObj.quoteId });
+      customerSkipReason = 'move_forward_false';
     }
   } else {
     if (!hasResendKey) warnings.push('missing_resend_key');
     if (!hasOfficeEmails) warnings.push('missing_hq_emails');
-    if (!fromAddress) warnings.push('missing_resend_from');
     warnings.push('email_skipped');
-    console.warn('RESEND_HQ_ERR', { reason: 'config', hasResendKey, hasOfficeEmails, fromAddress });
+    console.warn('RESEND_HQ_ERR', { reason: 'config', hasResendKey, hasOfficeEmails });
   }
+
+  logJson('EMAIL_OUTCOME_MASKED', {
+    resolvedFrom: resolvedFrom || null,
+    fromDomain: fromDomain || null,
+    hqRecipientsCount: hqEmails.length,
+    hqRecipients: hqEmails.map(maskEmail),
+    customerEmailAttempted,
+    customerSkipReason: customerSkipReason || null,
+    customerEmailMasked: maskEmail(customerEmail),
+  });
+
+  emailDiag.customerEmailAttempted = customerEmailAttempted;
+  emailDiag.customerSkipReason = customerSkipReason;
 
   // --- Respond ---
   res.status(200).json({
@@ -693,6 +790,7 @@ export default async function handler(req: any, res: any) {
     warnings: warnings.length ? warnings : undefined,
     buildId,
     runtimeHint,
+    git: { sha: gitSha, ref: gitRef },
     metaEcho: { quoteId: metaObj.quoteId, source: metaObj.source },
   });
 }
