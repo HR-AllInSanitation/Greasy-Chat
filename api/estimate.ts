@@ -2,9 +2,26 @@
 // Minimal buildId: hardcoded short string (update as needed)
 const BUILD_ID = 'DEV20260119';
 
+/*
+Manual QA (customer email should send, customerResendStatus=200):
+- curl -X POST "https://www.larestaurantservices.com/api/estimate" -H "Content-Type: application/json" -d '{"intake":{"businessName":"QA ContactEmail","wantsToMoveForward":true},"contact":{"contactEmail":"test@example.com"},"estimate":{"amount":100}}'
+- curl -X POST "https://www.larestaurantservices.com/api/estimate" -H "Content-Type: application/json" -d '{"intake":{"businessName":"QA Email","wantsToMoveForward":true},"contact":{"email":"test@example.com"},"estimate":{"amount":100}}'
+*/
+
 // pdf-lib is imported dynamically only when needed
 
 type ResendResult = { ok: boolean; status?: number; messageId?: string; errorCode?: string };
+
+type NormalizedContact = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  keyUsed: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+};
 
 const logJson = (event: string, data: Record<string, unknown>) => {
   try {
@@ -22,9 +39,9 @@ const sendResendEmail = async (params: { apiKey: string; from: string; to: strin
     return { ok: false, errorCode: 'missing-config' };
   }
 
-  console.log('Sending email to Resend...', { to: toList, subject, quoteId });
-  console.log('Email body:', text);
-  console.log('RESEND_SEND_START', { to: toList, subject, quoteId });
+  const toCount = toList.length;
+  console.log('Sending email to Resend...', { toCount, subject, quoteId, bodyLength: text?.length ?? 0 });
+  console.log('RESEND_SEND_START', { toCount, subject, quoteId });
   try {
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -44,17 +61,17 @@ const sendResendEmail = async (params: { apiKey: string; from: string; to: strin
       } catch {
         messageId = undefined;
       }
-      console.log('RESEND_SEND_OK', { to: toList, subject, status, messageId, quoteId });
+      console.log('RESEND_SEND_OK', { toCount, subject, status, messageId, quoteId });
       return { ok: true, status, messageId };
     }
 
     const errorText = await resp.text().catch(() => '');
     const errorCode = errorText ? errorText.slice(0, 200) : `status-${status}`;
-    console.error('RESEND_SEND_ERROR', { to: toList, subject, status, error: errorCode, quoteId });
+    console.error('RESEND_SEND_ERROR', { toCount, subject, status, error: errorCode, quoteId });
     return { ok: false, status, errorCode };
   } catch (err: any) {
     const errorCode = (err?.message || 'resend-exception').slice(0, 120);
-    console.error('RESEND_SEND_ERROR', { to: toList, subject, error: errorCode, quoteId });
+    console.error('RESEND_SEND_ERROR', { toCount, subject, error: errorCode, quoteId });
     return { ok: false, errorCode };
   }
 };
@@ -109,6 +126,36 @@ const wantsToMoveForwardFlag = (intake: any): boolean => {
   return isTruthyFlag(intake.wants_to_move_forward) || isTruthyFlag(intake.wantsToMoveForward);
 };
 
+const normalizeContact = (contactRaw: any): NormalizedContact => {
+  const pick = (keys: string[]): { value?: string; key?: string } => {
+    for (const key of keys) {
+      const val = contactRaw?.[key];
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+        if (trimmed) return { value: trimmed, key };
+      }
+    }
+    return {};
+  };
+
+  const namePick = pick(['name', 'contactName', 'contact_name']);
+  const emailPick = pick(['email', 'contactEmail', 'contact_email']);
+  const phonePick = pick(['phone', 'contactPhone', 'contact_phone']);
+
+  const prefix = 'contact.';
+
+  return {
+    name: namePick.value,
+    email: emailPick.value,
+    phone: phonePick.value,
+    keyUsed: {
+      name: namePick.key ? `${prefix}${namePick.key}` : undefined,
+      email: emailPick.key ? `${prefix}${emailPick.key}` : undefined,
+      phone: phonePick.key ? `${prefix}${phonePick.key}` : undefined,
+    },
+  };
+};
+
 const buildSheetRow = (intake: any, contact: any, estimate: any, meta: any) => {
   const nowIso = new Date().toISOString();
   const createdAt = meta?.createdAt || meta?.created_at || nowIso;
@@ -131,9 +178,9 @@ const buildSheetRow = (intake: any, contact: any, estimate: any, meta: any) => {
   const radiusBand = estimate?.radiusBand || (estimate as any)?.radius_band || '';
   const distanceMiles = estimate?.distanceMiles ?? estimate?.distance ?? '';
   const distanceSource = estimate?.distanceSource || (estimate as any)?.distance_source || '';
-  const contactName = contact?.name || contact?.contact_name || '';
-  const contactEmail = contact?.email || contact?.contact_email || '';
-  const contactPhone = contact?.phone || contact?.contact_phone || '';
+  const contactName = contact?.name || '';
+  const contactEmail = contact?.email || '';
+  const contactPhone = contact?.phone || '';
   const needsUco = intake?.needs_uco === true ? 'TRUE' : intake?.needs_uco === false ? 'FALSE' : '';
   const wantsMoveForwardFlagged = wantsToMoveForwardFlag(intake);
   const wantsMoveForward = wantsMoveForwardFlagged ? 'TRUE' : intake?.wants_to_move_forward ?? intake?.wantsToMoveForward ?? '';
@@ -217,7 +264,7 @@ const maskPhone = (value?: string) => {
 const sendCustomerEmail = async (payload: any, from: string): Promise<ResendResult> => {
   const { intake, contact, estimate, pdfBytes, meta } = payload || {};
   const apiKey = process.env.RESEND_API_KEY;
-  const to = contact?.email || contact?.contact_email;
+  const to = contact?.email;
 
   if (!apiKey) {
     console.warn('RESEND_API_KEY not set; skipping transactional email');
@@ -259,7 +306,7 @@ const sendCustomerEmail = async (payload: any, from: string): Promise<ResendResu
   ].join('\n');
 
   const subject = 'Your Grease Trap Service Estimate';
-  console.log('CUSTOMER_EMAIL_PREP', { to, subject, quoteId: meta?.quoteId });
+  console.log('CUSTOMER_EMAIL_PREP', { to: maskEmail(to), subject, quoteId: meta?.quoteId });
   console.log('CUSTOMER_EMAIL_BODY', text);
   try {
     const attachments = pdfBytes
@@ -348,16 +395,19 @@ const sendHqEmail = async (payload: any, toList: string[], from: string): Promis
     `- Needs UCO: ${intake?.needs_uco !== undefined ? String(intake.needs_uco) : 'N/A'}`,
     '',
     'Contact',
-    `- Name: ${contact?.name || contact?.contact_name || 'N/A'}`,
-    `- Phone: ${contact?.phone || contact?.contact_phone || 'N/A'}`,
-    `- Email: ${contact?.email || contact?.contact_email || 'N/A'}`,
+    `- Name: ${contact?.name || 'N/A'}`,
+    `- Phone: ${contact?.phone || 'N/A'}`,
+    `- Email: ${contact?.email || 'N/A'}`,
     '',
     `Move Forward Intent: ${isReady ? 'Yes' : 'No/Unspecified'}`,
     officePhone ? `Urgent? Call or text ${officePhone} for immediate assistance.` : '',
   ].join('\n');
 
-  console.log('HQ_EMAIL_PREP', { to, subject, quoteId: meta?.quoteId, officePhone: officePhone || undefined });
-  console.log('HQ_EMAIL_BODY', text);
+  console.log('HQ_EMAIL_PREP', { toCount: to.length, subject, quoteId: meta?.quoteId, officePhone: officePhone || undefined });
+  const hqEmailBodyRedacted = text
+    .replace(String(contact?.email || ''), contact?.email ? maskEmail(contact.email) as string : '')
+    .replace(String(contact?.phone || ''), contact?.phone ? maskPhone(contact.phone) as string : '');
+  console.log('HQ_EMAIL_BODY', hqEmailBodyRedacted);
   try {
     const attachments = pdfBytes
       ? [{ filename: 'Estimate.pdf', content: Buffer.from(pdfBytes).toString('base64') }]
@@ -426,7 +476,7 @@ const generateEstimatePdf = async (payload: any) => {
     disclaimerLines.forEach(line => drawText(line.trim()));
 
     const pdfBytes = await pdfDoc.save();
-    console.log('Generated estimate PDF bytes length', pdfBytes.length, 'for', contact?.email || 'unknown');
+    console.log('Generated estimate PDF bytes length', pdfBytes.length, 'for', maskEmail(contact?.email) || 'unknown');
     return pdfBytes;
   } catch (err: any) {
     console.error('PDF generation failed', err?.message || err);
@@ -522,6 +572,7 @@ export default async function handler(req: any, res: any) {
 
   // --- Contract enforcement ---
   const { intake, contact, estimate, meta } = body || {};
+  const normalizedContact = normalizeContact(contact);
   let metaObj = meta;
   if (!metaObj || typeof metaObj !== 'object') {
     metaObj = {
@@ -561,7 +612,7 @@ export default async function handler(req: any, res: any) {
     res.status(500).json({
       ok: false,
       error: 'RESEND_FROM is required',
-      hint: 'Set RESEND_FROM to larestaurantservices sender',
+      hint: 'Set RESEND_FROM to Name <noreply@larestaurantservices.com>',
       buildId,
       runtimeHint,
       resolvedFrom: null,
@@ -572,7 +623,8 @@ export default async function handler(req: any, res: any) {
   }
 
   const moveForward = wantsToMoveForwardFlag(intake);
-  const customerEmail = contact?.email || contact?.contact_email;
+  const customerEmail = normalizedContact.email;
+  const customerEmailKey = normalizedContact.keyUsed?.email || null;
   logJson('EMAIL_ENV', {
     hasKey: hasResendKey,
     from: resolvedFrom || null,
@@ -580,6 +632,11 @@ export default async function handler(req: any, res: any) {
     hqRecipientsCount: hqEmails.length,
     customerEmailPresent: !!customerEmail,
     wantsToMoveForward: moveForward,
+  });
+  logJson('CUSTOMER_EMAIL_PATH', {
+    present: !!customerEmail,
+    key: customerEmailKey,
+    quoteId: metaObj?.quoteId,
   });
 
   // --- Determine actions ---
@@ -600,7 +657,7 @@ export default async function handler(req: any, res: any) {
 
   const sheetPayload = {
     intake,
-    contact,
+    contact: normalizedContact,
     estimate,
     meta: metaObj,
     source: metaObj.source || 'greasy-agent',
@@ -622,11 +679,14 @@ export default async function handler(req: any, res: any) {
   });
   logJson('SHEETS_CONTACT_REDACTED', {
     email: maskEmail(customerEmail),
-    phone: maskPhone(contact?.phone || contact?.contact_phone),
+    phone: maskPhone(normalizedContact.phone),
   });
 
-  const sheetRow = buildSheetRow(intake, contact, estimate, metaObj);
-  console.log('SHEET_ROW_TO_APPEND', sheetRow);
+  const sheetRow = buildSheetRow(intake, normalizedContact, estimate, metaObj);
+  const sheetRowForLog = [...sheetRow];
+  sheetRowForLog[8] = maskEmail(sheetRowForLog[8] as string);
+  sheetRowForLog[9] = maskPhone(sheetRowForLog[9] as string);
+  console.log('SHEET_ROW_TO_APPEND', sheetRowForLog);
   const headerLen = SHEET_HEADERS.length;
   const rowLen = sheetRow.length;
   const missingKeys = headerLen === rowLen ? [] : SHEET_HEADERS.slice(rowLen);
@@ -651,7 +711,7 @@ export default async function handler(req: any, res: any) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           intake,
-          contact,
+          contact: normalizedContact,
           estimate,
           meta: metaObj,
           source: sheetPayload.source,
@@ -692,6 +752,7 @@ export default async function handler(req: any, res: any) {
     recipientsCount: hqEmails.length,
     resolvedFrom,
     fromDomain,
+    contactEmailKeyPathUsed: customerEmailKey,
     ok: false,
     resendStatus: undefined as number | undefined,
     resendErrorCode: undefined as string | undefined,
@@ -706,15 +767,15 @@ export default async function handler(req: any, res: any) {
   if (emailOffice && !diag) {
     emailDiag.attempted = true;
     try {
-      logJson('EMAIL_SEND_HQ_START', { to: hqEmails, from: resolvedFrom, quoteId: metaObj.quoteId });
-      const hqResult = await sendHqEmail({ intake, contact, estimate, meta: metaObj }, hqEmails, resolvedFrom);
+      logJson('EMAIL_SEND_HQ_START', { toCount: hqEmails.length, from: resolvedFrom, quoteId: metaObj.quoteId });
+      const hqResult = await sendHqEmail({ intake, contact: normalizedContact, estimate, meta: metaObj }, hqEmails, resolvedFrom);
       emailDiag.ok = hqResult.ok;
       emailDiag.resendStatus = hqResult.status;
       emailDiag.resendErrorCode = hqResult.errorCode;
-      logJson('EMAIL_SEND_HQ_RESULT', { to: hqEmails, from: resolvedFrom, status: hqResult.status ?? null, ok: hqResult.ok, messageId: hqResult.messageId || null, errorCode: hqResult.errorCode || null, quoteId: metaObj.quoteId });
+      logJson('EMAIL_SEND_HQ_RESULT', { toCount: hqEmails.length, from: resolvedFrom, status: hqResult.status ?? null, ok: hqResult.ok, messageId: hqResult.messageId || null, errorCode: hqResult.errorCode || null, quoteId: metaObj.quoteId });
       if (!hqResult.ok) {
         warnings.push(hqResult.errorCode || 'resend_failed');
-        console.error('RESEND_HQ_ERR', { to: hqEmails, from: resolvedFrom, status: hqResult.status, errorCode: hqResult.errorCode, quoteId: metaObj.quoteId });
+        console.error('RESEND_HQ_ERR', { toCount: hqEmails.length, from: resolvedFrom, status: hqResult.status, errorCode: hqResult.errorCode, quoteId: metaObj.quoteId });
       } else {
         emailed = true;
       }
@@ -725,34 +786,28 @@ export default async function handler(req: any, res: any) {
     }
 
     if (moveForward) {
-      const customerEmailRaw = contact?.email || contact?.contact_email;
-      const customerEmailNormalized = typeof customerEmailRaw === 'string' ? customerEmailRaw.trim() : '';
-      if (!customerEmailNormalized) {
-        warnings.push('customer_email_skipped_missing_contact');
+      const customerEmailNormalized = typeof customerEmail === 'string' ? customerEmail.trim() : '';
+      if (!customerEmailNormalized || !isValidEmail(customerEmailNormalized)) {
+        warnings.push('customer_email_skipped_missing_email');
         logJson('EMAIL_SEND_CUSTOMER_SKIPPED', { reason: 'missing_email', quoteId: metaObj.quoteId });
         customerSkipReason = 'missing_email';
-      } else if (!isValidEmail(customerEmailNormalized)) {
-        warnings.push('customer_email_skipped_invalid_email');
-        logJson('EMAIL_SEND_CUSTOMER_SKIPPED', { reason: 'invalid_email', quoteId: metaObj.quoteId, email: maskEmail(customerEmailNormalized) });
-        customerSkipReason = 'invalid_email';
       } else {
         customerEmailAttempted = true;
-        const contactForEmail = { ...contact, email: customerEmailNormalized, contact_email: customerEmailNormalized };
+        const contactForEmail: NormalizedContact = { ...normalizedContact, email: customerEmailNormalized };
         try {
-          logJson('EMAIL_SEND_CUSTOMER_START', { to: customerEmailNormalized, from: resolvedFrom, quoteId: metaObj.quoteId });
+          logJson('EMAIL_SEND_CUSTOMER_START', { to: maskEmail(customerEmailNormalized), from: resolvedFrom, quoteId: metaObj.quoteId });
           const customerResult = await sendCustomerEmail({ intake, contact: contactForEmail, estimate, meta: metaObj }, resolvedFrom);
           emailDiag.customer = customerResult;
           emailDiag.customerResendStatus = customerResult.status;
           emailDiag.customerResendErrorCode = customerResult.errorCode;
-          logJson('EMAIL_SEND_CUSTOMER_RESULT', { to: customerEmailNormalized, from: resolvedFrom, status: customerResult.status ?? null, ok: customerResult.ok, messageId: customerResult.messageId || null, errorCode: customerResult.errorCode || null, quoteId: metaObj.quoteId });
+          logJson('EMAIL_SEND_CUSTOMER_RESULT', { to: maskEmail(customerEmailNormalized), from: resolvedFrom, status: customerResult.status ?? null, ok: customerResult.ok, messageId: customerResult.messageId || null, errorCode: customerResult.errorCode || null, quoteId: metaObj.quoteId });
           if (!customerResult.ok) {
             warnings.push(customerResult.errorCode || 'customer_email_failed');
-            console.error('RESEND_CUSTOMER_ERR', { to: customerEmailNormalized, from: resolvedFrom, errorCode: customerResult.errorCode, quoteId: metaObj.quoteId });
+            console.error('RESEND_CUSTOMER_ERR', { to: maskEmail(customerEmailNormalized), from: resolvedFrom, errorCode: customerResult.errorCode, quoteId: metaObj.quoteId });
           }
         } catch (err: any) {
           warnings.push('customer_email_exception');
-          customerSkipReason = 'exception';
-          console.error('RESEND_CUSTOMER_ERR', { to: customerEmailNormalized, from: resolvedFrom, error: (err?.message || 'customer_email_exception').slice(0, 120), quoteId: metaObj.quoteId });
+          console.error('RESEND_CUSTOMER_ERR', { to: maskEmail(customerEmailNormalized), from: resolvedFrom, error: (err?.message || 'customer_email_exception').slice(0, 120), quoteId: metaObj.quoteId });
         }
       }
     } else {
@@ -764,7 +819,8 @@ export default async function handler(req: any, res: any) {
     if (!hasResendKey) warnings.push('missing_resend_key');
     if (!hasOfficeEmails) warnings.push('missing_hq_emails');
     warnings.push('email_skipped');
-    console.warn('RESEND_HQ_ERR', { reason: 'config', hasResendKey, hasOfficeEmails });
+    console.warn('RESEND_HQ_ERR', { reason: 'config', hasResendKey, hasOfficeEmails, diag });
+    customerSkipReason = 'resend_disabled';
   }
 
   logJson('EMAIL_OUTCOME_MASKED', {
@@ -794,3 +850,15 @@ export default async function handler(req: any, res: any) {
     metaEcho: { quoteId: metaObj.quoteId, source: metaObj.source },
   });
 }
+
+/*
+Manual verification (customer email should send, customerResendStatus=200):
+
+curl -sS -X POST "https://www.larestaurantservices.com/api/estimate" \
+  -H "Content-Type: application/json" \
+  -d '{"source":"curl-qa","intake":{"businessName":"QA Camel","wantsToMoveForward":true},"contact":{"contactName":"Rob","contactEmail":"hr@allinsanitation.com","contactPhone":"555-123-4567"},"estimate":{"amount":250,"ballpark":true}}'
+
+curl -sS -X POST "https://www.larestaurantservices.com/api/estimate" \
+  -H "Content-Type: application/json" \
+  -d '{"source":"curl-qa","intake":{"businessName":"QA Simple","wantsToMoveForward":true},"contact":{"name":"Rob","email":"hr@allinsanitation.com","phone":"555-123-4567"},"estimate":{"amount":250,"ballpark":true}}'
+*/
