@@ -783,18 +783,71 @@ export const ChatInterface: React.FC = () => {
 
   const formatEstimateForChat = (estimate: EstimationResult | null) => {
     if (!estimate) return '';
-    if (estimate.manualQuote) return '';
     const lines: string[] = [];
     const toMoney = (n: number | undefined | null) => typeof n === 'number' && !Number.isNaN(n) ? n.toFixed(2) : '0.00';
-    if (estimate.baseServiceLabel && typeof estimate.baseServicePrice === 'number') {
-      lines.push(`${estimate.baseServiceLabel}: $${toMoney(estimate.baseServicePrice)}`);
-    }
-    (estimate.addOns || []).forEach(add => {
-      lines.push(`+ ${add.name.replace(/\b\w/g, c => c.toUpperCase())}: $${toMoney(add.price)}`);
-    });
+    const manualOrReview = estimate.manualQuote === true || (estimate as any).officeReview === true;
+    const ballpark = (estimate as any).ballpark === true;
+    const hasRange = typeof estimate.minPrice === 'number' && typeof estimate.maxPrice === 'number' && estimate.minPrice !== estimate.maxPrice;
     const total = typeof estimate.totalPrice === 'number' ? estimate.totalPrice : estimate.minPrice;
-    lines.push(`Total estimate: $${toMoney(total)}`);
+
+    if (manualOrReview || ballpark) {
+      lines.push('Estimate pending office verification.');
+      if (hasRange) {
+        lines.push(`Ballpark range: $${toMoney(estimate.minPrice)}–$${toMoney(estimate.maxPrice)}`);
+      } else if (typeof total === 'number') {
+        lines.push(`Estimated amount: $${toMoney(total)}`);
+      }
+      lines.push('We will confirm pricing by phone.');
+    } else {
+      if (estimate.baseServiceLabel && typeof estimate.baseServicePrice === 'number') {
+        lines.push(`${estimate.baseServiceLabel}: $${toMoney(estimate.baseServicePrice)}`);
+      }
+      (estimate.addOns || []).forEach(add => {
+        lines.push(`+ ${add.name.replace(/\b\w/g, c => c.toUpperCase())}: $${toMoney(add.price)}`);
+      });
+      const totalLine = hasRange
+        ? `Total estimate: $${toMoney(estimate.minPrice)}–$${toMoney(estimate.maxPrice)}`
+        : `Total estimate: $${toMoney(total)}`;
+      lines.push(totalLine);
+      if (Array.isArray(estimate.notes)) {
+        estimate.notes.filter(Boolean).forEach(note => lines.push(`- ${note}`));
+      }
+    }
+
     return lines.join('\n');
+  };
+
+  const buildPinnedSummary = (estimate: EstimationResult | null) => {
+    if (!estimate) return null;
+    const toMoney = (n: number | undefined | null) => (typeof n === 'number' && !Number.isNaN(n) ? `$${n.toFixed(2)}` : null);
+    const manualOrReview = estimate.manualQuote === true || (estimate as any).officeReview === true;
+    const ballpark = (estimate as any).ballpark === true;
+    const hasRange = typeof estimate.minPrice === 'number' && typeof estimate.maxPrice === 'number' && estimate.minPrice !== estimate.maxPrice;
+    const rangeText = hasRange ? `${toMoney(estimate.minPrice)}–${toMoney(estimate.maxPrice)}` : null;
+    const amountText = toMoney(typeof estimate.totalPrice === 'number' ? estimate.totalPrice : estimate.minPrice);
+    const lines: string[] = [];
+    let title = 'Estimate Summary';
+
+    if (manualOrReview || ballpark) {
+      title = 'Office review required';
+      if (rangeText) {
+        lines.push(`Ballpark: ${rangeText}`);
+      } else if (amountText) {
+        lines.push(`Estimated amount: ${amountText}`);
+      }
+      lines.push('We will confirm pricing by phone.');
+    } else {
+      const formatted = formatEstimateForChat(estimate);
+      if (formatted && formatted.trim()) {
+        lines.push(...formatted.split('\n'));
+      }
+      if (!lines.length) {
+        if (rangeText) lines.push(`Estimate: ${rangeText}`);
+        else if (amountText) lines.push(`Estimate: ${amountText}`);
+      }
+    }
+
+    return { title, lines };
   };
 
   // IMPORTANT: The local, Gemini-independent flow below is intentional and must NOT be removed.
@@ -1176,9 +1229,24 @@ useEffect(() => {
   // ChatInterface is responsible ONLY for data collection and UX.
   // Side effects (webhooks, emails, PDFs, storage) must be handled externally.
   const shellClass = `${isGlowing ? 'ring-2 ring-blue-400 shadow-lg' : ''} bg-white rounded-b-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col h-full min-h-0 transition-shadow transition-colors duration-300`;
+  const activeEstimate = currentEstimateRef.current || currentEstimate;
+  const pinnedSummary = buildPinnedSummary(activeEstimate);
+  const showEstimateCard = !!pinnedSummary;
 
   const shellContent = (
     <>
+      {showEstimateCard && pinnedSummary && (
+        <div className="px-6 pt-5 pb-3 sticky top-0 z-20 bg-gradient-to-b from-white via-white to-white/80 border-b border-slate-100">
+          <div className="bg-slate-950 text-white rounded-2xl p-4 shadow-lg flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center text-xs shrink-0">EST</div>
+            <div className="flex-1">
+              <div className="text-xs font-black uppercase tracking-[0.15em] text-amber-200">{pinnedSummary.title}</div>
+              <pre className="mt-2 whitespace-pre-wrap text-sm leading-relaxed font-semibold">{pinnedSummary.lines.join('\n')}</pre>
+              <div className="mt-3 text-xs text-amber-100">Pinned so you can keep the quote handy while chatting.</div>
+            </div>
+          </div>
+        </div>
+      )}
       <div
         ref={scrollContainerRef}
         onScroll={updateNearBottom}
