@@ -114,8 +114,8 @@ const App: React.FC = () => {
       {/* Announcement Bar */}
       <div className="bg-[#0F172A] text-white py-3 px-6 text-center text-[11px] font-black uppercase tracking-[0.25em] border-b border-white/5 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse"></div>
-        <span className="text-amber-400 mr-2">● 2026 Fleet Status:</span> 
-        Operational in <span className="underline decoration-amber-400 underline-offset-4">Los Angeles</span> & <span className="underline decoration-amber-400 underline-offset-4">Orange County</span>
+        <span className="text-amber-400 mr-2">● Coverage Area:</span>
+        Los Angeles, Ventura, San Bernardino, Lancaster/Palmdale, San Diego, Orange County & beyond!
       </div>
 
       <nav className="bg-white/95 backdrop-blur-xl border-b border-slate-100 px-6 py-5 sticky top-0 z-[100] shadow-sm">
@@ -181,6 +181,33 @@ const App: React.FC = () => {
                 </div>
               </div>
 
+              <section className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl space-y-6" aria-labelledby="seo-content-heading">
+                <h1 id="seo-content-heading" className="text-4xl font-black text-slate-950 tracking-tight">Grease Trap Services in Los Angeles</h1>
+                <p className="text-slate-600 text-lg leading-relaxed font-medium">
+                  Our grease trap pumping services in Los Angeles keep your restaurant ready for health inspections while minimizing downtime. We specialize in eco-friendly collection, compliant hauling, and proactive maintenance plans.
+                </p>
+                <div className="space-y-4">
+                  <h2 className="text-2xl font-black text-slate-900">Why Choose Us?</h2>
+                  <ul className="list-disc list-inside text-slate-600 space-y-2 font-medium">
+                    <li>Eco-friendly solutions with documented disposal manifests</li>
+                    <li>Affordable pricing and transparent estimates</li>
+                    <li>Fast, reliable dispatch for scheduled and emergency service</li>
+                  </ul>
+                </div>
+                <div className="space-y-3">
+                  <h2 className="text-2xl font-black text-slate-900">Our Service Areas</h2>
+                  <p className="text-slate-600 font-medium">We proudly serve the following regions:</p>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700 font-semibold">
+                    <li>Los Angeles</li>
+                    <li>Orange County</li>
+                    <li>San Bernardino</li>
+                    <li>Ventura</li>
+                    <li>Lancaster / Palmdale</li>
+                    <li>San Diego</li>
+                  </ul>
+                </div>
+              </section>
+
               <div id="services" className="space-y-12 scroll-mt-32">
                 <div className="flex items-end justify-between border-b border-slate-100 pb-8">
                   <div>
@@ -219,6 +246,27 @@ const App: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              <section className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl space-y-6" aria-labelledby="partners-heading">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <h2 id="partners-heading" className="text-3xl font-black text-slate-950 tracking-tight">Strategic Partners</h2>
+                  <p className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-400">Trusted service alliances</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <div className="partner bg-slate-50 border border-slate-100 rounded-2xl p-6 text-center shadow-sm">
+                    <img src="/icons/pump-truck-icon.svg" alt="All in Sanitation Pump Truck" className="h-14 w-14 mx-auto mb-4" />
+                    <p className="font-black text-slate-900">All in Sanitation</p>
+                  </div>
+                  <div className="partner bg-slate-50 border border-slate-100 rounded-2xl p-6 text-center shadow-sm">
+                    <img src="/icons/restroom-icon.svg" alt="Luxury Flush Restroom" className="h-14 w-14 mx-auto mb-4" />
+                    <p className="font-black text-slate-900">Luxury Flush</p>
+                  </div>
+                  <div className="partner bg-slate-50 border border-slate-100 rounded-2xl p-6 text-center shadow-sm">
+                    <img src="/icons/food-truck-icon.svg" alt="Salted Lightly Food Truck" className="h-14 w-14 mx-auto mb-4" />
+                    <p className="font-black text-slate-900">Salted Lightly</p>
+                  </div>
+                </div>
+              </section>
             </div>
 
             <aside id="estimator" className="lg:sticky lg:top-24 self-start">
