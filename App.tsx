@@ -247,26 +247,6 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <section className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl space-y-6" aria-labelledby="partners-heading">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <h2 id="partners-heading" className="text-3xl font-black text-slate-950 tracking-tight">Strategic Partners</h2>
-                  <p className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-400">Trusted service alliances</p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  <div className="partner bg-slate-50 border border-slate-100 rounded-2xl p-6 text-center shadow-sm">
-                    <img src="/icons/pump-truck-icon.svg" alt="All in Sanitation Pump Truck" className="h-14 w-14 mx-auto mb-4" />
-                    <p className="font-black text-slate-900">All in Sanitation</p>
-                  </div>
-                  <div className="partner bg-slate-50 border border-slate-100 rounded-2xl p-6 text-center shadow-sm">
-                    <img src="/icons/restroom-icon.svg" alt="Luxury Flush Restroom" className="h-14 w-14 mx-auto mb-4" />
-                    <p className="font-black text-slate-900">Luxury Flush</p>
-                  </div>
-                  <div className="partner bg-slate-50 border border-slate-100 rounded-2xl p-6 text-center shadow-sm">
-                    <img src="/icons/food-truck-icon.svg" alt="Salted Lightly Food Truck" className="h-14 w-14 mx-auto mb-4" />
-                    <p className="font-black text-slate-900">Salted Lightly</p>
-                  </div>
-                </div>
-              </section>
             </div>
 
             <aside id="estimator" className="lg:sticky lg:top-24 self-start">
@@ -319,6 +299,15 @@ const App: React.FC = () => {
                 <i className="fas fa-link text-[10px] text-amber-500"></i>
                 <span className="text-[10px] font-black uppercase tracking-widest">Salted Lightly</span>
               </a>
+            </div>
+
+            <div className="footer-partners flex items-center justify-center md:justify-start gap-6 pt-6 border-t border-white/5">
+              <h3 className="text-lg font-black text-white tracking-tight">Strategic Partners</h3>
+              <div className="footer-icons flex items-center gap-4">
+                <img src="/icons/pump-truck-icon.svg" alt="All in Sanitation" className="w-[50px] h-[50px]" />
+                <img src="/icons/restroom-icon.svg" alt="Luxury Flush" className="w-[50px] h-[50px]" />
+                <img src="/icons/food-truck-icon.svg" alt="Salted Lightly" className="w-[50px] h-[50px]" />
+              </div>
             </div>
           </div>
 
