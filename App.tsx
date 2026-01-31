@@ -301,13 +301,10 @@ const App: React.FC = () => {
               </a>
             </div>
 
-            <div className="footer-partners flex items-center justify-center md:justify-start gap-6 pt-6 border-t border-white/5">
-              <h3 className="text-lg font-black text-white tracking-tight">Strategic Partners</h3>
-              <div className="footer-icons flex items-center gap-4">
-                <img src="/icons/pump-truck-icon.svg" alt="All in Sanitation" className="w-[50px] h-[50px]" />
-                <img src="/icons/restroom-icon.svg" alt="Luxury Flush" className="w-[50px] h-[50px]" />
-                <img src="/icons/food-truck-icon.svg" alt="Salted Lightly" className="w-[50px] h-[50px]" />
-              </div>
+            <div className="footer-icons flex items-center justify-center md:justify-start gap-6 pt-6 border-t border-white/5">
+              <img src="/icons/pump-truck-icon.svg" alt="All in Sanitation" className="w-[50px] h-[50px]" />
+              <img src="/icons/restroom-icon.svg" alt="Luxury Flush" className="w-[50px] h-[50px]" />
+              <img src="/icons/food-truck-icon.svg" alt="Salted Lightly" className="w-[50px] h-[50px]" />
             </div>
           </div>
 
