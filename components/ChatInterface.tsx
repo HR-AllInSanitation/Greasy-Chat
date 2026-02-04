@@ -800,8 +800,6 @@ export const ChatInterface: React.FC = () => {
         if (!needsOfficeReview) {
           const formatted = formatEstimateForChat(estimate);
           if (formatted) {
-            pushModel(`ESTIMATE SUMMARY\n\n${formatted}`);
-            scrollToBottom();
           }
           pushModel('Final pricing is confirmed after office verification.');
           if (!hasAskedMoveForwardRef.current && canShowMoveForwardPrompt(estimate)) {
