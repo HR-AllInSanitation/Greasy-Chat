@@ -246,6 +246,36 @@ const parseMoveForwardIntent = (text: string): boolean | 'UNSURE' | null => {
   return null;
 };
 
+  const parseGallonsInput = (raw: string): { raw: string; num: number; plus: boolean; status: string } => {
+    const t = raw.trim();
+  
+    // Check for unsure markers
+    if (isUnsureValue(t)) {
+      return { raw: t, num: 0, plus: false, status: 'unsure' };
+    }
+  
+    // Handle "2500+" or "2,500+" format
+    const hasPlusFlag = /\+\s*$/.test(t);
+    // Strip commas and plus signs for parsing
+    const cleaned = t.replace(/[,+\s]/g, '');
+  
+    // Try to parse as number
+    if (/^\d+$/.test(cleaned)) {
+      const num = Number(cleaned);
+      if (num > 0 && num <= 20000) {
+        if (import.meta.env.DEV) {
+          console.log('GALLONS_PARSE', { raw: t, num, plus: hasPlusFlag, status: 'success' });
+        }
+        return { raw: t, num, plus: hasPlusFlag, status: 'success' };
+      }
+    }
+  
+    // Fallback: could not parse
+    if (import.meta.env.DEV) {
+      console.log('GALLONS_PARSE', { raw: t, num: 0, plus: false, status: 'parse_failed' });
+    }
+    return { raw: t, num: 0, plus: false, status: 'parse_failed' };
+  };
 const getAck = () => {
   const acks = ['Got it 👍', 'Thanks!', 'Perfect.', 'Confirmed!', 'Received!'];
   return acks[Math.floor(Math.random() * acks.length)];
@@ -740,7 +770,18 @@ export const ChatInterface: React.FC = () => {
           gallons: unknownGallons ? 0 : Number(intakeRef.current.gallons) || 0,
           additionalServices: parseAdditionalServices(intakeRef.current.additional_services),
         };
-        const estimate = calculateServiceEstimate(estimationInputs);
+          // Parse gallons with helper to handle "2,500+" format
+          const gallonsParsed = intakeRef.current.gallons ? parseGallonsInput(intakeRef.current.gallons) : { raw: '', num: 0, plus: false, status: 'empty' };
+          const estimationInputsFixed: EstimationInputs = {
+            serviceType: intakeRef.current.system_type as ServiceType,
+            tierKey: 'matrix',
+            frequency: Frequency.MONTHLY,
+            isOpeningSoon: false,
+            parkingDistance: unknownParking ? 100 : Number(intakeRef.current.parking_distance) || 0,
+            gallons: gallonsParsed.num,
+            additionalServices: parseAdditionalServices(intakeRef.current.additional_services),
+          };
+          const estimate = calculateServiceEstimate(estimationInputsFixed);
         setCurrentEstimate(estimate);
         currentEstimateRef.current = estimate;
         const needsOfficeReview = !!(estimate.manualQuote || (estimate as any).officeReview || (estimate as any).ballpark);
