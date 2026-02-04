@@ -604,6 +604,15 @@ export const ChatInterface: React.FC = () => {
     }
     const needsOfficeReview = !!(estimate && (estimate.manualQuote || (estimate as any).officeReview || (estimate as any).ballpark));
     const moveForward = normalizeMoveForward(intakeRef.current?.wants_to_move_forward);
+    
+    // LEAD GATE: For estimator flows, require explicit moveForward decision.
+    // Contact-only flows (Septic, Jetting) bypass this gate.
+    if (!isContactOnlyCore && moveForward === 'UNSURE') {
+      if (import.meta.env.DEV) {
+        console.log('LEAD_GATE', { moveForward, isContactOnly: false, reason: 'awaiting_explicit_decision' });
+      }
+      return;
+    }
     if (!estimate) return;
     const missingIntake = getFirstMissingField(intakeRef.current);
     const missingContact = getFirstMissingContactField(contactRef.current);
@@ -611,6 +620,9 @@ export const ChatInterface: React.FC = () => {
     if (missingIntake && !(estimate.manualQuote && selectedServiceLabelRef.current)) return;
 
     hasSentLeadRef.current = true;
+    if (import.meta.env.DEV) {
+      console.log('LEAD_GATE', { moveForward, isContactOnly: isContactOnlyCore, reason: 'passed_gate' });
+    }
 
     const systemLabel = intakeRef.current.system_type === ServiceType.GREASE_TRAP
       ? 'Grease Trap (Indoor)'
@@ -801,7 +813,7 @@ export const ChatInterface: React.FC = () => {
       } else {
         // Out of area; rely on lead handoff for follow-up
       }
-      maybeSendEstimateLead();
+      
     }
   };
 
@@ -922,6 +934,10 @@ const processMessage = async (text: string) => {
       setIntake(prev => ({ ...prev, wants_to_move_forward: intent }));
       intakeRef.current = { ...intakeRef.current, wants_to_move_forward: intent };
       pushModel(getAck());
+      // Now that user has made explicit moveForward decision, attempt to send lead
+      setTimeout(() => maybeSendEstimateLead(), 50);
+      // Now that user has made explicit moveForward decision, attempt to send lead
+      setTimeout(() => maybeSendEstimateLead(), 50);
       setIsLoading(false);
       setIsBotProcessing(false);
       isProcessingRef.current = false;
