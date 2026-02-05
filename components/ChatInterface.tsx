@@ -784,6 +784,15 @@ export const ChatInterface: React.FC = () => {
             ? `We had trouble submitting. Please call/text ${officePhone} or reply to confirm.`
             : 'We had trouble submitting. Please reply to confirm your request.';
           pushModel(fallback);
+        } else if (leadEvent === 'estimate_created') {
+          // **HARDENING**: Show fallback for Event A too (though user might not see if they proceed)
+          const fallback = officePhone
+            ? `We had trouble recording your estimate. Please call/text ${officePhone} or continue to move forward.`
+            : 'We had trouble recording your estimate. You can continue to move forward.';
+          if (import.meta.env.DEV) {
+            console.warn('EVENT_A_POST_FAILED', { status: res.status });
+          }
+          pushModel(fallback);
         }
         if (import.meta.env.DEV) {
           console.log('LEAD_POST_FAILED', { method: 'fetch', status: res.status, leadEvent });
@@ -795,11 +804,20 @@ export const ChatInterface: React.FC = () => {
         console.log('LEAD_POST_ERROR', { method: 'fetch', error: (err as any).message, leadEvent });
       }
       // **NEW**: Show user-visible fallback on error
+      const officePhone = getOfficePhoneValue().trim();
       if (leadEvent === 'move_forward_decided') {
-        const officePhone = getOfficePhoneValue().trim();
         const fallback = officePhone
           ? `We had trouble submitting. Please call/text ${officePhone} or reply to confirm.`
           : 'We had trouble submitting. Please reply to confirm your request.';
+        pushModel(fallback);
+      } else if (leadEvent === 'estimate_created') {
+        // **HARDENING**: Show fallback for Event A too
+        const fallback = officePhone
+          ? `We had trouble recording your estimate. Please call/text ${officePhone} or continue to move forward.`
+          : 'We had trouble recording your estimate. You can continue to move forward.';
+        if (import.meta.env.DEV) {
+          console.warn('EVENT_A_POST_ERROR', { error: (err as any).message });
+        }
         pushModel(fallback);
       }
       console.error('Failed to send estimate lead:', err);

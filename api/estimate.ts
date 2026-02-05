@@ -67,6 +67,7 @@ const getQStashClient = (): QStashClient | null => {
 interface LeadState {
   quoteId: string;
   decision?: 'YES' | 'NO' | 'PENDING';
+  hqScheduled?: number; // 0 or 1
   hqSent?: number; // 0 or 1
   createdAt?: string;
   decisionAt?: string;
@@ -119,7 +120,13 @@ const scheduleHqEmailViaQStash = async (quoteId: string): Promise<boolean> => {
   }
   try {
     const delaySeconds = parseInt(process.env.HQ_EMAIL_DELAY_SECONDS || '120', 10);
-    const hqSendUrl = `${process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : process.env.HQ_SEND_URL || 'http://localhost:3000'}/api/hq-send`;
+    
+    // **HARDENING**: Use absolute URL for consistency with Receiver
+    // Prefer VERCEL_URL (set by Vercel), fall back to HQ_SEND_URL, then localhost
+    let hqSendUrl = process.env.HQ_SEND_URL || 'http://localhost:3000/api/hq-send';
+    if (process.env.VERCEL_URL) {
+      hqSendUrl = `https://${process.env.VERCEL_URL}/api/hq-send`;
+    }
     
     const messageId = await qstash.publishJSON({
       url: hqSendUrl,
@@ -922,18 +929,33 @@ export default async function handler(req: any, res: any) {
     await storeLeadState(quoteId, {
       quoteId,
       decision: 'PENDING',
+      hqScheduled: 0, // **HARDENING**: Track if QStash scheduled to prevent duplicates
       hqSent: 0,
       createdAt: new Date().toISOString(),
     });
     
-    // Schedule QStash to send HQ email after delay
-    const queuedHq = await scheduleHqEmailViaQStash(quoteId);
-    if (!queuedHq) {
-      warnings.push('qstash_hq_schedule_failed');
-      console.warn('Failed to schedule HQ email via QStash', { quoteId });
-    }
+    // Schedule QStash to send HQ email after delay (but only if not already scheduled)
+    const redis = getRedisClient();
+    const stateKey = `greasy:lead:${quoteId}:state`;
+    const existingState = redis ? await redis.hgetall(stateKey) : null;
+    const alreadyScheduled = existingState?.hqScheduled === '1' || existingState?.hqScheduled === 1;
     
-    emailed = queuedHq; // Mark as "queued" for HQ
+    if (!alreadyScheduled) {
+      const queuedHq = await scheduleHqEmailViaQStash(quoteId);
+      if (queuedHq) {
+        // Mark as scheduled to prevent re-scheduling
+        if (redis) {
+          await redis.hset(stateKey, { hqScheduled: '1' });
+        }
+      } else {
+        warnings.push('qstash_hq_schedule_failed');
+        console.warn('Failed to schedule HQ email via QStash', { quoteId });
+      }
+      emailed = queuedHq; // Mark as "queued" for HQ
+    } else {
+      console.log('QSTASH_ALREADY_SCHEDULED', { quoteId, reason: 'duplicate_event_a' });
+      emailed = true; // Already queued
+    }
     
     // **NO customer email for Event A**
     customerSkipReason = 'event_a_no_customer_email';
@@ -942,12 +964,26 @@ export default async function handler(req: any, res: any) {
   else if (isEventB) {
     console.log('LEAD_EVENT_B_MOVE_FORWARD_DECIDED', { quoteId, moveForward });
     
+    // **HARDENING**: Check if payload exists in Redis (Event B should follow Event A)
+    const redis = getRedisClient();
+    if (redis) {
+      const payloadKey = `greasy:lead:${quoteId}:payload`;
+      const payloadExists = await redis.exists(payloadKey);
+      if (!payloadExists) {
+        console.warn('EVENT_B_PAYLOAD_MISSING', { quoteId, reason: 'event_a_may_have_failed' });
+        // Still continue - we have intake/contact in current request
+      }
+    }
+    
     // Update Redis state with decision
     const decisionValue = moveForward ? 'YES' : 'NO';
-    await storeLeadState(quoteId, {
-      decision: decisionValue,
-      decisionAt: new Date().toISOString(),
-    });
+    const stateKey = `greasy:lead:${quoteId}:state`;
+    if (redis) {
+      await redis.hset(stateKey, {
+        decision: decisionValue,
+        decisionAt: new Date().toISOString(),
+      });
+    }
     
     // Send customer email ONLY if decision is YES
     if (moveForward && customerEmail && isValidEmail(customerEmail)) {
