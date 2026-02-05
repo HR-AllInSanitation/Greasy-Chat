@@ -77,6 +77,7 @@ type MessageLink = {
 };
 
 type MoveForward = true | false | 'UNSURE' | null;
+type Language = 'en' | 'es';
 
 const normalizeMoveForward = (raw: unknown): MoveForward => {
   if (raw === true) return true;
@@ -99,17 +100,28 @@ const getHandoffLink = (serviceLabel?: string | null): MessageLink | null => {
   return { href: telHref, label: `Call/Text: ${normalizedPhone}` };
 };
 
-const getHandoffMessage = (opts: { serviceLabel?: string | null; moveForward?: MoveForward; needsOfficeReview?: boolean }): string => {
+const getHandoffMessage = (
+  opts: { serviceLabel?: string | null; moveForward?: MoveForward; needsOfficeReview?: boolean },
+  language: Language | null = 'en',
+): string => {
   const label = opts.serviceLabel ? ` for "${opts.serviceLabel}"` : '';
+  const labelEs = opts.serviceLabel ? ` para "${opts.serviceLabel}"` : '';
   const urgencyLink = getHandoffLink(opts.serviceLabel);
   const urgencyLine = urgencyLink ? ` If this is urgent, ${urgencyLink.label}.` : '';
+  const urgencyLineEs = urgencyLink ? ` Si es urgente, ${urgencyLink.label}.` : '';
   if (opts.moveForward === true) {
-    return `Perfect — we sent this to our office${label}. You’ll hear back by the next business day.${urgencyLine}`;
+    return language === 'es'
+      ? `Perfecto — enviamos esto a nuestra oficina${labelEs}. Te contactaremos a más tardar el próximo día hábil.${urgencyLineEs}`
+      : `Perfect — we sent this to our office${label}. You’ll hear back by the next business day.${urgencyLine}`;
   }
   if (opts.needsOfficeReview) {
-    return `Thanks — request received${label}. We sent this to our office for a quick review. You’ll hear back by the next business day.${urgencyLine}`;
+    return language === 'es'
+      ? `Gracias — solicitud recibida${labelEs}. Enviamos esto a nuestra oficina para una revisión rápida. Te contactaremos a más tardar el próximo día hábil.${urgencyLineEs}`
+      : `Thanks — request received${label}. We sent this to our office for a quick review. You’ll hear back by the next business day.${urgencyLine}`;
   }
-  return `Thanks — request received${label}. We sent this to our office. You’ll hear back by the next business day.${urgencyLine}`;
+  return language === 'es'
+    ? `Gracias — solicitud recibida${labelEs}. Enviamos esto a nuestra oficina. Te contactaremos a más tardar el próximo día hábil.${urgencyLineEs}`
+    : `Thanks — request received${label}. We sent this to our office. You’ll hear back by the next business day.${urgencyLine}`;
 };
 
 const isNonEmptyValue = (v: unknown) => {
@@ -246,6 +258,14 @@ const parseMoveForwardIntent = (text: string): boolean | 'UNSURE' | null => {
   return null;
 };
 
+const detectLanguageChoice = (text: string): Language | null => {
+  const t = text.trim().toLowerCase();
+  if (!t) return null;
+  if (/(espanol|español|spanish|es)/i.test(t)) return 'es';
+  if (/(english|inglés|ingles|en)/i.test(t)) return 'en';
+  return null;
+};
+
 // **NEW**: Multi-field contact parsing helper
 // Extract email, phone, and name from a single message (e.g., "john@example.com 555-123-4567 John Smith")
 interface MultiFieldContact {
@@ -316,8 +336,10 @@ const tryParseMultiFieldContact = (text: string): MultiFieldContact => {
     }
     return { raw: t, num: 0, plus: false, status: 'parse_failed' };
   };
-const getAck = () => {
-  const acks = ['Got it 👍', 'Thanks!', 'Perfect.', 'Confirmed!', 'Received!'];
+const getAck = (language: Language | null = 'en') => {
+  const acksEn = ['Got it 👍', 'Thanks!', 'Perfect.', 'Confirmed!', 'Received!'];
+  const acksEs = ['Listo 👍', '¡Gracias!', 'Perfecto.', 'Confirmado.', '¡Recibido!'];
+  const acks = language === 'es' ? acksEs : acksEn;
   return acks[Math.floor(Math.random() * acks.length)];
 };
 
@@ -333,6 +355,13 @@ export const ChatInterface: React.FC = () => {
   const [isGlowing, setIsGlowing] = useState(false);
   // **NEW**: Stable quoteId for 2-event architecture (Event A + Event B use same quoteId)
   const quoteIdRef = useRef<string>(generateQuoteId());
+  const [language, setLanguage] = useState<Language | null>(IS_E2E ? 'en' : null);
+  const languageRef = useRef<Language | null>(IS_E2E ? 'en' : null);
+  const t = (en: string, es: string) => (languageRef.current === 'es' ? es : en);
+
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
 
   // Listen for greasy-select-service event
   useEffect(() => {
@@ -354,7 +383,7 @@ export const ChatInterface: React.FC = () => {
       selectedServiceLabelRef.current = normalizedLabel;
 
       if (changed) {
-        pushModel(`Updated — noted request for "${normalizedLabel}".`);
+        pushModel(t(`Updated — noted request for "${normalizedLabel}".`, `Actualizado — solicitud registrada para "${normalizedLabel}".`));
       }
 
       if (isEstimatorLabel) {
@@ -363,7 +392,7 @@ export const ChatInterface: React.FC = () => {
         intakeRef.current = updatedIntake;
         setIntake(updatedIntake);
         const next = getFirstMissingField(updatedIntake);
-        if (next) pushModel(getQuestionForField(next));
+        if (next) pushModel(getQuestionForField(next, languageRef.current));
         inputRef.current?.focus?.();
         return;
       }
@@ -371,7 +400,12 @@ export const ChatInterface: React.FC = () => {
       // Contact-only or other core services
       phaseRef.current = 'contact';
       if (!changed) {
-        pushModel(`Got it — you're interested in "${normalizedLabel}". Please reply with your name, phone number, and email (you can send all three in one message).`);
+        pushModel(
+          t(
+            `Got it — you're interested in "${normalizedLabel}". Please reply with your name, phone number, and email (you can send all three in one message).`,
+            `Entendido — estás interesado en "${normalizedLabel}". Por favor responde con tu nombre, teléfono y correo (puedes enviar los tres en un solo mensaje).`,
+          ),
+        );
       }
 
       if (isContactOnlyLabel) {
@@ -381,7 +415,7 @@ export const ChatInterface: React.FC = () => {
       }
 
       const nextContact = getFirstMissingContactField(contactRef.current);
-      if (nextContact) pushModel(getQuestionForContactField(nextContact));
+      if (nextContact) pushModel(getQuestionForContactField(nextContact, languageRef.current));
       inputRef.current?.focus?.();
     };
     window.addEventListener('greasy-select-service', handler);
@@ -421,7 +455,7 @@ export const ChatInterface: React.FC = () => {
   const sendHandoffOnce = (opts: { serviceLabel?: string | null; moveForward?: MoveForward; needsOfficeReview?: boolean }) => {
     if (hasSentHandoffRef.current) return;
     const link = getHandoffLink(opts.serviceLabel ?? null) || undefined;
-    const msg = getHandoffMessage(opts);
+    const msg = getHandoffMessage(opts, languageRef.current);
     if (msg && msg.trim()) pushModel(msg, link);
     hasSentHandoffRef.current = true;
   };
@@ -538,41 +572,43 @@ export const ChatInterface: React.FC = () => {
     return null;
   };
 
-  const getQuestionForField = (field: IntakeField) => {
+  const getQuestionForField = (field: IntakeField, language: Language | null = 'en') => {
+    const es = language === 'es';
     switch (field) {
       case 'business_name':
-        return 'What is your business name?';
+        return es ? '¿Cuál es el nombre de su negocio?' : 'What is your business name?';
       case 'address_line':
-        return 'What is the street address?';
+        return es ? '¿Cuál es la dirección?' : 'What is the street address?';
       case 'city':
-        return 'What city is this in?';
+        return es ? '¿En qué ciudad está?' : 'What city is this in?';
       case 'state':
-        return 'What state is this in?';
+        return es ? '¿En qué estado está?' : 'What state is this in?';
       case 'zip':
-        return 'What is the ZIP code?';
+        return es ? '¿Cuál es el código postal?' : 'What is the ZIP code?';
       case 'system_type':
-        return 'What system do you have?';
+        return es ? '¿Qué tipo de sistema tiene?' : 'What system do you have?';
       case 'gallons':
-        return 'How many gallons does the system hold?';
+        return es ? '¿Cuántos galones tiene el sistema?' : 'How many gallons does the system hold?';
       case 'parking_distance':
-        return 'What is the parking distance (in feet)?';
+        return es ? '¿Cuál es la distancia de estacionamiento (en pies)?' : 'What is the parking distance (in feet)?';
       case 'last_service_months':
-        return 'How many months since your last service?';
+        return es ? '¿Cuántos meses desde su último servicio?' : 'How many months since your last service?';
       case 'additional_services':
-        return 'Any additional services?';
+        return es ? '¿Algún servicio adicional?' : 'Any additional services?';
       default:
         return '';
     }
   };
 
-  const getQuestionForContactField = (field: ContactField) => {
+  const getQuestionForContactField = (field: ContactField, language: Language | null = 'en') => {
+    const es = language === 'es';
     switch (field) {
       case 'contact_name':
-        return 'What is the best contact name?';
+        return es ? '¿Cuál es el mejor nombre de contacto?' : 'What is the best contact name?';
       case 'contact_phone':
-        return 'What is the best phone number?';
+        return es ? '¿Cuál es el mejor número de teléfono?' : 'What is the best phone number?';
       case 'contact_email':
-        return 'What is the best email address?';
+        return es ? '¿Cuál es la mejor dirección de correo electrónico?' : 'What is the best email address?';
       default:
         return '';
     }
@@ -781,14 +817,26 @@ export const ChatInterface: React.FC = () => {
         const officePhone = getOfficePhoneValue().trim();
         if (leadEvent === 'move_forward_decided') {
           const fallback = officePhone
-            ? `We had trouble submitting. Please call/text ${officePhone} or reply to confirm.`
-            : 'We had trouble submitting. Please reply to confirm your request.';
+            ? t(
+                `We had trouble submitting. Please call/text ${officePhone} or reply to confirm.`,
+                `Tuvimos problemas para enviar. Por favor llama o envía un texto a ${officePhone} o responde para confirmar.`,
+              )
+            : t(
+                'We had trouble submitting. Please reply to confirm your request.',
+                'Tuvimos problemas para enviar. Responde para confirmar tu solicitud.',
+              );
           pushModel(fallback);
         } else if (leadEvent === 'estimate_created') {
           // **HARDENING**: Show fallback for Event A too (though user might not see if they proceed)
           const fallback = officePhone
-            ? `We had trouble recording your estimate. Please call/text ${officePhone} or continue to move forward.`
-            : 'We had trouble recording your estimate. You can continue to move forward.';
+            ? t(
+                `We had trouble recording your estimate. Please call/text ${officePhone} or continue to move forward.`,
+                `Tuvimos problemas para registrar tu estimado. Por favor llama o envía un texto a ${officePhone} o continúa para avanzar.`,
+              )
+            : t(
+                'We had trouble recording your estimate. You can continue to move forward.',
+                'Tuvimos problemas para registrar tu estimado. Puedes continuar para avanzar.',
+              );
           if (import.meta.env.DEV) {
             console.warn('EVENT_A_POST_FAILED', { status: res.status });
           }
@@ -807,14 +855,26 @@ export const ChatInterface: React.FC = () => {
       const officePhone = getOfficePhoneValue().trim();
       if (leadEvent === 'move_forward_decided') {
         const fallback = officePhone
-          ? `We had trouble submitting. Please call/text ${officePhone} or reply to confirm.`
-          : 'We had trouble submitting. Please reply to confirm your request.';
+          ? t(
+              `We had trouble submitting. Please call/text ${officePhone} or reply to confirm.`,
+              `Tuvimos problemas para enviar. Por favor llama o envía un texto a ${officePhone} o responde para confirmar.`,
+            )
+          : t(
+              'We had trouble submitting. Please reply to confirm your request.',
+              'Tuvimos problemas para enviar. Responde para confirmar tu solicitud.',
+            );
         pushModel(fallback);
       } else if (leadEvent === 'estimate_created') {
         // **HARDENING**: Show fallback for Event A too
         const fallback = officePhone
-          ? `We had trouble recording your estimate. Please call/text ${officePhone} or continue to move forward.`
-          : 'We had trouble recording your estimate. You can continue to move forward.';
+          ? t(
+              `We had trouble recording your estimate. Please call/text ${officePhone} or continue to move forward.`,
+              `Tuvimos problemas para registrar tu estimado. Por favor llama o envía un texto a ${officePhone} o continúa para avanzar.`,
+            )
+          : t(
+              'We had trouble recording your estimate. You can continue to move forward.',
+              'Tuvimos problemas para registrar tu estimado. Puedes continuar para avanzar.',
+            );
         if (import.meta.env.DEV) {
           console.warn('EVENT_A_POST_ERROR', { error: (err as any).message });
         }
@@ -859,17 +919,22 @@ export const ChatInterface: React.FC = () => {
     setIntake(merged);
     intakeRef.current = merged;
     console.debug('Next missing field:', nextField, 'outOfArea:', outOfArea);
-    if (nextField) pushModel(getQuestionForField(nextField));
+    if (nextField) pushModel(getQuestionForField(nextField, languageRef.current));
     if (outOfArea) {
       phaseRef.current = 'contact';
       const nextContact = getFirstMissingContactField(contactRef.current);
-      pushModel('We currently service Los Angeles County, CA. If you’d like, leave your contact info and our office can advise next steps.');
-      if (nextContact) pushModel(getQuestionForContactField(nextContact));
+      pushModel(
+        t(
+          'We currently service Los Angeles County, CA. If you’d like, leave your contact info and our office can advise next steps.',
+          'Actualmente servimos el Condado de Los Ángeles, CA. Si deseas, deja tu información de contacto y nuestra oficina te puede orientar sobre los siguientes pasos.',
+        ),
+      );
+      if (nextContact) pushModel(getQuestionForContactField(nextContact, languageRef.current));
     }
     if (!nextField && !outOfArea) {
       phaseRef.current = 'contact';
       const nextContact = getFirstMissingContactField(contactRef.current);
-      if (nextContact) pushModel(getQuestionForContactField(nextContact));
+      if (nextContact) pushModel(getQuestionForContactField(nextContact, languageRef.current));
     }
   };
 
@@ -887,7 +952,7 @@ export const ChatInterface: React.FC = () => {
     setContact(merged);
     contactRef.current = merged;
     console.debug('Next missing contact field:', next);
-    if (next) pushModel(getQuestionForContactField(next));
+    if (next) pushModel(getQuestionForContactField(next, languageRef.current));
     else {
       const st = intakeRef.current.state.trim().toUpperCase();
       const outOfArea = st.length > 0 && st !== 'CA' && st !== 'CALIFORNIA';
@@ -943,10 +1008,15 @@ export const ChatInterface: React.FC = () => {
         }
         
         if (!needsOfficeReview) {
-          pushModel('Final pricing is confirmed after office verification.');
+          pushModel(t('Final pricing is confirmed after office verification.', 'El precio final se confirma después de la verificación de la oficina.'));
           if (!hasAskedMoveForwardRef.current && canShowMoveForwardPrompt(estimate)) {
             hasAskedMoveForwardRef.current = true;
-            pushModel('Do you want to move forward?\n\nIf yes, our office will reach out to you to set up the service.');
+            pushModel(
+              t(
+                'Do you want to move forward?\n\nIf yes, our office will reach out to you to set up the service.',
+                '¿Deseas continuar?\n\nSi respondes que sí, nuestra oficina te contactará para programar el servicio.',
+              ),
+            );
           }
         }
         hasSentEstimateRef.current = true;
@@ -1058,9 +1128,9 @@ const processMessage = async (text: string) => {
   const expectedField = inContactPhase ? null : getFirstMissingField(intakeRef.current);
   const expectedContactField = expectedField ? null : getFirstMissingContactField(contactRef.current);
   const expectedQuestion = expectedField
-    ? getQuestionForField(expectedField)
+    ? getQuestionForField(expectedField, languageRef.current)
     : expectedContactField
-      ? getQuestionForContactField(expectedContactField)
+      ? getQuestionForContactField(expectedContactField, languageRef.current)
       : null;
 
   setMessages(prev => [...prev, { role: 'user', text: cleanText }]);
@@ -1068,12 +1138,35 @@ const processMessage = async (text: string) => {
   setIsLoading(true);
   console.debug('isLoading -> true');
 
+  if (!languageRef.current && !IS_E2E) {
+    const choice = detectLanguageChoice(cleanText);
+    if (!choice) {
+      pushModel('Please reply “Español” or “English”. / Responde “Español” o “English”.');
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      return;
+    }
+    languageRef.current = choice;
+    setLanguage(choice);
+    const confirm = choice === 'es' ? '¡Gracias! Comencemos.' : 'Thanks! Let’s get started.';
+    pushModel(confirm);
+    const firstField = getFirstMissingField(intakeRef.current);
+    if (firstField) {
+      pushModel(getQuestionForField(firstField, choice));
+    }
+    setIsLoading(false);
+    setIsBotProcessing(false);
+    isProcessingRef.current = false;
+    return;
+  }
+
   if (currentEstimateRef.current && intakeRef.current.wants_to_move_forward === 'UNSURE') {
     const intent = parseMoveForwardIntent(cleanText);
     if (intent !== null) {
       setIntake(prev => ({ ...prev, wants_to_move_forward: intent }));
       intakeRef.current = { ...intakeRef.current, wants_to_move_forward: intent };
-      pushModel(getAck());
+      pushModel(getAck(languageRef.current));
       // **NEW (Event B)**: Send move_forward_decided event when user clicks YES/NO
       setTimeout(() => {
         maybeSendEstimateLead('move_forward_decided').catch(err => {
@@ -1089,7 +1182,7 @@ const processMessage = async (text: string) => {
 
   if (isInterjection(cleanText) && expectedQuestion) {
     console.debug('Interjection detected');
-    pushModel(`👋 Hey! Quick question: ${expectedQuestion}`);
+    pushModel(t(`👋 Hey! Quick question: ${expectedQuestion}`, `👋 ¡Hola! Pregunta rápida: ${expectedQuestion}`));
     setIsLoading(false);
     setIsBotProcessing(false);
     console.debug('isLoading -> false (interjection)');
@@ -1101,7 +1194,7 @@ const processMessage = async (text: string) => {
   if (expectedField === 'business_name') {
     const extracted = extractBusinessName(sanitizedText);
     if (extracted && isValidFallback('business_name', extracted)) {
-      pushModel(getAck());
+      pushModel(getAck(languageRef.current));
       const aiJson: any = { business_name: extracted };
       orchestrateIntake(aiJson);
       setIsLoading(false);
@@ -1111,7 +1204,7 @@ const processMessage = async (text: string) => {
       return;
     }
     if (expectedQuestion) {
-      pushModel(`Got it — quick check: ${expectedQuestion}`);
+      pushModel(t(`Got it — quick check: ${expectedQuestion}`, `Entendido — confirmo: ${expectedQuestion}`));
       setIsLoading(false);
       setIsBotProcessing(false);
       isProcessingRef.current = false;
@@ -1119,7 +1212,7 @@ const processMessage = async (text: string) => {
     }
   } else if (expectedField === 'address_line') {
     if (isValidFallback('address_line', sanitizedText)) {
-      pushModel(getAck());
+      pushModel(getAck(languageRef.current));
       const aiJson: any = { address_line: sanitizedText };
       orchestrateIntake(aiJson);
       setIsLoading(false);
@@ -1129,7 +1222,7 @@ const processMessage = async (text: string) => {
       return;
     }
     if (expectedQuestion) {
-      pushModel(`Got it — quick check: ${expectedQuestion}`);
+      pushModel(t(`Got it — quick check: ${expectedQuestion}`, `Entendido — confirmo: ${expectedQuestion}`));
       setIsLoading(false);
       setIsBotProcessing(false);
       isProcessingRef.current = false;
@@ -1137,7 +1230,7 @@ const processMessage = async (text: string) => {
     }
   } else if (expectedField === 'system_type') {
     if (cleanText) {
-      pushModel(getAck());
+      pushModel(getAck(languageRef.current));
       orchestrateIntake({ system_type: cleanText });
       setIsLoading(false);
       setIsBotProcessing(false);
@@ -1146,7 +1239,7 @@ const processMessage = async (text: string) => {
       return;
     }
     if (expectedQuestion) {
-      pushModel(`Got it — quick check: ${expectedQuestion}`);
+      pushModel(t(`Got it — quick check: ${expectedQuestion}`, `Entendido — confirmo: ${expectedQuestion}`));
       setIsLoading(false);
       setIsBotProcessing(false);
       isProcessingRef.current = false;
@@ -1155,7 +1248,7 @@ const processMessage = async (text: string) => {
   } else if (expectedField === 'state') {
     const norm = normalizeStateInput(cleanText);
     if (norm) {
-      pushModel(getAck());
+      pushModel(getAck(languageRef.current));
       orchestrateIntake({ state: norm });
       setIsLoading(false);
       setIsBotProcessing(false);
@@ -1163,7 +1256,7 @@ const processMessage = async (text: string) => {
       console.debug('Pre-accepted state without Gemini');
       return;
     }
-    pushModel('Please enter a 2-letter state code (e.g., CA).');
+    pushModel(t('Please enter a 2-letter state code (e.g., CA).', 'Por favor ingresa el código de estado de 2 letras (por ejemplo, CA).'));
     setIsLoading(false);
     setIsBotProcessing(false);
     isProcessingRef.current = false;
@@ -1181,7 +1274,7 @@ const processMessage = async (text: string) => {
         console.log('MULTI_FIELD_CONTACT_PARSE', { extracted });
       }
       
-      pushModel(getAck());
+      pushModel(getAck(languageRef.current));
       orchestrateContact(extracted);
       setIsLoading(false);
       setIsBotProcessing(false);
@@ -1193,7 +1286,7 @@ const processMessage = async (text: string) => {
     // Fallback to single-field parsing
     const extracted = extractContactName(sanitizedText);
     if (extracted && isValidFallback('contact_name', extracted)) {
-      pushModel(getAck());
+      pushModel(getAck(languageRef.current));
       const aiJson: any = { contact_name: extracted };
       orchestrateContact(aiJson);
       setIsLoading(false);
@@ -1203,7 +1296,7 @@ const processMessage = async (text: string) => {
       return;
     }
     if (expectedQuestion) {
-      pushModel(`Got it — quick check: ${expectedQuestion}`);
+      pushModel(t(`Got it — quick check: ${expectedQuestion}`, `Entendido — confirmo: ${expectedQuestion}`));
       setIsLoading(false);
       setIsBotProcessing(false);
       isProcessingRef.current = false;
@@ -1211,7 +1304,7 @@ const processMessage = async (text: string) => {
     }
   } else if (expectedField === 'gallons') {
     if (isUnsureValue(cleanText)) {
-      pushModel(getAck());
+      pushModel(getAck(languageRef.current));
       orchestrateIntake({ gallons: 'UNSURE' });
       setIsLoading(false);
       setIsBotProcessing(false);
@@ -1220,7 +1313,7 @@ const processMessage = async (text: string) => {
       return;
     }
     if (/^\d+$/.test(cleanText)) {
-      pushModel(getAck());
+      pushModel(getAck(languageRef.current));
       orchestrateIntake({ gallons: cleanText });
       setIsLoading(false);
       setIsBotProcessing(false);
@@ -1229,7 +1322,7 @@ const processMessage = async (text: string) => {
       return;
     }
     if (expectedQuestion) {
-      pushModel(`Got it — quick check: ${expectedQuestion}`);
+      pushModel(t(`Got it — quick check: ${expectedQuestion}`, `Entendido — confirmo: ${expectedQuestion}`));
       setIsLoading(false);
       setIsBotProcessing(false);
       isProcessingRef.current = false;
@@ -1238,7 +1331,7 @@ const processMessage = async (text: string) => {
   } else if (expectedField === 'last_service_months') {
     if (/^\d+$/.test(cleanText) || isUnsureValue(cleanText)) {
       const val = isUnsureValue(cleanText) ? 'UNSURE' : cleanText;
-      pushModel(getAck());
+      pushModel(getAck(languageRef.current));
       orchestrateIntake({ last_service_months: val });
       setIsLoading(false);
       setIsBotProcessing(false);
@@ -1247,7 +1340,7 @@ const processMessage = async (text: string) => {
       return;
     }
     if (expectedQuestion) {
-      pushModel(`Got it — quick check: ${expectedQuestion}`);
+      pushModel(t(`Got it — quick check: ${expectedQuestion}`, `Entendido — confirmo: ${expectedQuestion}`));
       setIsLoading(false);
       setIsBotProcessing(false);
       isProcessingRef.current = false;
@@ -1256,7 +1349,7 @@ const processMessage = async (text: string) => {
   } else if (expectedContactField === 'contact_phone') {
     const digits = cleanText.replace(/\D/g, '');
     if (digits.length >= 10) {
-      pushModel(getAck());
+      pushModel(getAck(languageRef.current));
       const aiJson: any = { contact_phone: digits };
       orchestrateContact(aiJson);
       setIsLoading(false);
@@ -1265,14 +1358,14 @@ const processMessage = async (text: string) => {
       console.debug('Pre-accepted contact_phone without interjection/Gemini');
       return;
     }
-    pushModel('I didn’t catch that. Please enter a 10-digit phone number (numbers only).');
+    pushModel(t('I didn’t catch that. Please enter a 10-digit phone number (numbers only).', 'No logré entender. Por favor ingresa un número de teléfono de 10 dígitos (solo números).'));
     setIsLoading(false);
     setIsBotProcessing(false);
     isProcessingRef.current = false;
     return;
   } else if (expectedContactField === 'contact_email') {
     if (isValidFallback('contact_email', cleanText)) {
-      pushModel(getAck());
+      pushModel(getAck(languageRef.current));
       const aiJson: any = { contact_email: cleanText };
       orchestrateContact(aiJson);
       setIsLoading(false);
@@ -1281,7 +1374,7 @@ const processMessage = async (text: string) => {
       console.debug('Pre-accepted contact_email without interjection/Gemini');
       return;
     }
-    pushModel('That doesn’t look like an email. Please type it like name@domain.com.');
+    pushModel(t('That doesn’t look like an email. Please type it like name@domain.com.', 'Eso no parece un correo válido. Escríbelo como nombre@dominio.com.'));
     setIsLoading(false);
     setIsBotProcessing(false);
     isProcessingRef.current = false;
@@ -1333,7 +1426,7 @@ const processMessage = async (text: string) => {
         if (fieldKey === 'state') {
           const normState = normalizeStateInput(cleanText);
           if (!normState) {
-            if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
+            if (expectedQuestion) pushModel(t(`Got it — quick check: ${expectedQuestion}`, `Entendido — confirmo: ${expectedQuestion}`));
             setIsLoading(false);
             setIsBotProcessing(false);
             isProcessingRef.current = false;
@@ -1344,7 +1437,7 @@ const processMessage = async (text: string) => {
           aiJson[fieldKey] = isUnsureValue(cleanText) ? 'UNSURE' : cleanText;
         }
       } else {
-        if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
+        if (expectedQuestion) pushModel(t(`Got it — quick check: ${expectedQuestion}`, `Entendido — confirmo: ${expectedQuestion}`));
         setIsLoading(false);
         setIsBotProcessing(false);
         isProcessingRef.current = false;
@@ -1354,7 +1447,7 @@ const processMessage = async (text: string) => {
       if (isValidFallback(expectedContactField, cleanText)) {
         aiJson[expectedContactField] = cleanText;
       } else {
-        if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
+        if (expectedQuestion) pushModel(t(`Got it — quick check: ${expectedQuestion}`, `Entendido — confirmo: ${expectedQuestion}`));
         setIsLoading(false);
         setIsBotProcessing(false);
         isProcessingRef.current = false;
@@ -1387,7 +1480,7 @@ const processMessage = async (text: string) => {
           orchestrateContact({ contact_phone: digits });
           return;
         }
-        pushModel('I didn’t catch that. Please enter a 10-digit phone number (numbers only).');
+        pushModel(t('I didn’t catch that. Please enter a 10-digit phone number (numbers only).', 'No logré entender. Por favor ingresa un número de teléfono de 10 dígitos (solo números).'));
         setIsLoading(false);
         setIsBotProcessing(false);
         isProcessingRef.current = false;
@@ -1398,7 +1491,7 @@ const processMessage = async (text: string) => {
           orchestrateContact({ contact_email: cleanText });
           return;
         }
-        pushModel('That doesn’t look like an email. Please type it like name@domain.com.');
+        pushModel(t('That doesn’t look like an email. Please type it like name@domain.com.', 'Eso no parece un correo válido. Escríbelo como nombre@dominio.com.'));
         setIsLoading(false);
         setIsBotProcessing(false);
         isProcessingRef.current = false;
@@ -1410,7 +1503,7 @@ const processMessage = async (text: string) => {
       }
     }
 
-    if (expectedQuestion) pushModel(`Got it — quick check: ${expectedQuestion}`);
+    if (expectedQuestion) pushModel(t(`Got it — quick check: ${expectedQuestion}`, `Entendido — confirmo: ${expectedQuestion}`));
   } finally {
     setIsLoading(false);
     setIsBotProcessing(false);
@@ -1422,14 +1515,21 @@ const processMessage = async (text: string) => {
 // On mount, if no messages, ask for the first missing field (once). Skip when history already exists.
 useEffect(() => {
   if (messages.length > 0) return;
+  if (!languageRef.current) {
+    const ask = '¿Español o English?';
+    pushModel(ask);
+    return;
+  }
   const firstField = getFirstMissingField(intakeRef.current);
   if (!firstField) return;
 
   const timeoutId = setTimeout(() => {
     if (didInitRef.current) return;
     didInitRef.current = true;
-    const firstQuestion = getQuestionForField(firstField);
-    const intro = `Hi there! I'm the Greasy Agent. I'll collect a few quick details and give you a service estimate. ${firstQuestion}`;
+    const firstQuestion = getQuestionForField(firstField, languageRef.current);
+    const intro = languageRef.current === 'es'
+      ? `¡Hola! Soy Greasy Agent. Haré unas preguntas rápidas y te daré un estimado de servicio. ${firstQuestion}`
+      : `Hi there! I'm the Greasy Agent. I'll collect a few quick details and give you a service estimate. ${firstQuestion}`;
     pushModel(intro);
   }, 800);
 

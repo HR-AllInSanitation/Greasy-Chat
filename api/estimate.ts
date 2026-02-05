@@ -418,7 +418,7 @@ const sendCustomerEmail = async (payload: any, from: string): Promise<ResendResu
 
   const subject = 'Your Grease Trap Service Estimate';
   console.log('CUSTOMER_EMAIL_PREP', { to: maskEmail(to), subject, quoteId: meta?.quoteId });
-  console.log('CUSTOMER_EMAIL_BODY', text);
+  console.log('CUSTOMER_EMAIL_BODY_LENGTH', { length: text?.length ?? 0, quoteId: meta?.quoteId });
   try {
     const attachments = pdfBytes
       ? [{ filename: 'Estimate.pdf', content: Buffer.from(pdfBytes).toString('base64') }]
