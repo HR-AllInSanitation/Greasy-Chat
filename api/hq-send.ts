@@ -122,7 +122,7 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  const receiver = new Receiver({ tokens: [qstashToken] });
+  const receiver = new Receiver({ currentSigningKey: qstashToken });
   let body: any = {};
 
   try {

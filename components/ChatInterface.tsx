@@ -246,6 +246,46 @@ const parseMoveForwardIntent = (text: string): boolean | 'UNSURE' | null => {
   return null;
 };
 
+// **NEW**: Multi-field contact parsing helper
+// Extract email, phone, and name from a single message (e.g., "john@example.com 555-123-4567 John Smith")
+interface MultiFieldContact {
+  email?: string;
+  phone?: string;
+  name?: string;
+  extracted: boolean;
+}
+
+const tryParseMultiFieldContact = (text: string): MultiFieldContact => {
+  const trimmed = text.trim();
+  let email: string | undefined;
+  let phone: string | undefined;
+  let name: string | undefined;
+
+  // Extract email
+  const emailMatch = trimmed.match(/([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  if (emailMatch) {
+    email = emailMatch[1];
+  }
+
+  // Extract phone (10+ digits)
+  const phoneMatch = trimmed.match(/(\d{3}[-.\s]?\d{3}[-.\s]?\d{4}|\d{10})/);
+  if (phoneMatch) {
+    phone = phoneMatch[0].replace(/\D/g, '');
+  }
+
+  // Extract name: remove email and phone, take remaining text
+  let remaining = trimmed;
+  if (email) remaining = remaining.replace(email, '');
+  if (phone) remaining = remaining.replace(phoneMatch![0], '');
+  remaining = remaining.trim();
+  if (remaining.length >= 2 && /[a-zA-Z]/.test(remaining)) {
+    name = remaining;
+  }
+
+  const extracted = !!(email || phone || name);
+  return { email, phone, name, extracted };
+};
+
   const parseGallonsInput = (raw: string): { raw: string; num: number; plus: boolean; status: string } => {
     const t = raw.trim();
   
@@ -291,6 +331,8 @@ export const ChatInterface: React.FC = () => {
   // Track selected core service label
   const selectedServiceLabelRef = useRef<string | null>(null);
   const [isGlowing, setIsGlowing] = useState(false);
+  // **NEW**: Stable quoteId for 2-event architecture (Event A + Event B use same quoteId)
+  const quoteIdRef = useRef<string>(generateQuoteId());
 
   // Listen for greasy-select-service event
   useEffect(() => {
@@ -591,8 +633,9 @@ export const ChatInterface: React.FC = () => {
     return [];
   };
 
-  const maybeSendEstimateLead = () => {
-    if (hasSentLeadRef.current) return;
+  const maybeSendEstimateLead = async (leadEvent: 'estimate_created' | 'move_forward_decided' = 'estimate_created') => {
+    // For Event A (estimate_created): always send when estimate is ready
+    // For Event B (move_forward_decided): send after user clicks YES/NO
     const serviceLabel = selectedServiceLabelRef.current;
     const isContactOnlyCore = isContactOnlyService(serviceLabel);
     let estimate = currentEstimateRef.current;
@@ -605,30 +648,30 @@ export const ChatInterface: React.FC = () => {
     const needsOfficeReview = !!(estimate && (estimate.manualQuote || (estimate as any).officeReview || (estimate as any).ballpark));
     const moveForward = normalizeMoveForward(intakeRef.current?.wants_to_move_forward);
     
-    // LEAD GATE: For estimator flows, require explicit moveForward decision.
-    // Contact-only flows (Septic, Jetting) bypass this gate.
-    if (!isContactOnlyCore && moveForward === 'UNSURE') {
+    // Event A: always send (no gate for estimate_created)
+    // Event B: gate by explicit YES/NO decision
+    if (leadEvent === 'move_forward_decided' && !isContactOnlyCore && moveForward === 'UNSURE') {
       if (import.meta.env.DEV) {
-        console.log('LEAD_GATE', { moveForward, isContactOnly: false, reason: 'awaiting_explicit_decision' });
+        console.log('LEAD_GATE_EVENT_B', { moveForward, reason: 'awaiting_explicit_decision' });
       }
-      return;
+      return false;
     }
-    if (!estimate) return;
+
+    if (!estimate) return false;
     const missingIntake = getFirstMissingField(intakeRef.current);
     const missingContact = getFirstMissingContactField(contactRef.current);
-    if (missingContact) return;
-    if (missingIntake && !(estimate.manualQuote && selectedServiceLabelRef.current)) return;
+    if (missingContact) return false;
+    if (missingIntake && !(estimate.manualQuote && selectedServiceLabelRef.current)) return false;
 
-    hasSentLeadRef.current = true;
     if (import.meta.env.DEV) {
-      console.log('LEAD_GATE', { moveForward, isContactOnly: isContactOnlyCore, reason: 'passed_gate' });
+      console.log('LEAD_POST_ATTEMPT', { leadEvent, moveForward, isContactOnly: isContactOnlyCore });
     }
 
     const systemLabel = intakeRef.current.system_type === ServiceType.GREASE_TRAP
       ? 'Grease Trap (Indoor)'
       : undefined;
 
-    // Ensure meta exists and extend
+    // Build meta with leadEvent and quoteId
     let meta: any = {};
     if (estimate && (estimate as any).meta && typeof (estimate as any).meta === 'object') {
       meta = { ...(estimate as any).meta };
@@ -640,7 +683,11 @@ export const ChatInterface: React.FC = () => {
       meta.source = meta.source ?? 'greasy-agent';
     }
     
-    // Store parsed gallons data for audit trail (Fase B)
+    // **NEW**: Add leadEvent and quoteId to meta
+    meta.leadEvent = leadEvent;
+    meta.quoteId = quoteIdRef.current;
+    
+    // Store parsed gallons data for audit trail
     const gallonsParsed = intakeRef.current.gallons ? parseGallonsInput(intakeRef.current.gallons) : null;
     if (gallonsParsed) {
       meta.gallons_raw = gallonsParsed.raw;
@@ -648,6 +695,7 @@ export const ChatInterface: React.FC = () => {
       meta.gallons_plus = gallonsParsed.plus;
       meta.gallons_parse_status = gallonsParsed.status;
     }
+
     const payload = {
       intake: {
         ...intakeRef.current,
@@ -687,44 +735,75 @@ export const ChatInterface: React.FC = () => {
     const body = JSON.stringify(payload);
 
     if (import.meta.env.DEV) {
-      console.log('LEAD_POST_START', { moveForward, serviceLabel, needsOfficeReview });
+      console.log('LEAD_POST_START', { leadEvent, moveForward, serviceLabel, needsOfficeReview, quoteId: quoteIdRef.current });
     }
+
+    // **NEW**: Add user-visible fallback on failure
+    let postSuccess = false;
 
     if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
       const success = navigator.sendBeacon('/api/estimate', new Blob([body], { type: 'application/json' }));
       if (success) {
         if (import.meta.env.DEV) {
-          console.log('LEAD_POST_RESULT', { method: 'sendBeacon', success: true });
+          console.log('LEAD_POST_RESULT', { method: 'sendBeacon', success: true, leadEvent });
         }
-        sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
+        postSuccess = true;
+        // Only show handoff for Event B
+        if (leadEvent === 'move_forward_decided') {
+          sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
+        }
         selectedServiceLabelRef.current = null;
-        return;
+        return true;
       }
     }
 
     try {
-      fetch('/api/estimate', {
+      const res = await fetch('/api/estimate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,
-      })
-        .then(res => {
-          if (import.meta.env.DEV) {
-            console.log('LEAD_POST_RESULT', { method: 'fetch', status: res.status, ok: res.ok });
-          }
-          if (res.ok) {
-            sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
-            selectedServiceLabelRef.current = null;
-          }
-        })
-        .catch(err => {
-          if (import.meta.env.DEV) {
-            console.log('LEAD_POST_RESULT', { method: 'fetch', error: err.message });
-          }
-          console.error('Failed to send estimate lead:', err);
-        });
+      });
+
+      if (import.meta.env.DEV) {
+        console.log('LEAD_POST_RESULT', { method: 'fetch', status: res.status, ok: res.ok, leadEvent });
+      }
+
+      if (res.ok) {
+        postSuccess = true;
+        // Only show handoff for Event B
+        if (leadEvent === 'move_forward_decided') {
+          sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
+        }
+        selectedServiceLabelRef.current = null;
+        return true;
+      } else {
+        // **NEW**: Show user-visible fallback message on POST failure
+        const officePhone = getOfficePhoneValue().trim();
+        if (leadEvent === 'move_forward_decided') {
+          const fallback = officePhone
+            ? `We had trouble submitting. Please call/text ${officePhone} or reply to confirm.`
+            : 'We had trouble submitting. Please reply to confirm your request.';
+          pushModel(fallback);
+        }
+        if (import.meta.env.DEV) {
+          console.log('LEAD_POST_FAILED', { method: 'fetch', status: res.status, leadEvent });
+        }
+        return false;
+      }
     } catch (err) {
+      if (import.meta.env.DEV) {
+        console.log('LEAD_POST_ERROR', { method: 'fetch', error: (err as any).message, leadEvent });
+      }
+      // **NEW**: Show user-visible fallback on error
+      if (leadEvent === 'move_forward_decided') {
+        const officePhone = getOfficePhoneValue().trim();
+        const fallback = officePhone
+          ? `We had trouble submitting. Please call/text ${officePhone} or reply to confirm.`
+          : 'We had trouble submitting. Please reply to confirm your request.';
+        pushModel(fallback);
+      }
       console.error('Failed to send estimate lead:', err);
+      return false;
     }
   };
 
@@ -832,6 +911,17 @@ export const ChatInterface: React.FC = () => {
         const formatted = formatEstimateForChat(estimate);
         if (formatted && formatted.trim()) {
           pushModel(formatted);
+        }
+        
+        // **NEW (Event A)**: Send estimate_created event immediately
+        // This captures the lead even if the user closes the page or doesn't respond to Move Forward
+        if (!hasSentLeadRef.current) {
+          hasSentLeadRef.current = true;
+          setTimeout(() => {
+            maybeSendEstimateLead('estimate_created').catch(err => {
+              console.error('Failed to send Event A (estimate_created):', err);
+            });
+          }, 100);
         }
         
         if (!needsOfficeReview) {
@@ -966,10 +1056,12 @@ const processMessage = async (text: string) => {
       setIntake(prev => ({ ...prev, wants_to_move_forward: intent }));
       intakeRef.current = { ...intakeRef.current, wants_to_move_forward: intent };
       pushModel(getAck());
-      // Now that user has made explicit moveForward decision, attempt to send lead
-      setTimeout(() => maybeSendEstimateLead(), 50);
-      // Now that user has made explicit moveForward decision, attempt to send lead
-      setTimeout(() => maybeSendEstimateLead(), 50);
+      // **NEW (Event B)**: Send move_forward_decided event when user clicks YES/NO
+      setTimeout(() => {
+        maybeSendEstimateLead('move_forward_decided').catch(err => {
+          console.error('Failed to send Event B (move_forward_decided):', err);
+        });
+      }, 50);
       setIsLoading(false);
       setIsBotProcessing(false);
       isProcessingRef.current = false;
@@ -1059,6 +1151,28 @@ const processMessage = async (text: string) => {
     isProcessingRef.current = false;
     return;
   } else if (expectedContactField === 'contact_name') {
+    // **NEW**: Try multi-field extraction first (email + phone + name in one message)
+    const multiField = tryParseMultiFieldContact(cleanText);
+    if (multiField.extracted && (multiField.email || multiField.phone || multiField.name)) {
+      const extracted: any = {};
+      if (multiField.name) extracted.contact_name = multiField.name;
+      if (multiField.email) extracted.contact_email = multiField.email;
+      if (multiField.phone) extracted.contact_phone = multiField.phone;
+      
+      if (import.meta.env.DEV) {
+        console.log('MULTI_FIELD_CONTACT_PARSE', { extracted });
+      }
+      
+      pushModel(getAck());
+      orchestrateContact(extracted);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Multi-field contact extraction successful');
+      return;
+    }
+    
+    // Fallback to single-field parsing
     const extracted = extractContactName(sanitizedText);
     if (extracted && isValidFallback('contact_name', extracted)) {
       pushModel(getAck());
