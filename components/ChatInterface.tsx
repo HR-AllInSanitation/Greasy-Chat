@@ -732,6 +732,15 @@ export const ChatInterface: React.FC = () => {
       meta.gallons_parse_status = gallonsParsed.status;
     }
 
+    const distanceMiles = estimate?.distanceMiles ?? estimate?.distance;
+    const radiusBand = estimate?.radiusBand || (estimate as any)?.radius_band;
+    const distanceVerified = estimate?.distanceVerified ?? false;
+    if (distanceMiles !== undefined && distanceMiles !== null) meta.distance_miles = distanceMiles;
+    if (radiusBand) meta.distance_band = radiusBand;
+    if (distanceVerified) meta.distance_verified = true;
+    if (estimate?.tierUsed) meta.tier_used = estimate.tierUsed;
+    if (typeof estimate?.baseServicePrice === 'number') meta.base_price = estimate.baseServicePrice;
+
     const payload = {
       intake: {
         ...intakeRef.current,
@@ -938,7 +947,7 @@ export const ChatInterface: React.FC = () => {
     }
   };
 
-  const orchestrateContact = (aiJson: any) => {
+  const orchestrateContact = async (aiJson: any) => {
     console.count('orchestrateContact');
     console.debug('orchestrateContact: nextIntake', getFirstMissingField(intakeRef.current), 'nextContact', getFirstMissingContactField(contactRef.current), 'hasSentEstimate', hasSentEstimateRef.current, 'hasAskedMoveForward', hasAskedMoveForwardRef.current);
     phaseRef.current = 'contact';
@@ -970,6 +979,48 @@ export const ChatInterface: React.FC = () => {
         };
           // Parse gallons with helper to handle "2,500+" format
           const gallonsParsed = intakeRef.current.gallons ? parseGallonsInput(intakeRef.current.gallons) : { raw: '', num: 0, plus: false, status: 'empty' };
+          
+          // PHASE 4: Geocode address for verified distance (required for 2,500+ tier)
+          let location: { latitude: number; longitude: number; address?: string } | undefined;
+          const isGrease4000 = gallonsParsed.plus || gallonsParsed.num > 2500;
+          
+          if (isGrease4000) {
+            try {
+              const geoRes = await fetch('/api/geocode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  addressLine1: intakeRef.current.address_line,
+                  city: intakeRef.current.city,
+                  state: intakeRef.current.state,
+                  zip: intakeRef.current.zip,
+                }),
+              });
+              
+              if (geoRes.ok) {
+                const geoData = await geoRes.json();
+                if (geoData.verified && typeof geoData.lat === 'number' && typeof geoData.lng === 'number') {
+                  location = {
+                    latitude: geoData.lat,
+                    longitude: geoData.lng,
+                    address: geoData.normalizedAddress,
+                  };
+                  if (import.meta.env.DEV) {
+                    console.log('GEOCODE_SUCCESS', { lat: geoData.lat, lng: geoData.lng, cached: geoData.cached });
+                  }
+                } else if (import.meta.env.DEV) {
+                  console.warn('GEOCODE_UNVERIFIED', geoData);
+                }
+              } else if (import.meta.env.DEV) {
+                console.warn('GEOCODE_HTTP_ERROR', geoRes.status);
+              }
+            } catch (err) {
+              if (import.meta.env.DEV) {
+                console.error('GEOCODE_ERROR', err);
+              }
+            }
+          }
+          
           const estimationInputsFixed: EstimationInputs = {
             serviceType: intakeRef.current.system_type as ServiceType,
             tierKey: 'matrix',
@@ -977,6 +1028,8 @@ export const ChatInterface: React.FC = () => {
             isOpeningSoon: false,
             parkingDistance: unknownParking ? 100 : Number(intakeRef.current.parking_distance) || 0,
             gallons: gallonsParsed.num,
+            gallonsPlus: gallonsParsed.plus,
+            location,
             additionalServices: parseAdditionalServices(intakeRef.current.additional_services),
           };
           if (import.meta.env.DEV) {
@@ -1053,13 +1106,10 @@ export const ChatInterface: React.FC = () => {
     const hasRange = typeof estimate.minPrice === 'number' && typeof estimate.maxPrice === 'number' && estimate.minPrice !== estimate.maxPrice;
     const total = typeof estimate.totalPrice === 'number' ? estimate.totalPrice : estimate.minPrice;
 
+    // BLOCKER #2 FIX: Never show numeric price for office review cases
     if (manualOrReview || ballpark) {
       lines.push('Estimate pending office verification.');
-      if (hasRange) {
-        lines.push(`Ballpark range: $${toMoney(estimate.minPrice)}–$${toMoney(estimate.maxPrice)}`);
-      } else if (typeof total === 'number') {
-        lines.push(`Estimated amount: $${toMoney(total)}`);
-      }
+      lines.push('Office will confirm pricing based on exact location and distance.');
       lines.push('We will confirm pricing by phone.');
     } else {
       if (estimate.baseServiceLabel && typeof estimate.baseServicePrice === 'number') {
@@ -1093,11 +1143,7 @@ export const ChatInterface: React.FC = () => {
 
     if (manualOrReview || ballpark) {
       title = 'Office review required';
-      if (rangeText) {
-        lines.push(`Ballpark: ${rangeText}`);
-      } else if (amountText) {
-        lines.push(`Estimated amount: ${amountText}`);
-      }
+      lines.push('Office will confirm pricing based on exact location.');
       lines.push('We will confirm pricing by phone.');
     } else {
       const formatted = formatEstimateForChat(estimate);

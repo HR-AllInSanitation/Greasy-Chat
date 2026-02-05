@@ -29,6 +29,7 @@ export interface EstimationInputs {
   isOpeningSoon: boolean;
   parkingDistance: number;
   gallons?: number; 
+  gallonsPlus?: boolean;
   monthsSinceLastService?: number;
   additionalServices?: string[];
   capacityTier?: 'UP_TO_1600' | 'UP_TO_2500';
@@ -42,8 +43,8 @@ export interface EstimationInputs {
 }
 
 export interface EstimationResult {
-  minPrice: number;
-  maxPrice: number;
+  minPrice: number | null;
+  maxPrice: number | null;
   distance: number; // Miles from Sylmar base
   distanceSource?: string;
   assumptions?: string[];
@@ -51,6 +52,7 @@ export interface EstimationResult {
   radiusBand?: string;
   radius_band?: string;
   distanceAssumed?: boolean;
+  distanceVerified?: boolean;
   tierUsed?: string;
   gallonsUncertain?: boolean;
   addOns?: { name: string; price: number }[];
@@ -58,7 +60,7 @@ export interface EstimationResult {
   manualQuote?: boolean;
   baseServiceLabel?: string;
   baseServicePrice?: number;
-  totalPrice?: number;
+  totalPrice?: number | null;
   capacity_tier?: string;
   capacity_unsure?: boolean;
   manual_quote?: boolean;
