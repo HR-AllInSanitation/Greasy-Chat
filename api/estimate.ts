@@ -10,6 +10,9 @@ Manual QA (customer email should send, customerResendStatus=200):
 
 // pdf-lib is imported dynamically only when needed
 
+import { Redis } from '@upstash/redis';
+import { Client as QStashClient } from '@upstash/qstash';
+
 type ResendResult = { ok: boolean; status?: number; messageId?: string; errorCode?: string };
 
 type NormalizedContact = {
@@ -28,6 +31,107 @@ const logJson = (event: string, data: Record<string, unknown>) => {
     console.log(JSON.stringify({ event, ...data }));
   } catch (err) {
     console.log(event, data, err);
+  }
+};
+
+// Redis helper: get or create Redis client
+const getRedisClient = (): Redis | null => {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) {
+    return null;
+  }
+  try {
+    return new Redis({ url, token });
+  } catch (err: any) {
+    console.warn('Redis initialization failed:', err?.message);
+    return null;
+  }
+};
+
+// QStash helper: get or create QStash client
+const getQStashClient = (): QStashClient | null => {
+  const token = process.env.QSTASH_TOKEN;
+  if (!token) {
+    return null;
+  }
+  try {
+    return new QStashClient({ token });
+  } catch (err: any) {
+    console.warn('QStash initialization failed:', err?.message);
+    return null;
+  }
+};
+
+// Redis state management for leads
+interface LeadState {
+  quoteId: string;
+  decision?: 'YES' | 'NO' | 'PENDING';
+  hqSent?: number; // 0 or 1
+  createdAt?: string;
+  decisionAt?: string;
+  hqSentAt?: string;
+  hqMessageId?: string;
+}
+
+const storeLeadState = async (quoteId: string, state: Partial<LeadState>): Promise<boolean> => {
+  const redis = getRedisClient();
+  if (!redis) {
+    console.warn('Redis unavailable; skipping lead state storage', { quoteId });
+    return false;
+  }
+  try {
+    const key = `greasy:lead:${quoteId}:state`;
+    await redis.hset(key, state as Record<string, string | number>);
+    // Set expiry to 30 days
+    await redis.expire(key, 30 * 24 * 60 * 60);
+    if (process.env.DEV) console.log('Lead state stored', { quoteId, key });
+    return true;
+  } catch (err: any) {
+    console.error('Failed to store lead state:', err?.message, { quoteId });
+    return false;
+  }
+};
+
+const storeLeadPayload = async (quoteId: string, payload: any): Promise<boolean> => {
+  const redis = getRedisClient();
+  if (!redis) {
+    console.warn('Redis unavailable; skipping lead payload storage', { quoteId });
+    return false;
+  }
+  try {
+    const key = `greasy:lead:${quoteId}:payload`;
+    const json = JSON.stringify(payload);
+    await redis.set(key, json, { ex: 30 * 24 * 60 * 60 });
+    if (process.env.DEV) console.log('Lead payload stored', { quoteId, key });
+    return true;
+  } catch (err: any) {
+    console.error('Failed to store lead payload:', err?.message, { quoteId });
+    return false;
+  }
+};
+
+const scheduleHqEmailViaQStash = async (quoteId: string): Promise<boolean> => {
+  const qstash = getQStashClient();
+  if (!qstash) {
+    console.warn('QStash unavailable; skipping HQ email scheduling', { quoteId });
+    return false;
+  }
+  try {
+    const delaySeconds = parseInt(process.env.HQ_EMAIL_DELAY_SECONDS || '120', 10);
+    const hqSendUrl = `${process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : process.env.HQ_SEND_URL || 'http://localhost:3000'}/api/hq-send`;
+    
+    const messageId = await qstash.publishJSON({
+      url: hqSendUrl,
+      body: { quoteId },
+      delay: delaySeconds,
+    });
+    
+    console.log('QSTASH_SCHEDULED', { quoteId, delaySeconds, hqSendUrl, messageId });
+    return true;
+  } catch (err: any) {
+    console.error('Failed to schedule QStash HQ email:', err?.message, { quoteId });
+    return false;
   }
 };
 
@@ -625,6 +729,9 @@ export default async function handler(req: any, res: any) {
   const moveForward = wantsToMoveForwardFlag(intake);
   const customerEmail = normalizedContact.email;
   const customerEmailKey = normalizedContact.keyUsed?.email || null;
+  const leadEvent = metaObj?.leadEvent || null; // "estimate_created" or "move_forward_decided"
+  const quoteId = metaObj?.quoteId || `QT-${Date.now()}`;
+  
   logJson('EMAIL_ENV', {
     hasKey: hasResendKey,
     from: resolvedFrom || null,
@@ -632,21 +739,33 @@ export default async function handler(req: any, res: any) {
     hqRecipientsCount: hqEmails.length,
     customerEmailPresent: !!customerEmail,
     wantsToMoveForward: moveForward,
+    leadEvent,
+    quoteId,
   });
   logJson('CUSTOMER_EMAIL_PATH', {
     present: !!customerEmail,
     key: customerEmailKey,
-    quoteId: metaObj?.quoteId,
+    quoteId,
   });
 
-  // --- Determine actions ---
+  // Ensure quoteId is in meta for all downstream uses
+  if (!metaObj.quoteId) {
+    metaObj.quoteId = quoteId;
+  }
+
+  // --- Determine actions based on leadEvent ---
   const forwardToSheet = scriptUrlValid;
-  const emailOffice = hasResendKey && hasOfficeEmails;
   const warnings: string[] = [];
   let forwarded = false;
   let emailed = false;
   let customerEmailAttempted = false;
   let customerSkipReason: string | undefined;
+
+  // **CRITICAL: 2-Event Architecture**
+  // Event A (estimate_created): Store in Redis, schedule QStash HQ email, no customer email
+  // Event B (move_forward_decided): Update Redis state, send customer email only if YES
+  const isEventA = leadEvent === 'estimate_created';
+  const isEventB = leadEvent === 'move_forward_decided';
 
   const sheetPayloadKeyCounts = {
     intake: Object.keys(intake || {}).length,
@@ -676,6 +795,8 @@ export default async function handler(req: any, res: any) {
     estimateKeys: Object.keys(estimate || {}),
     metaKeys: Object.keys(metaObj || {}),
     wants_to_move_forward: intake?.wants_to_move_forward ?? null,
+    leadEvent,
+    quoteId,
   });
   logJson('SHEETS_CONTACT_REDACTED', {
     email: maskEmail(customerEmail),
@@ -745,82 +866,158 @@ export default async function handler(req: any, res: any) {
     warnings.push('sheet_forward_skipped');
   }
 
-  // --- Email HQ + Customer via Resend ---
-  let emailDiag = {
-    attempted: false,
-    enabled: emailOffice,
-    recipientsCount: hqEmails.length,
-    resolvedFrom,
-    fromDomain,
-    contactEmailKeyPathUsed: customerEmailKey,
-    ok: false,
-    resendStatus: undefined as number | undefined,
-    resendErrorCode: undefined as string | undefined,
-    error: undefined as string | undefined,
-    customer: undefined as ResendResult | undefined,
-    customerEmailAttempted: false,
-    customerSkipReason: undefined as string | undefined,
-    customerResendStatus: undefined as number | undefined,
-    customerResendErrorCode: undefined as string | undefined,
-  };
-
-  if (emailOffice && !diag) {
-    emailDiag.attempted = true;
+  // --- Forward to Apps Script (Google Sheet) ---
+  if (forwardToSheet) {
     try {
-      logJson('EMAIL_SEND_HQ_START', { toCount: hqEmails.length, from: resolvedFrom, quoteId: metaObj.quoteId });
-      const hqResult = await sendHqEmail({ intake, contact: normalizedContact, estimate, meta: metaObj }, hqEmails, resolvedFrom);
-      emailDiag.ok = hqResult.ok;
-      emailDiag.resendStatus = hqResult.status;
-      emailDiag.resendErrorCode = hqResult.errorCode;
-      logJson('EMAIL_SEND_HQ_RESULT', { toCount: hqEmails.length, from: resolvedFrom, status: hqResult.status ?? null, ok: hqResult.ok, messageId: hqResult.messageId || null, errorCode: hqResult.errorCode || null, quoteId: metaObj.quoteId });
-      if (!hqResult.ok) {
-        warnings.push(hqResult.errorCode || 'resend_failed');
-        console.error('RESEND_HQ_ERR', { toCount: hqEmails.length, from: resolvedFrom, status: hqResult.status, errorCode: hqResult.errorCode, quoteId: metaObj.quoteId });
+      const ac = new AbortController();
+      const timeout = setTimeout(() => ac.abort(), 8000);
+      diagInfo.webhookAttempted = true;
+      const resp = await fetch(officeWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intake,
+          contact: normalizedContact,
+          estimate,
+          meta: metaObj,
+          source: sheetPayload.source,
+          createdAt: sheetPayload.createdAt,
+          serviceLabel: sheetPayload.serviceLabel,
+          serviceType: sheetPayload.serviceType,
+          distanceMiles: sheetPayload.distanceMiles,
+          distanceSource: sheetPayload.distanceSource,
+          tierUsed: sheetPayload.tierUsed,
+          radiusBand: sheetPayload.radiusBand,
+          sheetHeaders: SHEET_HEADERS,
+          sheetRow,
+          leadEvent,
+          quoteId,
+        }),
+        signal: ac.signal,
+      });
+      clearTimeout(timeout);
+      diagInfo.webhookStatus = resp.status;
+      const respText = await resp.text().catch(() => '');
+      diagInfo.webhookBodyPreview = respText.slice(0, 200);
+      diagInfo.webhookOk = resp.ok;
+      console.log('SHEETS_WEBHOOK_RESP', { status: resp.status, ok: resp.ok, body: diagInfo.webhookBodyPreview, leadEvent, quoteId });
+      if (!resp.ok) {
+        warnings.push(`sheet_forward_failed:${resp.status}`);
       } else {
-        emailed = true;
+        forwarded = true;
       }
     } catch (err: any) {
-      emailDiag.error = (err?.message || 'email_failed:exception').slice(0, 120);
-      warnings.push('email_failed:exception');
-      console.error('RESEND_HQ_ERR', { to: hqEmails, from: resolvedFrom, error: emailDiag.error, quoteId: metaObj.quoteId });
+      warnings.push('sheet_forward_failed:exception');
     }
+  } else {
+    warnings.push('sheet_forward_skipped');
+  }
 
-    if (moveForward) {
-      const customerEmailNormalized = typeof customerEmail === 'string' ? customerEmail.trim() : '';
-      if (!customerEmailNormalized || !isValidEmail(customerEmailNormalized)) {
-        warnings.push('customer_email_skipped_missing_email');
-        logJson('EMAIL_SEND_CUSTOMER_SKIPPED', { reason: 'missing_email', quoteId: metaObj.quoteId });
-        customerSkipReason = 'missing_email';
-      } else {
-        customerEmailAttempted = true;
-        const contactForEmail: NormalizedContact = { ...normalizedContact, email: customerEmailNormalized };
+  // --- EVENT A (estimate_created): Store state, schedule HQ email, NO customer email ---
+  if (isEventA) {
+    console.log('LEAD_EVENT_A_ESTIMATE_CREATED', { quoteId });
+    
+    // Store full payload and initial state in Redis
+    await storeLeadPayload(quoteId, { intake, contact: normalizedContact, estimate, meta: metaObj });
+    await storeLeadState(quoteId, {
+      quoteId,
+      decision: 'PENDING',
+      hqSent: 0,
+      createdAt: new Date().toISOString(),
+    });
+    
+    // Schedule QStash to send HQ email after delay
+    const queuedHq = await scheduleHqEmailViaQStash(quoteId);
+    if (!queuedHq) {
+      warnings.push('qstash_hq_schedule_failed');
+      console.warn('Failed to schedule HQ email via QStash', { quoteId });
+    }
+    
+    emailed = queuedHq; // Mark as "queued" for HQ
+    
+    // **NO customer email for Event A**
+    customerSkipReason = 'event_a_no_customer_email';
+  }
+  // --- EVENT B (move_forward_decided): Send customer email if YES, update Redis ---
+  else if (isEventB) {
+    console.log('LEAD_EVENT_B_MOVE_FORWARD_DECIDED', { quoteId, moveForward });
+    
+    // Update Redis state with decision
+    const decisionValue = moveForward ? 'YES' : 'NO';
+    await storeLeadState(quoteId, {
+      decision: decisionValue,
+      decisionAt: new Date().toISOString(),
+    });
+    
+    // Send customer email ONLY if decision is YES
+    if (moveForward && customerEmail && isValidEmail(customerEmail)) {
+      customerEmailAttempted = true;
+      const apiKey = process.env.RESEND_API_KEY || '';
+      if (apiKey) {
         try {
-          logJson('EMAIL_SEND_CUSTOMER_START', { to: maskEmail(customerEmailNormalized), from: resolvedFrom, quoteId: metaObj.quoteId });
-          const customerResult = await sendCustomerEmail({ intake, contact: contactForEmail, estimate, meta: metaObj }, resolvedFrom);
-          emailDiag.customer = customerResult;
-          emailDiag.customerResendStatus = customerResult.status;
-          emailDiag.customerResendErrorCode = customerResult.errorCode;
-          logJson('EMAIL_SEND_CUSTOMER_RESULT', { to: maskEmail(customerEmailNormalized), from: resolvedFrom, status: customerResult.status ?? null, ok: customerResult.ok, messageId: customerResult.messageId || null, errorCode: customerResult.errorCode || null, quoteId: metaObj.quoteId });
-          if (!customerResult.ok) {
+          logJson('EMAIL_SEND_CUSTOMER_START', { to: maskEmail(customerEmail), from: resolvedFrom, quoteId });
+          const customerResult = await sendCustomerEmail({ intake, contact: normalizedContact, estimate, meta: metaObj }, resolvedFrom);
+          logJson('EMAIL_SEND_CUSTOMER_RESULT', { to: maskEmail(customerEmail), from: resolvedFrom, status: customerResult.status ?? null, ok: customerResult.ok, messageId: customerResult.messageId || null, errorCode: customerResult.errorCode || null, quoteId });
+          if (customerResult.ok) {
+            emailed = true;
+          } else {
             warnings.push(customerResult.errorCode || 'customer_email_failed');
-            console.error('RESEND_CUSTOMER_ERR', { to: maskEmail(customerEmailNormalized), from: resolvedFrom, errorCode: customerResult.errorCode, quoteId: metaObj.quoteId });
           }
         } catch (err: any) {
           warnings.push('customer_email_exception');
-          console.error('RESEND_CUSTOMER_ERR', { to: maskEmail(customerEmailNormalized), from: resolvedFrom, error: (err?.message || 'customer_email_exception').slice(0, 120), quoteId: metaObj.quoteId });
+          console.error('RESEND_CUSTOMER_ERR', { to: maskEmail(customerEmail), from: resolvedFrom, error: (err?.message || 'customer_email_exception').slice(0, 120), quoteId });
+        }
+      } else {
+        customerSkipReason = 'missing_resend_key';
+        warnings.push('customer_email_skipped_missing_key');
+      }
+    } else {
+      customerSkipReason = moveForward ? 'missing_or_invalid_email' : 'move_forward_false';
+      logJson('EMAIL_SEND_CUSTOMER_SKIPPED', { reason: customerSkipReason, moveForward, hasEmail: !!customerEmail, quoteId });
+    }
+  }
+  // --- Legacy flow (no leadEvent specified, treat as single-event for backward compat) ---
+  else {
+    console.log('LEAD_EVENT_LEGACY_NO_EVENT_SPECIFIED', { quoteId });
+    
+    // For backward compatibility: send HQ email immediately if moveForward=true
+    if (moveForward && hasResendKey && hasOfficeEmails) {
+      try {
+        logJson('EMAIL_SEND_HQ_START', { toCount: hqEmails.length, from: resolvedFrom, quoteId });
+        const hqResult = await sendHqEmail({ intake, contact: normalizedContact, estimate, meta: metaObj }, hqEmails, resolvedFrom);
+        logJson('EMAIL_SEND_HQ_RESULT', { toCount: hqEmails.length, from: resolvedFrom, status: hqResult.status ?? null, ok: hqResult.ok, messageId: hqResult.messageId || null, errorCode: hqResult.errorCode || null, quoteId });
+        if (hqResult.ok) {
+          emailed = true;
+        } else {
+          warnings.push(hqResult.errorCode || 'resend_failed');
+        }
+      } catch (err: any) {
+        warnings.push('email_failed:exception');
+      }
+      
+      // Send customer email if moveForward=true
+      if (customerEmail && isValidEmail(customerEmail)) {
+        customerEmailAttempted = true;
+        const apiKey = process.env.RESEND_API_KEY || '';
+        if (apiKey) {
+          try {
+            logJson('EMAIL_SEND_CUSTOMER_START', { to: maskEmail(customerEmail), from: resolvedFrom, quoteId });
+            const customerResult = await sendCustomerEmail({ intake, contact: normalizedContact, estimate, meta: metaObj }, resolvedFrom);
+            logJson('EMAIL_SEND_CUSTOMER_RESULT', { to: maskEmail(customerEmail), from: resolvedFrom, status: customerResult.status ?? null, ok: customerResult.ok, messageId: customerResult.messageId || null, errorCode: customerResult.errorCode || null, quoteId });
+            if (!customerResult.ok) {
+              warnings.push(customerResult.errorCode || 'customer_email_failed');
+            }
+          } catch (err: any) {
+            warnings.push('customer_email_exception');
+          }
+        } else {
+          customerSkipReason = 'missing_resend_key';
         }
       }
     } else {
-      warnings.push('customer_email_skipped_move_forward_false');
-      logJson('EMAIL_SEND_CUSTOMER_SKIPPED', { reason: 'move_forward_false', quoteId: metaObj.quoteId });
-      customerSkipReason = 'move_forward_false';
+      customerSkipReason = moveForward ? 'resend_disabled' : 'move_forward_false';
+      logJson('EMAIL_SEND_SKIPPED', { reason: customerSkipReason, moveForward, hasResendKey, hasOfficeEmails, quoteId });
     }
-  } else {
-    if (!hasResendKey) warnings.push('missing_resend_key');
-    if (!hasOfficeEmails) warnings.push('missing_hq_emails');
-    warnings.push('email_skipped');
-    console.warn('RESEND_HQ_ERR', { reason: 'config', hasResendKey, hasOfficeEmails, diag });
-    customerSkipReason = 'resend_disabled';
   }
 
   logJson('EMAIL_OUTCOME_MASKED', {
@@ -831,23 +1028,20 @@ export default async function handler(req: any, res: any) {
     customerEmailAttempted,
     customerSkipReason: customerSkipReason || null,
     customerEmailMasked: maskEmail(customerEmail),
+    leadEvent,
+    quoteId,
   });
-
-  emailDiag.customerEmailAttempted = customerEmailAttempted;
-  emailDiag.customerSkipReason = customerSkipReason;
 
   // --- Respond ---
   res.status(200).json({
     ok: true,
     forwarded,
     emailed,
-    email: emailDiag,
-    diag: diagInfo,
     warnings: warnings.length ? warnings : undefined,
     buildId,
     runtimeHint,
     git: { sha: gitSha, ref: gitRef },
-    metaEcho: { quoteId: metaObj.quoteId, source: metaObj.source },
+    metaEcho: { quoteId, source: metaObj.source, leadEvent },
   });
 }
 
