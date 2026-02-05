@@ -581,7 +581,7 @@ export const ChatInterface: React.FC = () => {
         { label: '600 gal', value: '600' },
         { label: '1000 gal', value: '1000' },
         { label: '1600 gal', value: '1600' },
-        { label: '2500+ gal', value: '2500' },
+        { label: '2500+ gal', value: '2500+' },
         { label: 'Unsure', value: 'UNSURE' },
       ];
     }
@@ -639,6 +639,15 @@ export const ChatInterface: React.FC = () => {
     } else {
       meta.source = meta.source ?? 'greasy-agent';
     }
+    
+    // Store parsed gallons data for audit trail (Fase B)
+    const gallonsParsed = intakeRef.current.gallons ? parseGallonsInput(intakeRef.current.gallons) : null;
+    if (gallonsParsed) {
+      meta.gallons_raw = gallonsParsed.raw;
+      meta.gallons_num = gallonsParsed.num;
+      meta.gallons_plus = gallonsParsed.plus;
+      meta.gallons_parse_status = gallonsParsed.status;
+    }
     const payload = {
       intake: {
         ...intakeRef.current,
@@ -677,9 +686,16 @@ export const ChatInterface: React.FC = () => {
 
     const body = JSON.stringify(payload);
 
+    if (import.meta.env.DEV) {
+      console.log('LEAD_POST_START', { moveForward, serviceLabel, needsOfficeReview });
+    }
+
     if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
       const success = navigator.sendBeacon('/api/estimate', new Blob([body], { type: 'application/json' }));
       if (success) {
+        if (import.meta.env.DEV) {
+          console.log('LEAD_POST_RESULT', { method: 'sendBeacon', success: true });
+        }
         sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
         selectedServiceLabelRef.current = null;
         return;
@@ -693,12 +709,20 @@ export const ChatInterface: React.FC = () => {
         body,
       })
         .then(res => {
+          if (import.meta.env.DEV) {
+            console.log('LEAD_POST_RESULT', { method: 'fetch', status: res.status, ok: res.ok });
+          }
           if (res.ok) {
             sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
             selectedServiceLabelRef.current = null;
           }
         })
-        .catch(err => console.error('Failed to send estimate lead:', err));
+        .catch(err => {
+          if (import.meta.env.DEV) {
+            console.log('LEAD_POST_RESULT', { method: 'fetch', error: err.message });
+          }
+          console.error('Failed to send estimate lead:', err);
+        });
     } catch (err) {
       console.error('Failed to send estimate lead:', err);
     }
@@ -793,14 +817,24 @@ export const ChatInterface: React.FC = () => {
             gallons: gallonsParsed.num,
             additionalServices: parseAdditionalServices(intakeRef.current.additional_services),
           };
+          if (import.meta.env.DEV) {
+            console.log('ESTIMATE_INPUTS', estimationInputsFixed);
+          }
           const estimate = calculateServiceEstimate(estimationInputsFixed);
+          if (import.meta.env.DEV) {
+            console.log('ESTIMATE_OUTPUT', { minPrice: estimate.minPrice, maxPrice: estimate.maxPrice, totalPrice: estimate.totalPrice, tierUsed: estimate.tierUsed, manualQuote: estimate.manualQuote, officeReview: (estimate as any).officeReview });
+          }
         setCurrentEstimate(estimate);
         currentEstimateRef.current = estimate;
         const needsOfficeReview = !!(estimate.manualQuote || (estimate as any).officeReview || (estimate as any).ballpark);
+        
+        // Fase E: Show estimate once in chat (not in card)
+        const formatted = formatEstimateForChat(estimate);
+        if (formatted && formatted.trim()) {
+          pushModel(formatted);
+        }
+        
         if (!needsOfficeReview) {
-          const formatted = formatEstimateForChat(estimate);
-          if (formatted) {
-          }
           pushModel('Final pricing is confirmed after office verification.');
           if (!hasAskedMoveForwardRef.current && canShowMoveForwardPrompt(estimate)) {
             hasAskedMoveForwardRef.current = true;
@@ -1286,7 +1320,7 @@ useEffect(() => {
   const shellClass = `${isGlowing ? 'ring-2 ring-blue-400 shadow-lg' : ''} bg-white rounded-b-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col h-full min-h-0 transition-shadow transition-colors duration-300`;
   const activeEstimate = currentEstimateRef.current || currentEstimate;
   const pinnedSummary = buildPinnedSummary(activeEstimate);
-  const showEstimateCard = !!pinnedSummary;
+  const showEstimateCard = false; // Fase E: Disabled pinned card - estimate shown in chat only
 
   const shellContent = (
     <>
