@@ -79,7 +79,8 @@ const getRadiusBand = (distance: number): { label: string; bandMax: number } | n
 
 const priceForGrease4000ByMiles = (distanceMiles: number | null | undefined) => {
   if (distanceMiles == null || !Number.isFinite(distanceMiles)) return null;
-  const d = Math.max(0, Math.floor(distanceMiles));
+  const EPSILON = 1e-6;
+  const d = Math.max(0, Math.ceil(distanceMiles - EPSILON));
   const band = GREASE_4000_DISTANCE_PRICING.find(b => d >= b.min && d <= b.max);
   return band ? { ...band, distanceMiles: d } : null;
 };

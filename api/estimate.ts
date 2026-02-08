@@ -176,9 +176,16 @@ const sendResendEmail = async (params: { apiKey: string; from: string; to: strin
       return { ok: true, status, messageId };
     }
 
-    const errorText = await resp.text().catch(() => '');
-    const errorCode = errorText ? errorText.slice(0, 200) : `status-${status}`;
-    console.error('RESEND_SEND_ERROR', { toCount, subject, status, error: errorCode, quoteId });
+    const requestId = resp.headers.get('x-request-id') || resp.headers.get('x-resend-id') || undefined;
+    let message = '';
+    try {
+      const json = await resp.json();
+      if (typeof json?.message === 'string') message = json.message;
+    } catch {
+      message = '';
+    }
+    const errorCode = message ? message.slice(0, 200) : `status-${status}`;
+    console.error('RESEND_SEND_ERROR', { toCount, subject, status, message: message || undefined, requestId, quoteId });
     return { ok: false, status, errorCode };
   } catch (err: any) {
     const errorCode = (err?.message || 'resend-exception').slice(0, 120);
