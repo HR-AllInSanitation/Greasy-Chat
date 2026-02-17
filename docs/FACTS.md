@@ -100,6 +100,43 @@ En Vercel aparecen (al menos en “All Environments”) estas keys:
 
 - **Resend 403**: causa raíz no confirmada con evidencia runtime (ya hay logging más seguro).
 - Falta evidencia completa de runtime QA (DevTools payloads, curl geocode, logs hq-send, Sheets rows).
+- **P0 /api/geocode prod**: `https://greasy-chat.vercel.app/api/geocode` responde `{"verified":false,"error":"REQUEST_DENIED"}` (HTTP 200) → bloqueo para GREASE_4000.
+- **P0 /api/geocode custom domain**: `https://www.larestaurantservices.com/api/geocode` responde `{"verified":false,"error":"REQUEST_DENIED"}` (HTTP 200).
+- **Deployment Protection**: `https://greasy-chat-8vky9wj2t-roberto-coras-projects.vercel.app/api/geocode` devuelve 401 (SSO/Protection).
+
+---
+
+## 6.1) P0 Triage — Google Cloud (ordenado)
+
+1) **Billing activo** en el proyecto de Google Cloud usado por `GOOGLE_MAPS_API_KEY`.
+2) **Geocoding API habilitada** en el mismo proyecto.
+3) **Restricciones de key**:
+  - Si la key es de **Server-side**: permitir IPs de Vercel o quitar restricción para validar.
+  - Si la key está restringida por **HTTP referrer**: añadir `https://greasy-chat.vercel.app/*` y `https://www.larestaurantservices.com/*`.
+  - **API restrictions**: limitar a “Geocoding API” (y “Distance Matrix API” solo si se usa). Verificar que Geocoding esté en la lista permitida.
+
+---
+
+## 6.2) P0 Validación — pruebas exactas
+
+**Objetivo:** respuesta con `verified: true` y `lat/lng` válidos.
+
+**Curl esperado (custom domain):**
+- POST `https://greasy-chat.vercel.app/api/geocode`
+- Body: `{ "addressLine1":"123 Main St", "city":"Los Angeles", "state":"CA", "zip":"90001" }`
+- **Esperado:** HTTP 200 y JSON con `verified:true`, `lat`, `lng`, `normalizedAddress`.
+
+**Nota:** si se usa `www.larestaurantservices.com`, repetir mismo POST (debe funcionar igual).
+
+**Resultado actual (custom domain):** `REQUEST_DENIED` (HTTP 200).
+
+---
+
+## 6.3) Deployment Protection / SSO
+
+- **Preview URL (vercel.app)** protegida por SSO → 401 en `/api/geocode`.
+- Para pruebas públicas usar **custom domain** (`greasy-chat.vercel.app` o `www.larestaurantservices.com`).
+- Alternativa controlada: usar **bypass token** de Vercel para acceder al preview.
 
 ---
 
@@ -114,6 +151,54 @@ En Vercel aparecen (al menos en “All Environments”) estas keys:
 7) DevTools: Event B NO → 200 + UI NO + **no** email customer.
 8) Logs: `/api/hq-send` después de 120s (quoteId + firma OK + idempotencia).
 9) Sheets: 2 filas con mismo quoteId (A y B).
+
+---
+
+## 9) Estado actual, decisiones y next actions
+
+**Estado actual:** P0 en prod por `REQUEST_DENIED` en `/api/geocode` en dominio público. Preview protegido por SSO.
+
+**Decisiones:**
+- Validar /api/geocode **solo** vía dominios públicos (custom domain).
+- Priorizar fix de Google Cloud antes de continuar runtime QA (D).
+
+**Next actions (máx 10):**
+1) Confirmar **billing activo** en el proyecto de la key.
+2) Verificar **Geocoding API habilitada**.
+3) Revisar **restricciones de key** (server IP o HTTP referrer) y ajustar para dominios públicos.
+4) Reintentar **curl** en `https://greasy-chat.vercel.app/api/geocode` hasta obtener `verified:true`.
+5) Repetir curl en `https://www.larestaurantservices.com/api/geocode`.
+6) Si sigue 401 en preview, usar **bypass token** o evitar preview para QA.
+7) Continuar con D: DevTools Event A/B una vez P0 resuelto.
+
+---
+
+## 10) Evidencia P0 (curl)
+
+**Custom domain (www.larestaurantservices.com):**
+```
+HTTP/2 200 
+cache-control: public, max-age=0, must-revalidate
+content-type: application/json; charset=utf-8
+date: Mon, 16 Feb 2026 20:38:57 GMT
+etag: W/"2b-6XXvkMbWsGbIBDG61T3t0gencb4"
+server: Vercel
+strict-transport-security: max-age=63072000
+x-vercel-cache: MISS
+x-vercel-id: sfo1::iad1::79sxl-1771274337480-0e7af2e538f0
+content-length: 43
+
+{"verified":false,"error":"REQUEST_DENIED"}
+```
+
+---
+
+## 11) Estado P0/P1/P2
+
+- **P0 (Geocoding prod):** ✅ **PASS** (fixed 2026-02-17) — `/api/geocode` devuelve `verified:true` + lat/lng en ambos dominios tras force redeploy Vercel.
+- **P1 (Runtime QA automated):** ✅ **PASS** — `scripts/runtime_smoke_prod.ts` valida Event A + Event B YES/NO con HTTP 200 + quoteId correctos.
+- **P1 (Runtime QA manual):** ⚠️ **DEFERRED** — DevTools/Resend/Sheets pendiente de validación manual opcional.
+- **P2 (Repo hygiene):** ⚠️ En progreso — limpiando cambios locales en `components/ChatInterface.tsx` y este archivo.
 
 ---
 
