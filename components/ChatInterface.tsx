@@ -105,23 +105,13 @@ const getHandoffMessage = (
   language: Language | null = 'en',
 ): string => {
   const label = opts.serviceLabel ? ` for "${opts.serviceLabel}"` : '';
-  const labelEs = opts.serviceLabel ? ` para "${opts.serviceLabel}"` : '';
-  const urgencyLink = getHandoffLink(opts.serviceLabel);
-  const urgencyLine = urgencyLink ? ` If this is urgent, ${urgencyLink.label}.` : '';
-  const urgencyLineEs = urgencyLink ? ` Si es urgente, ${urgencyLink.label}.` : '';
   if (opts.moveForward === true) {
-    return language === 'es'
-      ? `Perfecto — enviamos esto a nuestra oficina${labelEs}. Te contactaremos a más tardar el próximo día hábil.${urgencyLineEs}`
-      : `Perfect — we sent this to our office${label}. You’ll hear back by the next business day.${urgencyLine}`;
+    return `Perfect — we’ll take it from here${label}. Our office will reach out soon.`;
   }
   if (opts.needsOfficeReview) {
-    return language === 'es'
-      ? `Gracias — solicitud recibida${labelEs}. Enviamos esto a nuestra oficina para una revisión rápida. Te contactaremos a más tardar el próximo día hábil.${urgencyLineEs}`
-      : `Thanks — request received${label}. We sent this to our office for a quick review. You’ll hear back by the next business day.${urgencyLine}`;
+    return `Thanks — request received${label}. This needs a quick office review, and we’ll contact you soon.`;
   }
-  return language === 'es'
-    ? `Gracias — solicitud recibida${labelEs}. Enviamos esto a nuestra oficina. Te contactaremos a más tardar el próximo día hábil.${urgencyLineEs}`
-    : `Thanks — request received${label}. We sent this to our office. You’ll hear back by the next business day.${urgencyLine}`;
+  return `Thanks — request received${label}. If you’d like to move forward, reply YES and our office will reach out to schedule.`;
 };
 
 const isNonEmptyValue = (v: unknown) => {
@@ -793,10 +783,7 @@ export const ChatInterface: React.FC = () => {
           console.log('LEAD_POST_RESULT', { method: 'sendBeacon', success: true, leadEvent });
         }
         postSuccess = true;
-        // Only show handoff for Event B
-        if (leadEvent === 'move_forward_decided') {
-          sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
-        }
+        sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
         selectedServiceLabelRef.current = null;
         return true;
       }
@@ -815,10 +802,7 @@ export const ChatInterface: React.FC = () => {
 
       if (res.ok) {
         postSuccess = true;
-        // Only show handoff for Event B
-        if (leadEvent === 'move_forward_decided') {
-          sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
-        }
+        sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
         selectedServiceLabelRef.current = null;
         return true;
       } else {
@@ -1036,19 +1020,16 @@ export const ChatInterface: React.FC = () => {
             console.log('ESTIMATE_INPUTS', estimationInputsFixed);
           }
           const estimate = calculateServiceEstimate(estimationInputsFixed);
+          const needsOfficeReview = !!(estimate.manualQuote || (estimate as any).officeReview || (estimate as any).ballpark);
           if (import.meta.env.DEV) {
             console.log('ESTIMATE_OUTPUT', { minPrice: estimate.minPrice, maxPrice: estimate.maxPrice, totalPrice: estimate.totalPrice, tierUsed: estimate.tierUsed, manualQuote: estimate.manualQuote, officeReview: (estimate as any).officeReview });
           }
-        setCurrentEstimate(estimate);
-        currentEstimateRef.current = estimate;
-        const needsOfficeReview = !!(estimate.manualQuote || (estimate as any).officeReview || (estimate as any).ballpark);
-        
-        // Fase E: Show estimate once in chat (not in card)
-        const formatted = formatEstimateForChat(estimate);
-        if (formatted && formatted.trim()) {
-          pushModel(formatted);
-        }
-        
+          setCurrentEstimate(estimate);
+          currentEstimateRef.current = estimate;
+          const formatted = formatEstimateForChat(estimate);
+          if (formatted && formatted.trim()) {
+            pushModel(formatted);
+          }
         // **NEW (Event A)**: Send estimate_created event immediately
         // This captures the lead even if the user closes the page or doesn't respond to Move Forward
         if (!hasSentLeadRef.current) {
@@ -1108,9 +1089,7 @@ export const ChatInterface: React.FC = () => {
 
     // BLOCKER #2 FIX: Never show numeric price for office review cases
     if (manualOrReview || ballpark) {
-      lines.push('Estimate pending office verification.');
-      lines.push('Office will confirm pricing based on exact location and distance.');
-      lines.push('We will confirm pricing by phone.');
+      return '';
     } else {
       if (estimate.baseServiceLabel && typeof estimate.baseServicePrice === 'number') {
         lines.push(`${estimate.baseServiceLabel}: $${toMoney(estimate.baseServicePrice)}`);
