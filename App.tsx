@@ -288,23 +288,17 @@ const App: React.FC = () => {
             
             <div className="flex flex-wrap gap-x-8 gap-y-4 pt-4 border-t border-white/5">
               <a href="https://www.allinsanitation.com" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 hover:text-white transition-colors">
-                <i className="fas fa-link text-[10px] text-amber-500"></i>
+                <i className="fas fa-truck text-[10px] text-amber-500"></i>
                 <span className="text-[10px] font-black uppercase tracking-widest">All In Sanitation</span>
               </a>
               <a href="https://portableluxuryrestrooms.com" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 hover:text-white transition-colors">
-                <i className="fas fa-link text-[10px] text-amber-500"></i>
+                <i className="fas fa-restroom text-[10px] text-amber-500"></i>
                 <span className="text-[10px] font-black uppercase tracking-widest">Luxury Flush</span>
               </a>
               <a href="https://www.saltedlightlycommissary.com" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 hover:text-white transition-colors">
-                <i className="fas fa-link text-[10px] text-amber-500"></i>
+                <i className="fas fa-utensils text-[10px] text-amber-500"></i>
                 <span className="text-[10px] font-black uppercase tracking-widest">Salted Lightly</span>
               </a>
-            </div>
-
-            <div className="footer-icons flex items-center justify-center md:justify-start gap-6 pt-6 border-t border-white/5">
-              <img src="/icons/pump-truck-icon.svg" alt="All in Sanitation" className="w-[50px] h-[50px]" />
-              <img src="/icons/restroom-icon.svg" alt="Luxury Flush" className="w-[50px] h-[50px]" />
-              <img src="/icons/food-truck-icon.svg" alt="Salted Lightly" className="w-[50px] h-[50px]" />
             </div>
           </div>
 

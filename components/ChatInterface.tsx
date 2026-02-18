@@ -160,6 +160,34 @@ const normalizeStateInput = (text: string): string | null => {
   return null;
 };
 
+const parseAddressInput = (input: string): Partial<IntakeState> | null => {
+  const cleaned = stripFillers(input);
+  if (!cleaned) return null;
+
+  const commaPattern = /^(?<address>.+?),\s*(?<city>[^,]+),\s*(?<state>[A-Za-z]{2}|California)\s*(?<zip>\d{5})?$/i;
+  const spacePattern = /^(?<address>\d+\s+.+?)\s+(?<city>[A-Za-z\s]+?)\s+(?<state>[A-Za-z]{2}|California)\s+(?<zip>\d{5})$/i;
+
+  const tryMatch = (pattern: RegExp) => {
+    const match = cleaned.match(pattern);
+    const groups = match?.groups;
+    if (!groups) return null;
+    const state = normalizeStateInput(groups.state || '');
+    if (!state) return null;
+    const address_line = groups.address?.trim();
+    const city = groups.city?.trim();
+    const zip = groups.zip?.trim();
+    if (!address_line || !city) return null;
+    return {
+      address_line,
+      city,
+      state,
+      zip: zip || undefined,
+    } as Partial<IntakeState>;
+  };
+
+  return tryMatch(commaPattern) || tryMatch(spacePattern);
+};
+
 const extractBusinessName = (input: string): string | null => {
   const cleaned = stripFillers(input);
   const match = cleaned.match(/^(?:it['’]?s|its)\s+(.+)/i);
@@ -186,8 +214,10 @@ const isValidFallback = (field: string, text: string): boolean => {
       return /^\d{5}$/.test(clean);
     case 'gallons': {
       if (isUnsureValue(clean)) return true;
-      if (!/^\d+$/.test(clean)) return false;
-      const n = Number(clean);
+      const cleaned = clean.replace(/[^\d+]/g, '');
+      const normalized = cleaned.endsWith('+') ? cleaned.slice(0, -1) : cleaned;
+      if (!/^\d+$/.test(normalized)) return false;
+      const n = Number(normalized);
       return n > 0 && n <= 20000;
     }
     case 'parking_distance': {
@@ -298,17 +328,16 @@ const tryParseMultiFieldContact = (text: string): MultiFieldContact => {
 
   const parseGallonsInput = (raw: string): { raw: string; num: number; plus: boolean; status: string } => {
     const t = raw.trim();
-  
+
     // Check for unsure markers
     if (isUnsureValue(t)) {
       return { raw: t, num: 0, plus: false, status: 'unsure' };
     }
-  
-    // Handle "2500+" or "2,500+" format
-    const hasPlusFlag = /\+\s*$/.test(t);
-    // Strip commas and plus signs for parsing
-    const cleaned = t.replace(/[,+\s]/g, '');
-  
+
+    // Handle "2500+" / "2,500+" / "2500+ gal" formats
+    const hasPlusFlag = /\+/.test(t);
+    const cleaned = t.replace(/[^\d]/g, '');
+
     // Try to parse as number
     if (/^\d+$/.test(cleaned)) {
       const num = Number(cleaned);
@@ -319,7 +348,7 @@ const tryParseMultiFieldContact = (text: string): MultiFieldContact => {
         return { raw: t, num, plus: hasPlusFlag, status: 'success' };
       }
     }
-  
+
     // Fallback: could not parse
     if (import.meta.env.DEV) {
       console.log('GALLONS_PARSE', { raw: t, num: 0, plus: false, status: 'parse_failed' });
@@ -1026,7 +1055,8 @@ export const ChatInterface: React.FC = () => {
           }
           setCurrentEstimate(estimate);
           currentEstimateRef.current = estimate;
-          const formatted = formatEstimateForChat(estimate);
+          const includeMoveForward = !needsOfficeReview && canShowMoveForwardPrompt(estimate);
+          const formatted = formatEstimateForChat(estimate, languageRef.current, includeMoveForward);
           if (formatted && formatted.trim()) {
             pushModel(formatted);
           }
@@ -1041,17 +1071,8 @@ export const ChatInterface: React.FC = () => {
           }, 100);
         }
         
-        if (!needsOfficeReview) {
-          pushModel(t('Final pricing is confirmed after office verification.', 'El precio final se confirma después de la verificación de la oficina.'));
-          if (!hasAskedMoveForwardRef.current && canShowMoveForwardPrompt(estimate)) {
-            hasAskedMoveForwardRef.current = true;
-            pushModel(
-              t(
-                'Do you want to move forward?\n\nIf yes, our office will reach out to you to set up the service.',
-                '¿Deseas continuar?\n\nSi respondes que sí, nuestra oficina te contactará para programar el servicio.',
-              ),
-            );
-          }
+        if (!hasAskedMoveForwardRef.current && !needsOfficeReview && canShowMoveForwardPrompt(estimate)) {
+          hasAskedMoveForwardRef.current = true;
         }
         hasSentEstimateRef.current = true;
       } else {
@@ -1078,35 +1099,58 @@ export const ChatInterface: React.FC = () => {
     return fence ? fence[1].trim() : t;
   };
 
-  const formatEstimateForChat = (estimate: EstimationResult | null) => {
-    if (!estimate) return '';
+  const buildEstimateLineItems = (estimate: EstimationResult, language: Language | null = 'en') => {
     const lines: string[] = [];
     const toMoney = (n: number | undefined | null) => typeof n === 'number' && !Number.isNaN(n) ? n.toFixed(2) : '0.00';
-    const manualOrReview = estimate.manualQuote === true || (estimate as any).officeReview === true;
-    const ballpark = (estimate as any).ballpark === true;
     const hasRange = typeof estimate.minPrice === 'number' && typeof estimate.maxPrice === 'number' && estimate.minPrice !== estimate.maxPrice;
     const total = typeof estimate.totalPrice === 'number' ? estimate.totalPrice : estimate.minPrice;
+    const isEs = language === 'es';
 
-    // BLOCKER #2 FIX: Never show numeric price for office review cases
-    if (manualOrReview || ballpark) {
-      return '';
-    } else {
-      if (estimate.baseServiceLabel && typeof estimate.baseServicePrice === 'number') {
-        lines.push(`${estimate.baseServiceLabel}: $${toMoney(estimate.baseServicePrice)}`);
-      }
-      (estimate.addOns || []).forEach(add => {
-        lines.push(`+ ${add.name.replace(/\b\w/g, c => c.toUpperCase())}: $${toMoney(add.price)}`);
-      });
-      const totalLine = hasRange
-        ? `Total estimate: $${toMoney(estimate.minPrice)}–$${toMoney(estimate.maxPrice)}`
-        : `Total estimate: $${toMoney(total)}`;
-      lines.push(totalLine);
-      if (Array.isArray(estimate.notes)) {
-        estimate.notes.filter(Boolean).forEach(note => lines.push(`- ${note}`));
-      }
+    if (estimate.baseServiceLabel && typeof estimate.baseServicePrice === 'number') {
+      const baseLabel = isEs ? `Servicio base (${estimate.baseServiceLabel})` : estimate.baseServiceLabel;
+      lines.push(`${baseLabel}: $${toMoney(estimate.baseServicePrice)}`);
+    }
+    (estimate.addOns || []).forEach(add => {
+      lines.push(`+ ${add.name.replace(/\b\w/g, c => c.toUpperCase())}: $${toMoney(add.price)}`);
+    });
+    const totalLabel = isEs ? 'Monto estimado' : 'Estimated total';
+    const totalLine = hasRange
+      ? `${totalLabel}: $${toMoney(estimate.minPrice)}–$${toMoney(estimate.maxPrice)}`
+      : `${totalLabel}: $${toMoney(total)}`;
+    lines.push(totalLine);
+    if (Array.isArray(estimate.notes)) {
+      estimate.notes.filter(Boolean).forEach(note => lines.push(`- ${note}`));
     }
 
-    return lines.join('\n');
+    return lines;
+  };
+
+  const formatEstimateForChat = (estimate: EstimationResult | null, language: Language | null = 'en', includeMoveForward = false) => {
+    if (!estimate) return '';
+    const manualOrReview = estimate.manualQuote === true || (estimate as any).officeReview === true;
+    const ballpark = (estimate as any).ballpark === true;
+    const isEs = language === 'es';
+
+    if (manualOrReview || ballpark) {
+      return isEs
+        ? 'Este servicio requiere revisión de oficina. Confirmaremos el precio por teléfono.'
+        : 'This request needs office review. We’ll confirm pricing by phone.';
+    }
+
+    const lines = buildEstimateLineItems(estimate, language);
+    const disclaimer = isEs
+      ? 'Este estimado es preliminar y está sujeto a verificación por la oficina. El precio final puede variar según condiciones en sitio, acceso, volumen real o servicios adicionales.'
+      : 'This estimate is preliminary and subject to office verification. Final pricing may vary based on on-site conditions, access, actual volume, or additional services.';
+    const question = isEs
+      ? '¿Deseas continuar? Si respondes que sí, nuestra oficina te contactará para programar el servicio.'
+      : 'Do you want to move forward? If yes, our office will reach out to schedule.';
+
+    return [
+      ...lines,
+      '',
+      disclaimer,
+      ...(includeMoveForward ? ['', question] : []),
+    ].join('\n');
   };
 
   const buildPinnedSummary = (estimate: EstimationResult | null) => {
@@ -1125,9 +1169,9 @@ export const ChatInterface: React.FC = () => {
       lines.push('Office will confirm pricing based on exact location.');
       lines.push('We will confirm pricing by phone.');
     } else {
-      const formatted = formatEstimateForChat(estimate);
-      if (formatted && formatted.trim()) {
-        lines.push(...formatted.split('\n'));
+      const formattedLines = buildEstimateLineItems(estimate, languageRef.current);
+      if (formattedLines.length) {
+        lines.push(...formattedLines);
       }
       if (!lines.length) {
         if (rangeText) lines.push(`Estimate: ${rangeText}`);
@@ -1213,6 +1257,19 @@ const processMessage = async (text: string) => {
     console.debug('isLoading -> false (interjection)');
     isProcessingRef.current = false;
     return;
+  }
+
+  if (expectedField && ['address_line', 'city', 'state', 'zip'].includes(expectedField)) {
+    const parsedAddress = parseAddressInput(sanitizedText);
+    if (parsedAddress && parsedAddress.address_line && parsedAddress.city && parsedAddress.state) {
+      pushModel(getAck(languageRef.current));
+      orchestrateIntake(parsedAddress);
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Parsed full address without interjection/Gemini');
+      return;
+    }
   }
 
   // Deterministic pre-processing for free-text fields before interjection handling or Gemini.
@@ -1337,9 +1394,11 @@ const processMessage = async (text: string) => {
       console.debug('Pre-accepted gallons unsure without Gemini');
       return;
     }
-    if (/^\d+$/.test(cleanText)) {
+    const parsedGallons = parseGallonsInput(cleanText);
+    if (parsedGallons.status === 'success') {
       pushModel(getAck(languageRef.current));
-      orchestrateIntake({ gallons: cleanText });
+      const normalizedGallons = parsedGallons.plus ? `${parsedGallons.num}+` : String(parsedGallons.num);
+      orchestrateIntake({ gallons: normalizedGallons });
       setIsLoading(false);
       setIsBotProcessing(false);
       isProcessingRef.current = false;

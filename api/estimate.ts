@@ -409,6 +409,7 @@ const sendCustomerEmail = async (payload: any, from: string): Promise<ResendResu
   const addressParts = [intake?.address_line, intake?.city, intake?.state, intake?.zip].filter(Boolean);
   const address = addressParts.join(', ');
   const disclaimer = 'This estimate is a preliminary range and is subject to verification by our operations team. Final pricing may vary based on on-site conditions and job requirements, including but not limited to additional hose length, actual waste volume, access constraints, blockages, hydro-jetting needs, or other services required to properly complete the work.';
+  const assistanceLine = 'For immediate assistance, call/text 818-698-4252 or email info@allinsanitation.com.';
   const cta = wantsToMoveForwardFlag(intake)
     ? 'Our office will reach out to you shortly to move forward.'
     : 'Reply to this email if you would like to move forward.';
@@ -421,6 +422,8 @@ const sendCustomerEmail = async (payload: any, from: string): Promise<ResendResu
     disclaimer,
     '',
     cta,
+    '',
+    assistanceLine,
   ].join('\n');
 
   const subject = 'Your Grease Trap Service Estimate';
@@ -480,6 +483,7 @@ const sendHqEmail = async (payload: any, toList: string[], from: string): Promis
   const addOns = addOnsRaw as { name: string; price: number }[];
   const unknownAddOns = Array.isArray(estimate?.unknownAddOns) ? estimate.unknownAddOns : [];
   const manualQuoteFlag = manualQuote || (estimate as any)?.manual_quote === true;
+  const assistanceLine = 'For immediate assistance, call/text 818-698-4252 or email info@allinsanitation.com.';
   const subject = isReady
     ? `🔥 NEW LEAD – Ready to Move Forward – ${intake?.business_name || 'Unknown'}`
     : `New Estimate Request – ${intake?.business_name || 'Unknown'}`;
@@ -518,7 +522,7 @@ const sendHqEmail = async (payload: any, toList: string[], from: string): Promis
     `- Email: ${contact?.email || 'N/A'}`,
     '',
     `Move Forward Intent: ${isReady ? 'Yes' : 'No/Unspecified'}`,
-    officePhone ? `Urgent? Call or text ${officePhone} for immediate assistance.` : '',
+    assistanceLine,
   ].join('\n');
 
   console.log('HQ_EMAIL_PREP', { toCount: to.length, subject, quoteId: meta?.quoteId, officePhone: officePhone || undefined });
@@ -834,51 +838,6 @@ export default async function handler(req: any, res: any) {
     webhookBodyPreview: undefined as string | undefined,
     sheetPayloadKeyCounts,
   };
-
-  // --- Forward to Apps Script (Google Sheet) ---
-  if (forwardToSheet) {
-    try {
-      const ac = new AbortController();
-      const timeout = setTimeout(() => ac.abort(), 8000);
-      diagInfo.webhookAttempted = true;
-      const resp = await fetch(officeWebhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          intake,
-          contact: normalizedContact,
-          estimate,
-          meta: metaObj,
-          source: sheetPayload.source,
-          createdAt: sheetPayload.createdAt,
-          serviceLabel: sheetPayload.serviceLabel,
-          serviceType: sheetPayload.serviceType,
-          distanceMiles: sheetPayload.distanceMiles,
-          distanceSource: sheetPayload.distanceSource,
-          tierUsed: sheetPayload.tierUsed,
-          radiusBand: sheetPayload.radiusBand,
-          sheetHeaders: SHEET_HEADERS,
-          sheetRow,
-        }),
-        signal: ac.signal,
-      });
-      clearTimeout(timeout);
-      diagInfo.webhookStatus = resp.status;
-      const respText = await resp.text().catch(() => '');
-      diagInfo.webhookBodyPreview = respText.slice(0, 200);
-      diagInfo.webhookOk = resp.ok;
-      console.log('SHEETS_WEBHOOK_RESP', { status: resp.status, ok: resp.ok, body: diagInfo.webhookBodyPreview });
-      if (!resp.ok) {
-        warnings.push(`sheet_forward_failed:${resp.status}`);
-      } else {
-        forwarded = true;
-      }
-    } catch (err: any) {
-      warnings.push('sheet_forward_failed:exception');
-    }
-  } else {
-    warnings.push('sheet_forward_skipped');
-  }
 
   // --- Forward to Apps Script (Google Sheet) ---
   if (forwardToSheet) {
