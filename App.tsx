@@ -286,19 +286,22 @@ const App: React.FC = () => {
               LA Restaurant Services exists to help restaurants open, operate, and grow without interruptions by handling critical sanitation, waste, and compliance needs before problems arise. We partner with owners early to deliver reliable grease trap, UCO, waste, and restroom solutions that protect their business and keep them focused on serving customers.
             </p>
             
-            <div className="flex flex-wrap gap-x-8 gap-y-4 pt-4 border-t border-white/5">
-              <a href="https://www.allinsanitation.com" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 hover:text-white transition-colors">
-                <i className="fas fa-truck text-[10px] text-amber-500"></i>
-                <span className="text-[10px] font-black uppercase tracking-widest">All In Sanitation</span>
-              </a>
-              <a href="https://portableluxuryrestrooms.com" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 hover:text-white transition-colors">
-                <i className="fas fa-restroom text-[10px] text-amber-500"></i>
-                <span className="text-[10px] font-black uppercase tracking-widest">Luxury Flush</span>
-              </a>
-              <a href="https://www.saltedlightlycommissary.com" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 hover:text-white transition-colors">
-                <i className="fas fa-utensils text-[10px] text-amber-500"></i>
-                <span className="text-[10px] font-black uppercase tracking-widest">Salted Lightly</span>
-              </a>
+            <div className="pt-6 border-t border-white/5">
+              <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-amber-500 mb-4">Partners</h4>
+              <div className="flex flex-wrap gap-x-8 gap-y-4">
+                <a href="https://www.allinsanitation.com" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 hover:text-white transition-colors">
+                  <i className="fas fa-truck text-base text-amber-500"></i>
+                  <span className="text-[13px] font-black uppercase tracking-widest">All In Sanitation</span>
+                </a>
+                <a href="https://portableluxuryrestrooms.com" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 hover:text-white transition-colors">
+                  <i className="fas fa-restroom text-base text-amber-500"></i>
+                  <span className="text-[13px] font-black uppercase tracking-widest">Luxury Flush</span>
+                </a>
+                <a href="https://www.saltedlightlycommissary.com" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 hover:text-white transition-colors">
+                  <i className="fas fa-utensils text-base text-amber-500"></i>
+                  <span className="text-[13px] font-black uppercase tracking-widest">Salted Lightly</span>
+                </a>
+              </div>
             </div>
           </div>
 
