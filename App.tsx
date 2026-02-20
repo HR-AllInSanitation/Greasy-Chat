@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChatInterface } from './components/ChatInterface';
+import { FAQSection } from './components/FAQSection';
+import { faqs } from './data/faqData';
 
 type LegalType = 'privacy' | 'compliance' | 'terms' | null;
 
@@ -151,14 +153,6 @@ const App: React.FC = () => {
           <div className="grid lg:grid-cols-[1fr,420px] gap-12 items-start">
             <div className="space-y-16">
               <div className="space-y-10">
-                <div className="inline-flex items-center gap-3 bg-amber-50 text-amber-700 px-6 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest border border-amber-100">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                  </span>
-                  Regional Dispatch Active
-                </div>
-                
                 <h2 className="text-6xl lg:text-8xl font-black text-slate-950 leading-[0.9] tracking-tighter">
                   Opening a New Restaurant <br/>
                   in Los Angeles? 
@@ -245,6 +239,11 @@ const App: React.FC = () => {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* FAQ Section */}
+              <div id="faq" className="scroll-mt-32">
+                <FAQSection faqs={faqs} />
               </div>
 
             </div>
