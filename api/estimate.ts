@@ -239,6 +239,16 @@ const isTruthyFlag = (value: any): boolean => {
   return false;
 };
 
+const isFalseyFlag = (value: any): boolean => {
+  if (value === false) return true;
+  if (typeof value === 'string') {
+    const trimmed = value.trim().toLowerCase();
+    return trimmed === 'false' || trimmed === 'no' || trimmed === '0' || trimmed === 'n';
+  }
+  if (typeof value === 'number') return value === 0;
+  return false;
+};
+
 const wantsToMoveForwardFlag = (intake: any): boolean => {
   if (!intake || typeof intake !== 'object') return false;
   return isTruthyFlag(intake.wants_to_move_forward) || isTruthyFlag(intake.wantsToMoveForward);
@@ -299,7 +309,8 @@ const buildSheetRow = (intake: any, contact: any, estimate: any, meta: any) => {
   const contactName = contact?.name || '';
   const contactEmail = contact?.email || '';
   const contactPhone = contact?.phone || '';
-  const needsUco = intake?.needs_uco === true ? 'TRUE' : intake?.needs_uco === false ? 'FALSE' : '';
+  const needsUcoRaw = intake?.needs_uco ?? (intake as any)?.needsUco;
+  const needsUco = isTruthyFlag(needsUcoRaw) ? 'TRUE' : isFalseyFlag(needsUcoRaw) ? 'FALSE' : '';
   const wantsMoveForwardFlagged = wantsToMoveForwardFlag(intake);
   const wantsMoveForward = wantsMoveForwardFlagged ? 'TRUE' : intake?.wants_to_move_forward ?? intake?.wantsToMoveForward ?? '';
 

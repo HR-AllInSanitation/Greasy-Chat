@@ -25,3 +25,5 @@ dist-ssr
 
 # Test artifacts
 test-results/
+.vercel
+.env*.local

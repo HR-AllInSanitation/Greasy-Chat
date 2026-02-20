@@ -51,6 +51,8 @@ type IntakeState = {
   parking_distance: string;
   last_service_months: string;
   additional_services: string;
+  last_cleaned_at: string;
+  needs_uco: string;
   wants_to_move_forward: boolean | 'UNSURE';
 };
 
@@ -228,6 +230,13 @@ const isValidFallback = (field: string, text: string): boolean => {
       return /^\d+$/.test(clean);
     case 'additional_services':
       return clean.length > 0 && !isInterjection(clean);
+    case 'last_cleaned_at':
+      return clean.length > 0 && !isInterjection(clean);
+    case 'needs_uco': {
+      const lower = clean.toLowerCase();
+      if (isUnsureValue(clean)) return true;
+      return ['yes', 'no', 'y', 'n', 'true', 'false'].includes(lower);
+    }
     case 'contact_phone': {
       const digits = clean.replace(/\D/g, '');
       return digits.length >= 10;
@@ -489,6 +498,8 @@ export const ChatInterface: React.FC = () => {
     parking_distance: '',
     last_service_months: '',
     additional_services: '',
+    last_cleaned_at: '',
+    needs_uco: '',
     wants_to_move_forward: 'UNSURE',
   });
 
@@ -581,6 +592,8 @@ export const ChatInterface: React.FC = () => {
     if (!obj.parking_distance.trim()) return 'parking_distance';
     if (!obj.last_service_months.trim()) return 'last_service_months';
     if (!obj.additional_services.trim()) return 'additional_services';
+    if (!obj.last_cleaned_at.trim()) return 'last_cleaned_at';
+    if (!obj.needs_uco.trim()) return 'needs_uco';
     return null;
   };
 
@@ -614,6 +627,10 @@ export const ChatInterface: React.FC = () => {
         return es ? '¿Cuántos meses desde su último servicio?' : 'How many months since your last service?';
       case 'additional_services':
         return es ? '¿Algún servicio adicional?' : 'Any additional services?';
+      case 'last_cleaned_at':
+        return es ? '¿Cuándo fue la última limpieza?' : 'When was the system last cleaned?';
+      case 'needs_uco':
+        return es ? '¿Necesita reciclaje de aceite usado (UCO)?' : 'Do you need used cooking oil (UCO) recycling?';
       default:
         return '';
     }
@@ -684,6 +701,8 @@ export const ChatInterface: React.FC = () => {
     }
     if (nextField === 'last_service_months') return [{ label: '0–3 mo', value: '3' }, { label: '4–6 mo', value: '6' }, { label: '7–12 mo', value: '12' }, { label: '13+ mo', value: '24' }];
     if (nextField === 'parking_distance') return ['50', '100', '150', '200', 'Unsure'];
+    if (nextField === 'last_cleaned_at') return ['< 1 year', '1–2 years', '2–5 years', '> 5 years', 'Never', 'Unsure'];
+    if (nextField === 'needs_uco') return ['Yes', 'No', 'Unsure'];
     if (canShowMoveForwardPrompt(currentEstimate, intake, contact) && intake.wants_to_move_forward === 'UNSURE') return ['Yes, move forward', 'Not right now'];
     return [];
   };
@@ -1430,6 +1449,44 @@ const processMessage = async (text: string) => {
       isProcessingRef.current = false;
       return;
     }
+  } else if (expectedField === 'last_cleaned_at') {
+    if (isValidFallback('last_cleaned_at', cleanText)) {
+      pushModel(getAck(languageRef.current));
+      orchestrateIntake({ last_cleaned_at: cleanText });
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted last_cleaned_at without Gemini');
+      return;
+    }
+    if (expectedQuestion) {
+      pushModel(t(`Got it — quick check: ${expectedQuestion}`, `Entendido — confirmo: ${expectedQuestion}`));
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      return;
+    }
+  } else if (expectedField === 'needs_uco') {
+    const lower = cleanText.trim().toLowerCase();
+    const normalized = isUnsureValue(cleanText)
+      ? 'UNSURE'
+      : (['yes', 'y', 'true'].includes(lower) ? 'YES' : ['no', 'n', 'false'].includes(lower) ? 'NO' : '');
+    if (normalized) {
+      pushModel(getAck(languageRef.current));
+      orchestrateIntake({ needs_uco: normalized });
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      console.debug('Pre-accepted needs_uco without Gemini');
+      return;
+    }
+    if (expectedQuestion) {
+      pushModel(t(`Got it — quick check: ${expectedQuestion}`, `Entendido — confirmo: ${expectedQuestion}`));
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      return;
+    }
   } else if (expectedContactField === 'contact_phone') {
     const digits = cleanText.replace(/\D/g, '');
     if (digits.length >= 10) {
@@ -1471,7 +1528,7 @@ const processMessage = async (text: string) => {
     aiJson = {};
     if (!geminiDisabledRef.current) {
       try {
-        const systemPrompt = `You are an intake interpreter. You must ONLY return valid JSON (no prose, no questions, no markdown) matching this schema and using snake_case keys. Use null for unknown.\n\nSchema:\n{\n  \"business_name\": string | null,\n  \"address_line\": string | null,\n  \"city\": string | null,\n  \"state\": string | null,\n  \"zip\": string | null,\n  \"system_type\": string | null,\n  \"gallons\": string | null,\n  \"parking_distance\": string | null,\n  \"last_service_months\": string | null,\n  \"additional_services\": string | null,\n  \"contact_name\": string | null,\n  \"contact_phone\": string | null,\n  \"contact_email\": string | null\n}`;
+        const systemPrompt = `You are an intake interpreter. You must ONLY return valid JSON (no prose, no questions, no markdown) matching this schema and using snake_case keys. Use null for unknown.\n\nSchema:\n{\n  \"business_name\": string | null,\n  \"address_line\": string | null,\n  \"city\": string | null,\n  \"state\": string | null,\n  \"zip\": string | null,\n  \"system_type\": string | null,\n  \"gallons\": string | null,\n  \"parking_distance\": string | null,\n  \"last_service_months\": string | null,\n  \"additional_services\": string | null,\n  \"last_cleaned_at\": string | null,\n  \"needs_uco\": string | null,\n  \"contact_name\": string | null,\n  \"contact_phone\": string | null,\n  \"contact_email\": string | null\n}`;
         const resp = await Promise.race([
           fetch('/api/gemini', {
             method: 'POST',

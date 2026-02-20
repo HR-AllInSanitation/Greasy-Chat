@@ -1,0 +1,243 @@
+/**
+ * Greasy Agent – Lead Webhook (v1.5)
+ * Receives completed chat estimates and appends them to Google Sheets.
+ * - Ensures headers exist (adds missing headers to the right, never breaks old columns)
+ * - Accepts camelCase + snake_case variants
+ */
+
+const SHEET_NAME = "Greasy Agent – Leads"; // If not found, uses active sheet.
+
+console.log(JSON.stringify(data));  // Esto imprimirá todo el contenido de 'data' en los logs de Apps Script.
+
+const HEADERS = [
+  "Timestamp",
+  "Business Name",
+  "Address",
+  "City",
+  "Gallons",
+  "Estimate Amount",
+  "Ballpark",
+  "Contact Name",
+  "Contact Email",
+  "Contact Phone",
+  "Source",
+  "Created At",
+  "State",
+  "Zip",
+  "System Type",
+  "Service Type",
+  "Parking Distance",
+  "Last Service Months",
+  "Additional Services",
+  "Capacity Tier",
+  "Capacity Unsure",
+  "Manual Quote",
+  "Tier Used",
+  "Radius Band",
+  "Distance Miles",
+  "Distance Source",
+  "Add-ons",
+  "Last Cleaned",
+  "Needs UCO",
+  "Wants To Move Forward",
+];
+
+function doPost(e) {
+  try {
+    if (!e || !e.postData || !e.postData.contents) {
+      throw new Error("No POST body received");
+    }
+
+    const data = safeJsonParse_(e.postData.contents);
+    const intake = data.intake || data.Intake || {};
+    const contact = data.contact || data.Contact || {};
+    const estimate = data.estimate || data.Estimate || {};
+
+    // Minimal validation (don’t block if some objects are empty; just log)
+    if (!data) throw new Error("Invalid JSON body");
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = (SHEET_NAME && ss.getSheetByName(SHEET_NAME)) || ss.getActiveSheet();
+
+    ensureHeaders_(sheet, HEADERS);
+
+    // CRITICAL: Use pre-built sheetRow from backend if available
+    const row = data.sheetRow || buildRow_({ data, intake, contact, estimate });
+
+    // Guarantee row length exactly matches headers length
+    const fixedRow = row.slice(0, HEADERS.length);
+    while (fixedRow.length < HEADERS.length) fixedRow.push("");
+
+    sheet.appendRow(fixedRow);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: true, columns: HEADERS.length }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    console.error(err);
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: String(err && err.message ? err.message : err) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/* ---------------- helpers ---------------- */
+
+function safeJsonParse_(raw) {
+  try {
+    return JSON.parse(raw || "{}");
+  } catch (e) {
+    // Last resort: strip code fences if someone sent ```json ... ```
+    const s = String(raw || "");
+    const stripped = s
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+    return JSON.parse(stripped || "{}");
+  }
+}
+
+function pick_(obj, keys, fallback) {
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    if (obj && obj[k] !== undefined && obj[k] !== null && obj[k] !== "") return obj[k];
+  }
+  return fallback;
+}
+
+function yesNoUnsure_(v) {
+  if (v === true) return "YES";
+  if (v === false) return "NO";
+  if (v === "YES" || v === "NO" || v === "UNSURE") return v;
+  return "UNSURE";
+}
+
+function toMoney_(n) {
+  if (n === null || n === undefined || n === "") return "";
+  var num = Number(n);
+  if (isNaN(num)) return String(n);
+  return "$" + num.toFixed(2);
+}
+
+function estimateAmount_(estimate) {
+  // 1) explicit amount
+  const amount = pick_(estimate, ["amount"], null);
+  if (amount !== null && amount !== undefined && amount !== "") return toMoney_(amount);
+
+  // 2) min/max range
+  const minP = pick_(estimate, ["minPrice", "min_price"], null);
+  const maxP = pick_(estimate, ["maxPrice", "max_price"], null);
+
+  if (minP !== null && maxP !== null && minP !== "" && maxP !== "") {
+    // keep range readable
+    const a = isNaN(Number(minP)) ? String(minP) : toMoney_(minP);
+    const b = isNaN(Number(maxP)) ? String(maxP) : toMoney_(maxP);
+    return a + " – " + b;
+  }
+
+  return "";
+}
+
+function isBallpark_(estimate) {
+  // treat officeReview/manualQuote/ballpark as “ballpark”
+  const ballpark = pick_(estimate, ["ballpark"], null);
+  const officeReview = pick_(estimate, ["officeReview", "office_review"], null);
+  const manualQuote = pick_(estimate, ["manualQuote", "manual_quote"], null);
+
+  const flag = (ballpark === true) || (officeReview === true) || (manualQuote === true);
+  return flag ? "YES" : "NO";
+}
+
+function buildRow_(ctx) {
+  const data = ctx.data || {};
+  const intake = ctx.intake || {};
+  const contact = ctx.contact || {};
+  const estimate = ctx.estimate || {};
+  const breakdown = pick_(estimate, ["breakdown"], {}) || {};
+
+  const addOns = pick_(intake, ["add_ons", "addOns"], "");
+  const addOnsStr = Array.isArray(addOns) ? JSON.stringify(addOns) : (addOns || "");
+
+  const manualQuoteFlag = pick_(estimate, ["manualQuote", "manual_quote"], null);
+  const manualQuoteYN =
+    manualQuoteFlag === true ? "YES" :
+    manualQuoteFlag === false ? "NO" : "";
+
+  // Prefer estimate/meta for these (not intake)
+  const tierUsed = pick_(estimate, ["tierUsed", "tier_used"], pick_(data, ["tierUsed", "tier_used"], ""));
+  const radiusBand = pick_(estimate, ["radiusBand", "radius_band"], pick_(data, ["radiusBand", "radius_band"], ""));
+
+  // Distance: prefer estimate.distance, then breakdown.milesFromHQ
+  const distanceMiles =
+    pick_(estimate, ["distanceMiles", "distance_miles", "distance"], null) ??
+    pick_(breakdown, ["milesFromHQ", "miles_from_hq"], "");
+
+  const distanceSource =
+    pick_(estimate, ["distanceSource", "distance_source"], pick_(data, ["distanceSource", "distance_source"], ""));
+
+  // Service Type: prefer explicit serviceLabel, then baseServiceLabel
+  const serviceType =
+    pick_(data, ["serviceLabel", "service_label"], null) ||
+    pick_(estimate, ["serviceLabel", "service_label", "baseServiceLabel", "base_service_label"], "") ||
+    pick_(intake, ["serviceType", "service_type"], "");
+
+  return [
+    new Date(), // Timestamp
+    pick_(intake, ["business_name", "businessName"], ""), // Business Name
+    pick_(intake, ["address_line", "addressLine"], ""), // Address
+    pick_(intake, ["city"], ""), // City
+    pick_(intake, ["gallons"], ""), // Gallons
+    estimateAmount_(estimate), // Estimate Amount
+    isBallpark_(estimate), // Ballpark
+    pick_(contact, ["contact_name", "name", "contactName"], ""), // Contact Name
+    pick_(contact, ["contact_email", "email", "contactEmail"], ""), // Contact Email
+    pick_(contact, ["contact_phone", "phone", "contactPhone"], ""), // Contact Phone
+    pick_(data, ["source"], ""), // Source
+    pick_(data, ["createdAt", "created_at"], ""), // Created At
+    pick_(intake, ["state"], ""), // State
+    pick_(intake, ["zip"], ""), // Zip
+    pick_(intake, ["system_type", "systemType"], ""), // System Type
+    serviceType, // Service Type
+    pick_(intake, ["parking_distance", "parkingDistance"], ""), // Parking Distance
+    pick_(intake, ["last_service_months", "lastServiceMonths"], ""), // Last Service Months
+    pick_(intake, ["additional_services", "additionalServices"], ""), // Additional Services
+    pick_(intake, ["capacity_tier", "capacityTier"], ""), // Capacity Tier
+    pick_(intake, ["capacity_unsure", "capacityUnsure"], null) === true ? "YES"
+      : pick_(intake, ["capacity_unsure", "capacityUnsure"], null) === false ? "NO"
+      : "", // Capacity Unsure
+    manualQuoteYN, // Manual Quote
+    tierUsed, // Tier Used
+    radiusBand, // Radius Band
+    distanceMiles === null || distanceMiles === undefined ? "" : String(distanceMiles), // Distance Miles
+    distanceSource, // Distance Source
+    addOnsStr, // Add-ons
+    pick_(intake, ["last_cleaned_at", "lastCleanedAt"], ""), // Last Cleaned
+    yesNoUnsure_(pick_(intake, ["needs_uco", "needsUco"], null)), // Needs UCO
+    yesNoUnsure_(pick_(intake, ["wants_to_move_forward", "wantsToMoveForward"], null)), // Wants To Move Forward
+  ];
+}
+
+function ensureHeaders_(sheet, expectedHeaders) {
+  const lastCol = Math.max(1, sheet.getLastColumn());
+  const range = sheet.getRange(1, 1, 1, lastCol);
+  const values = range.getValues();
+  const existing = (values && values[0]) ? values[0].map(String) : [];
+
+  const isBlank = existing.every((h) => !h || String(h).trim() === "");
+  if (sheet.getLastRow() === 0 || isBlank) {
+    sheet.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders]);
+    return;
+  }
+
+  // Append missing headers to the right
+  let col = existing.length;
+  for (var i = 0; i < expectedHeaders.length; i++) {
+    var h = expectedHeaders[i];
+    if (existing.indexOf(h) === -1) {
+      col += 1;
+      sheet.getRange(1, col).setValue(h);
+      existing.push(h);
+    }
+  }
+}
