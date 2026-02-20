@@ -243,7 +243,22 @@ const App: React.FC = () => {
 
               {/* FAQ Section */}
               <div id="faq" className="scroll-mt-32">
-                <FAQSection faqs={faqs} />
+                <FAQSection 
+                  faqs={faqs} 
+                  onCTAClick={(message) => {
+                    // Auto-fill the chat input with the contextual message
+                    const textarea = document.querySelector('#estimator textarea') as HTMLTextAreaElement;
+                    if (textarea) {
+                      textarea.value = message;
+                      textarea.focus();
+                      // Auto-submit the form
+                      const form = textarea.closest('form');
+                      if (form) {
+                        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                      }
+                    }
+                  }}
+                />
               </div>
 
             </div>

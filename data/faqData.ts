@@ -2,6 +2,7 @@ export interface FAQ {
   category: string;
   question: string;
   answer: string;
+  ctaMessage?: string;
 }
 
 export const faqs: FAQ[] = [
@@ -9,6 +10,7 @@ export const faqs: FAQ[] = [
   {
     category: "Grease Trap",
     question: "How often should I clean my grease trap?",
+    ctaMessage: "I need help setting up a grease trap cleaning schedule for my restaurant.",
     answer: `
       <p>The frequency depends on your kitchen size and volume. <strong>LA County Health Department</strong> requires cleaning when the grease trap reaches <strong>25% of its capacity</strong> with FOG (fats, oils, grease).</p>
       <p><strong>Recommended frequencies:</strong></p>
@@ -25,6 +27,7 @@ export const faqs: FAQ[] = [
   {
     category: "Grease Trap",
     question: "What happens if I don't comply with Health Department regulations?",
+    ctaMessage: "I need help ensuring my restaurant is 100% compliant with LA County FOG regulations.",
     answer: `
       <p>Non-compliance with LA County's <strong>FOG Control Program</strong> can result in severe consequences:</p>
       <ul class="list-disc ml-6 space-y-1">
@@ -40,6 +43,7 @@ export const faqs: FAQ[] = [
   {
     category: "Grease Trap",
     question: "What documentation must I maintain for inspections?",
+    ctaMessage: "I want to ensure I have all the required documentation for Health Department inspections.",
     answer: `
       <p>To pass <strong>LA County Health Department</strong> inspections, you must maintain:</p>
       <ul class="list-disc ml-6 space-y-1">
@@ -58,6 +62,7 @@ export const faqs: FAQ[] = [
   {
     category: "Used Cooking Oil",
     question: "Is it mandatory to recycle used cooking oil in California?",
+    ctaMessage: "I'd like to schedule used cooking oil pickup and start earning money from our oil.",
     answer: `
       <p>While California doesn't have a law that <em>requires</em> UCO (used cooking oil) recycling, there are strong incentives and regulations:</p>
       <ul class="list-disc ml-6 space-y-1">
@@ -72,6 +77,7 @@ export const faqs: FAQ[] = [
   {
     category: "Used Cooking Oil",
     question: "How do I prevent used cooking oil theft? (UCO theft)",
+    ctaMessage: "I need lockable containers and secure storage solutions to prevent UCO theft.",
     answer: `
       <p>UCO theft is a real problem in Southern California due to the oil's value for biodiesel:</p>
       <p><strong>Prevention measures:</strong></p>
@@ -92,6 +98,7 @@ export const faqs: FAQ[] = [
   {
     category: "Compliance",
     question: "What is LA County's FOG Control Program?",
+    ctaMessage: "I need help understanding and complying with the FOG Control Program requirements.",
     answer: `
       <p>The <strong>Fats, Oils, and Grease (FOG) Control Program</strong> is a mandatory program by LA County Sanitation Districts designed to prevent sewer overflows and protect the municipal sewage system.</p>
       <p><strong>Main requirements:</strong></p>
@@ -109,6 +116,7 @@ export const faqs: FAQ[] = [
   {
     category: "Compliance",
     question: "Do I need special permits for outdoor dining with restroom trailers?",
+    ctaMessage: "I need an ADA-compliant restroom trailer for our outdoor dining area.",
     answer: `
       <p>For <strong>permanent outdoor dining</strong> in Los Angeles, you need specific permits:</p>
       <p><strong>LADOT Al Fresco Permit (if using sidewalk/parklet):</strong></p>
@@ -132,6 +140,7 @@ export const faqs: FAQ[] = [
   {
     category: "Best Practices",
     question: "How can I extend the time between grease trap cleanings?",
+    ctaMessage: "I'd like a free BMP consultation to reduce our grease trap maintenance costs.",
     answer: `
       <p>Implementing <strong>Best Management Practices (BMPs)</strong> can reduce cleaning frequency:</p>
       <ul class="list-disc ml-6 space-y-1">
@@ -149,6 +158,7 @@ export const faqs: FAQ[] = [
   {
     category: "Best Practices",
     question: "When do I need hydro jetting vs. just grease trap cleaning?",
+    ctaMessage: "I need a camera inspection to diagnose our drain issues and find the right solution.",
     answer: `
       <p><strong>Hydro jetting</strong> is needed when the problem is in your <em>main sewer lines</em>, not just the grease trap:</p>
       <p><strong>Signs you need jetting:</strong></p>
@@ -167,6 +177,7 @@ export const faqs: FAQ[] = [
   {
     category: "Best Practices",
     question: "How do I choose the right grease trap size for my restaurant?",
+    ctaMessage: "I'd like a free consultation to determine if our grease trap is correctly sized.",
     answer: `
       <p><strong>Correct sizing</strong> is critical for compliance and operational efficiency:</p>
       <p><strong>California Plumbing Code requires:</strong></p>

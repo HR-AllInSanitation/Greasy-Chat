@@ -4,23 +4,80 @@ export interface FAQItem {
   question: string;
   answer: string;
   category?: string;
+  ctaMessage?: string;
 }
 
 interface FAQSectionProps {
   title?: string;
   faqs: FAQItem[];
   className?: string;
+  onCTAClick?: (message: string) => void;
 }
 
 export const FAQSection: React.FC<FAQSectionProps> = ({ 
   title = "Frequently Asked Questions", 
   faqs,
-  className = ""
+  className = "",
+  onCTAClick
 }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const toggleFAQ = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
+  };
+
+  // Play sci-fi blip sound
+  const playSound = () => {
+    if (typeof window === 'undefined' || !window.AudioContext) return;
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.type = 'triangle';
+      osc.frequency.value = 1200;
+      
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(2000, ctx.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
+      
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+      
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (err) {}
+  };
+
+  const handleCTAClick = (e: React.MouseEvent, ctaMessage?: string) => {
+    e.preventDefault();
+    playSound();
+    
+    // Scroll to estimator
+    const estimator = document.querySelector('#estimator');
+    if (estimator) {
+      estimator.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    // Send message after short delay
+    if (ctaMessage && onCTAClick) {
+      setTimeout(() => {
+        onCTAClick(ctaMessage);
+      }, 800);
+    }
+  };
+
+  // Intercept CTA link clicks in FAQ answers
+  const handleAnswerClick = (e: React.MouseEvent, faq: FAQItem) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'A' && target.getAttribute('href') === '#estimator') {
+      handleCTAClick(e, faq.ctaMessage);
+    }
   };
 
   return (
@@ -62,6 +119,7 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
                 <div 
                   className="text-slate-700 leading-relaxed space-y-3 text-sm lg:text-base prose prose-sm max-w-none"
                   dangerouslySetInnerHTML={{ __html: faq.answer }}
+                  onClick={(e) => handleAnswerClick(e, faq)}
                 />
               </div>
             )}

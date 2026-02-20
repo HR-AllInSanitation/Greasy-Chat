@@ -295,6 +295,18 @@ const detectLanguageChoice = (text: string): Language | null => {
   return null;
 };
 
+// Detect if text is likely Spanish based on common patterns
+const detectSpanishText = (text: string): boolean => {
+  const t = text.toLowerCase();
+  // Common Spanish words/patterns
+  const spanishPatterns = [
+    /\b(necesito|quiero|quisiera|tengo|estoy|soy|mi|tu|su|nuestro|una|que|como|cuando|donde|por favor|gracias|hola|buenos|dias|tardes|noches)\b/,
+    /¿|¡/,  // Spanish punctuation
+    /\b(el|la|los|las|un|una|de|del|al)\s/,  // Articles
+  ];
+  return spanishPatterns.some(pattern => pattern.test(t));
+};
+
 // **NEW**: Multi-field contact parsing helper
 // Extract email, phone, and name from a single message (e.g., "john@example.com 555-123-4567 John Smith")
 interface MultiFieldContact {
@@ -383,8 +395,8 @@ export const ChatInterface: React.FC = () => {
   const [isGlowing, setIsGlowing] = useState(false);
   // **NEW**: Stable quoteId for 2-event architecture (Event A + Event B use same quoteId)
   const quoteIdRef = useRef<string>(generateQuoteId());
-  const [language, setLanguage] = useState<Language | null>(IS_E2E ? 'en' : null);
-  const languageRef = useRef<Language | null>(IS_E2E ? 'en' : null);
+  const [language, setLanguage] = useState<Language | null>(IS_E2E ? 'en' : 'en');
+  const languageRef = useRef<Language | null>(IS_E2E ? 'en' : 'en');
   const t = (en: string, es: string) => (languageRef.current === 'es' ? es : en);
 
   useEffect(() => {
@@ -1259,6 +1271,25 @@ const processMessage = async (text: string) => {
   setIsLoading(true);
   console.debug('isLoading -> true');
 
+  // Auto-detect Spanish if user writes in Spanish (and we're in English mode)
+  if (languageRef.current === 'en' && detectSpanishText(cleanText)) {
+    // Check if user explicitly requested Spanish
+    const explicitSpanish = /\b(espa[ñn]ol|spanish|habla|hablar|speak)\b/i.test(cleanText);
+    if (explicitSpanish) {
+      languageRef.current = 'es';
+      setLanguage('es');
+      pushModel('¡Perfecto! Cambiando a español.');
+      const nextField = expectedField || getFirstMissingField(intakeRef.current);
+      if (nextField) {
+        pushModel(getQuestionForField(nextField, 'es'));
+      }
+      setIsLoading(false);
+      setIsBotProcessing(false);
+      isProcessingRef.current = false;
+      return;
+    }
+  }
+
   if (!languageRef.current && !IS_E2E) {
     const choice = detectLanguageChoice(cleanText);
     if (!choice) {
@@ -1689,11 +1720,6 @@ const processMessage = async (text: string) => {
 // On mount, if no messages, ask for the first missing field (once). Skip when history already exists.
 useEffect(() => {
   if (messages.length > 0) return;
-  if (!languageRef.current) {
-    const ask = '¿Español o English?';
-    pushModel(ask);
-    return;
-  }
   const firstField = getFirstMissingField(intakeRef.current);
   if (!firstField) return;
 
