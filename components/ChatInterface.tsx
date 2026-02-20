@@ -466,34 +466,32 @@ export const ChatInterface: React.FC = () => {
   // Idempotent initial bot message guard
   const didInitRef = useRef(false);
 
-  // Robot beep-boop sound using Web Audio API
+  // Sci-Fi Blip sound using Web Audio API
   const playRobotBeep = () => {
     if (typeof window === 'undefined' || !window.AudioContext) return;
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
+      const osc = ctx.createOscillator();
       const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
       
-      osc1.connect(gain);
-      osc2.connect(gain);
+      osc.connect(filter);
+      filter.connect(gain);
       gain.connect(ctx.destination);
       
-      // Beep (high)
-      osc1.frequency.value = 800;
-      osc1.type = 'square';
-      osc1.start(ctx.currentTime);
-      osc1.stop(ctx.currentTime + 0.08);
+      osc.type = 'triangle';
+      osc.frequency.value = 1200;
       
-      // Boop (low)
-      osc2.frequency.value = 400;
-      osc2.type = 'square';
-      osc2.start(ctx.currentTime + 0.1);
-      osc2.stop(ctx.currentTime + 0.25);
+      // Filtro para sonido más espacial
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(2000, ctx.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
       
-      // Volume
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+      
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.12);
     } catch (err) {
       // Silently fail if audio not supported
     }
