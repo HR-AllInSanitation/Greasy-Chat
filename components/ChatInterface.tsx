@@ -466,6 +466,39 @@ export const ChatInterface: React.FC = () => {
   // Idempotent initial bot message guard
   const didInitRef = useRef(false);
 
+  // Robot beep-boop sound using Web Audio API
+  const playRobotBeep = () => {
+    if (typeof window === 'undefined' || !window.AudioContext) return;
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+      
+      // Beep (high)
+      osc1.frequency.value = 800;
+      osc1.type = 'square';
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.08);
+      
+      // Boop (low)
+      osc2.frequency.value = 400;
+      osc2.type = 'square';
+      osc2.start(ctx.currentTime + 0.1);
+      osc2.stop(ctx.currentTime + 0.25);
+      
+      // Volume
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+    } catch (err) {
+      // Silently fail if audio not supported
+    }
+  };
+
   // Helper to append a model message only if not identical to last model message
   const pushModel = (text: string, link?: MessageLink) => {
     setMessages(prevMsgs => {
@@ -475,6 +508,8 @@ export const ChatInterface: React.FC = () => {
       if (sameText && sameLink) return prevMsgs;
       const next: Message = { role: 'model', text };
       if (link) next.link = link;
+      // Play robot sound when bot sends message
+      playRobotBeep();
       return [...prevMsgs, next];
     });
   };
@@ -1718,7 +1753,7 @@ useEffect(() => {
           <div className="text-sm text-slate-400 font-semibold">Share your site details to get an estimate.</div>
         ) : (
           messages.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} ${msg.role === 'model' ? 'animate-fadeIn' : ''}`}>
               <div
                 className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm font-semibold shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-900'}`}
               >
@@ -1803,7 +1838,7 @@ useEffect(() => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={'Instructions...'}
+              placeholder={'Type here...'}
               className="w-full bg-slate-50 border-2 border-slate-50 focus:border-amber-500 focus:bg-white rounded-xl px-6 py-3.5 text-[14px] font-bold outline-none transition-all shadow-inner"
               disabled={isLoading}
             />
