@@ -7,6 +7,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { calculateServiceEstimate } from '../services/pricingEngine';
 import { EstimationInputs, EstimationResult, Frequency, ServiceType } from '../types';
+import { trackConversion, trackEvent } from '../api/gtag-utils';
 
 const OFFICE_PHONE = typeof __OFFICE_PHONE__ === 'string' ? __OFFICE_PHONE__ : '';
 if (import.meta.env.DEV && !OFFICE_PHONE.trim()) {
@@ -876,6 +877,13 @@ export const ChatInterface: React.FC = () => {
           console.log('LEAD_POST_RESULT', { method: 'sendBeacon', success: true, leadEvent });
         }
         postSuccess = true;
+        // Track conversion to Google Ads
+        trackConversion({
+          phone: contactRef.current?.phone,
+          email: contactRef.current?.email,
+          service: selectedServiceLabelRef.current,
+          estimateId: quoteIdRef.current,
+        });
         sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
         selectedServiceLabelRef.current = null;
         return true;
@@ -895,6 +903,13 @@ export const ChatInterface: React.FC = () => {
 
       if (res.ok) {
         postSuccess = true;
+        // Track conversion to Google Ads
+        trackConversion({
+          phone: contactRef.current?.phone,
+          email: contactRef.current?.email,
+          service: selectedServiceLabelRef.current,
+          estimateId: quoteIdRef.current,
+        });
         sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
         selectedServiceLabelRef.current = null;
         return true;
