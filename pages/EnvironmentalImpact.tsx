@@ -97,7 +97,7 @@ const EnvironmentalImpact: React.FC = () => {
             </div>
             <div className="flex flex-wrap gap-3">
               <a
-                href="/#estimator"
+                href="/?service=uco-recycling&source=environmental-impact#estimator"
                 onClick={() => trackEvent('support_page_cta_click', { page_type: 'environmental_impact', cta: 'start_estimate' })}
                 className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
               >

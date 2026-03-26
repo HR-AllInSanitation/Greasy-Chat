@@ -47,7 +47,7 @@ const FAQPage: React.FC = () => {
               <p className="text-slate-400 text-sm font-medium">Use the instant estimator to get pricing in about 60 seconds.</p>
             </div>
             <a
-              href="/#estimator"
+              href="/?source=faq#estimator"
               onClick={() => trackEvent('support_page_cta_click', { page_type: 'faq', cta: 'instant_estimate' })}
               className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-400 transition-all shadow-lg"
             >

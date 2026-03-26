@@ -68,7 +68,7 @@ Build a conversion-first web experience that maximizes revenue by:
 - [ ] Extract reusable intake/validation modules from chat
 - [ ] Build intelligent multi-step form UI (same visual system)
 - [ ] Keep chat as escalation widget for complex/manual cases
-- [ ] Standardize service-button entry behavior into form context
+- [x] Standardize service-button entry behavior into form context
 
 ## WS6 — Integrations and Env Governance
 - [x] Create canonical env var mapping table
@@ -156,3 +156,4 @@ Deliverables in Phase 1:
 - 2026-03-26: Expanded sitemap with support page routes.
 - 2026-03-26: Added support-page analytics events (`page_view_support`, `support_page_cta_click`) on FAQ/About/Best Practices/Environmental pages.
 - 2026-03-26: Added canonical env/integration map in `ENVIRONMENT_MAP.md`.
+- 2026-03-26: Added service-context deep links (`?service=...#estimator`) and homepage preselection handling to standardize estimator entry intent.

@@ -173,7 +173,7 @@ const RestroomTrailerRentalsLA: React.FC = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <a 
-                href="/#estimator" 
+                href="/?service=restroom-rentals#estimator" 
                 className="bg-white text-purple-600 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-purple-50 transition-all shadow-lg"
               >
                 Get Quote
@@ -334,7 +334,7 @@ const RestroomTrailerRentalsLA: React.FC = () => {
               Limited availability during peak event season. Get your quote today and secure your rental dates.
             </p>
             <a 
-              href="/#estimator" 
+              href="/?service=restroom-rentals#estimator" 
               className="inline-block bg-white text-purple-600 px-12 py-5 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-purple-50 transition-all shadow-xl"
             >
               Check Availability

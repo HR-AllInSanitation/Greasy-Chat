@@ -170,7 +170,7 @@ const RestaurantWasteServicesLA: React.FC = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <a 
-                href="/#estimator" 
+                href="/?service=grease-trap-interceptor#estimator" 
                 className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-400 transition-all shadow-lg"
               >
                 Get Custom Quote
@@ -332,7 +332,7 @@ const RestaurantWasteServicesLA: React.FC = () => {
               Get a custom quote for all your waste and sanitation needs. New openings get 10% off for the first year.
             </p>
             <a 
-              href="/#estimator" 
+              href="/?service=grease-trap-interceptor#estimator" 
               className="inline-block bg-slate-950 text-white px-12 py-5 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-slate-800 transition-all shadow-xl"
             >
               Get Your Quote

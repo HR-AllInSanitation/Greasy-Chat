@@ -3,9 +3,43 @@ import { ChatInterface } from './components/ChatInterface';
 
 type LegalType = 'privacy' | 'compliance' | 'terms' | null;
 
+const SERVICE_QUERY_MAP: Record<string, string> = {
+  'grease-trap-interceptor': 'Grease Trap / Interceptor Pumping',
+  'septic-holding-tank': 'Septic / Holding Tank Pumping',
+  'hydro-jetting': 'Main Sewer Line Jetting / Hydro Jetting',
+  'uco-recycling': 'UCO Recycling',
+  'restroom-rentals': 'Restroom Rentals',
+  'compliance-audit': 'Compliance Audit',
+  'hood-cleaning': 'Hood Cleaning',
+  'janitorial-services': 'Janitorial Services',
+};
+
 const App: React.FC = () => {
+  const didHandleEstimatorRouteRef = React.useRef(false);
+
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    if (didHandleEstimatorRouteRef.current || typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const serviceKey = url.searchParams.get('service')?.trim().toLowerCase();
+    const selectedLabel = serviceKey ? SERVICE_QUERY_MAP[serviceKey] : null;
+    if (!selectedLabel) return;
+
+    didHandleEstimatorRouteRef.current = true;
+
+    const estimator = document.getElementById('estimator');
+    if (estimator) {
+      estimator.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    const timeoutId = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('greasy-select-service', { detail: { label: selectedLabel } }));
+    }, 650);
+
+    return () => clearTimeout(timeoutId);
   }, []);
   const [activeLegal, setActiveLegal] = useState<LegalType>(null);
 
