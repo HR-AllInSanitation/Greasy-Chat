@@ -112,7 +112,7 @@ QSTASH_TOKEN                    # QStash auth token
 QSTASH_CURRENT_SIGNING_KEY      # For webhook signature verification
 HQ_EMAIL_DELAY_SECONDS          # Default: 120
 RESEND_API_KEY                  # For email sending
-GOOGLE_SHEETS_WEBHOOK_URL       # For sheet updates
+GOOGLE_SHEETS_WEBHOOK           # For sheet updates
 ```
 
 → Full setup instructions in **QUICK_REFERENCE.md**

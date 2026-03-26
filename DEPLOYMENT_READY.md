@@ -102,12 +102,23 @@ UPSTASH_REDIS_REST_TOKEN=<token>
 QSTASH_TOKEN=<token>
 QSTASH_CURRENT_SIGNING_KEY=<signing_key>
 HQ_EMAIL_DELAY_SECONDS=120
+HQ_SEND_URL=https://<your-domain>/api/hq-send   # optional; VERCEL_URL is preferred when present
 
 # Resend (email delivery)
 RESEND_API_KEY=<api_key>
+RESEND_FROM="LA Restaurant Services <noreply@yourdomain.com>"
+HQ_LEADS_EMAILS=ops@yourdomain.com,dispatch@yourdomain.com
 
-# Google Sheets (webhook)
-GOOGLE_SHEETS_WEBHOOK_URL=https://script.google.com/...
+# Office/Sheets webhook
+OFFICE_WEBHOOK_URL=https://script.google.com/...
+# (optional backward-compatible alias)
+GOOGLE_SHEETS_WEBHOOK=https://script.google.com/...
+
+# Geocoding
+GOOGLE_MAPS_API_KEY=<maps_key>
+
+# Frontend handoff CTA
+VITE_OFFICE_PHONE=8186984252
 
 # Auto-detected (no setup needed)
 # VERCEL_URL (set by Vercel, used for QStash callback URL)
@@ -248,7 +259,7 @@ Status: ✅ Production-ready, TypeScript clean, build successful
 - UPSTASH_REDIS_REST_URL/TOKEN
 - QSTASH_TOKEN and QSTASH_CURRENT_SIGNING_KEY
 - RESEND_API_KEY
-- GOOGLE_SHEETS_WEBHOOK_URL
+- GOOGLE_SHEETS_WEBHOOK
 - HQ_EMAIL_DELAY_SECONDS (optional, defaults to 120)
 
 ### Instructions

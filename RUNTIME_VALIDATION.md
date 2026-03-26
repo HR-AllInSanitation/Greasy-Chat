@@ -39,7 +39,7 @@ QSTASH_TOKEN=your-qstash-token
 QSTASH_CURRENT_SIGNING_KEY=your-signing-key
 HQ_EMAIL_DELAY_SECONDS=120
 RESEND_API_KEY=your-resend-api-key
-GOOGLE_SHEETS_WEBHOOK_URL=https://your-sheets-webhook
+GOOGLE_SHEETS_WEBHOOK=https://your-sheets-webhook
 ```
 
 ---

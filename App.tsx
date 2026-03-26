@@ -1,13 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { ChatInterface } from './components/ChatInterface';
-import { FAQSection } from './components/FAQSection';
-import { faqs } from './data/faqData';
+import { estimatorServiceQueryMap } from './data/serviceOptions';
 
 type LegalType = 'privacy' | 'compliance' | 'terms' | null;
 
 const App: React.FC = () => {
+  const didHandleEstimatorRouteRef = React.useRef(false);
+
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    if (didHandleEstimatorRouteRef.current || typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const serviceKey = url.searchParams.get('service')?.trim().toLowerCase();
+    const selectedLabel = serviceKey ? estimatorServiceQueryMap[serviceKey] : null;
+    if (!selectedLabel) return;
+
+    const estimator = document.getElementById('estimator');
+    if (estimator) {
+      estimator.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    const timeoutId = setTimeout(() => {
+      didHandleEstimatorRouteRef.current = true;
+      window.dispatchEvent(new CustomEvent('greasy-select-service', { detail: { label: selectedLabel } }));
+    }, 650);
+
+    return () => clearTimeout(timeoutId);
   }, []);
   const [activeLegal, setActiveLegal] = useState<LegalType>(null);
 
@@ -132,18 +153,16 @@ const App: React.FC = () => {
           <div className="hidden lg:flex items-center gap-10 text-[12px] font-black text-slate-500 uppercase tracking-widest">
             <button type="button" onClick={() => scrollToSection('services')} className="hover:text-amber-600 transition-colors">Services</button>
             <div className="h-4 w-px bg-slate-200"></div>
-            <button 
-              type="button"
-              onClick={() => {
-                if (didDispatchRef.current) return; // debounce/guard
-                didDispatchRef.current = true;
-                triggerChatAction(undefined, true);
-                setTimeout(() => { didDispatchRef.current = false; }, 1200); // reset guard
-              }}
+            <a href="/faq" className="hover:text-amber-600 transition-colors">FAQ</a>
+            <div className="h-4 w-px bg-slate-200"></div>
+            <a href="/best-practices" className="hover:text-amber-600 transition-colors">Best Practices</a>
+            <div className="h-4 w-px bg-slate-200"></div>
+            <a
+              href="/instant-estimate"
               className="bg-amber-500 text-slate-950 px-10 py-4 rounded-full hover:bg-amber-400 transition-all font-black shadow-lg shadow-amber-200/50"
             >
               Instant Estimate
-            </button>
+            </a>
           </div>
         </div>
       </nav>
@@ -241,25 +260,29 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* FAQ Section */}
-              <div id="faq" className="scroll-mt-32">
-                <FAQSection 
-                  faqs={faqs} 
-                  onCTAClick={(message) => {
-                    // Auto-fill the chat input with the contextual message
-                    const textarea = document.querySelector('#estimator textarea') as HTMLTextAreaElement;
-                    if (textarea) {
-                      textarea.value = message;
-                      textarea.focus();
-                      // Auto-submit the form
-                      const form = textarea.closest('form');
-                      if (form) {
-                        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                      }
-                    }
-                  }}
-                />
-              </div>
+              <section id="faq" className="scroll-mt-32 bg-white p-8 lg:p-10 rounded-[2rem] border border-slate-100 shadow-xl">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+                  <div className="space-y-3 max-w-2xl">
+                    <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-amber-100">
+                      <i className="fas fa-circle-question"></i>
+                      <span>Knowledge Center</span>
+                    </div>
+                    <h3 className="text-3xl lg:text-4xl font-black text-slate-950 tracking-tight">Need answers before requesting service?</h3>
+                    <p className="text-slate-600 font-medium leading-relaxed">
+                      We moved our full FAQ library into a dedicated page so this homepage stays focused on instant estimates and lead capture.
+                    </p>
+                  </div>
+                  <div className="w-full lg:w-auto">
+                    <a
+                      href="/faq"
+                      className="inline-flex w-full lg:w-auto items-center justify-center gap-3 bg-slate-950 text-white px-8 py-4 rounded-xl font-black uppercase tracking-[0.16em] text-xs hover:bg-black transition-all shadow-xl"
+                    >
+                      <i className="fas fa-book-open"></i>
+                      <span>Open Full FAQ Page</span>
+                    </a>
+                  </div>
+                </div>
+              </section>
 
             </div>
 
@@ -314,6 +337,28 @@ const App: React.FC = () => {
                 <a href="https://www.saltedlightlycommissary.com" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 hover:text-white transition-colors">
                   <i className="fas fa-utensils text-base text-amber-500"></i>
                   <span className="text-[13px] font-black uppercase tracking-widest">Salted Lightly</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-white/5">
+              <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-amber-500 mb-4">Resources</h4>
+              <div className="flex flex-wrap gap-x-8 gap-y-4">
+                <a href="/about-us" className="group flex items-center gap-3 hover:text-white transition-colors">
+                  <i className="fas fa-building text-base text-amber-500"></i>
+                  <span className="text-[13px] font-black uppercase tracking-widest">About Us</span>
+                </a>
+                <a href="/faq" className="group flex items-center gap-3 hover:text-white transition-colors">
+                  <i className="fas fa-circle-question text-base text-amber-500"></i>
+                  <span className="text-[13px] font-black uppercase tracking-widest">FAQ</span>
+                </a>
+                <a href="/best-practices" className="group flex items-center gap-3 hover:text-white transition-colors">
+                  <i className="fas fa-lightbulb text-base text-amber-500"></i>
+                  <span className="text-[13px] font-black uppercase tracking-widest">Best Practices</span>
+                </a>
+                <a href="/environmental-impact" className="group flex items-center gap-3 hover:text-white transition-colors">
+                  <i className="fas fa-leaf text-base text-amber-500"></i>
+                  <span className="text-[13px] font-black uppercase tracking-widest">Environmental Impact</span>
                 </a>
               </div>
             </div>

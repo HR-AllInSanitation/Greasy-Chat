@@ -56,7 +56,7 @@ RESEND_API_KEY
   Value: <your-resend-api-key>
   Scopes: Production, Preview, Development
 
-GOOGLE_SHEETS_WEBHOOK_URL
+GOOGLE_SHEETS_WEBHOOK
   Value: https://script.google.com/macros/d/{id}/usercontent
   Scopes: Production, Preview, Development
 ```
@@ -71,7 +71,7 @@ vercel env add QSTASH_TOKEN
 vercel env add QSTASH_CURRENT_SIGNING_KEY
 vercel env add HQ_EMAIL_DELAY_SECONDS
 vercel env add RESEND_API_KEY
-vercel env add GOOGLE_SHEETS_WEBHOOK_URL
+vercel env add GOOGLE_SHEETS_WEBHOOK
 
 # Verify
 vercel env ls

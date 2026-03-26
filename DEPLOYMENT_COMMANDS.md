@@ -8,16 +8,19 @@
 
 ## Quick Deployment
 
-### Option 1: Deploy to Vercel (Recommended - Auto-Deploys)
+### Option 1: Branch → PR → Merge (Recommended)
 
 ```bash
-# Step 1: Push to GitHub (Vercel watches main branch)
+# Step 1: Push feature branch
 cd /Users/roberto88/Greasy-Chat
-git push origin main
+git push origin feature/multipage-faq-tracking
 
-# Expected output:
-#   To github.com:roberto88/greasy-chat.git
-#   ab616e2..9238018  main -> main
+# Step 2: Open PR to main
+# base: main
+# compare: feature/multipage-faq-tracking
+
+# Step 3: Verify checks, then merge PR
+# Vercel deploys from main after merge
 ```
 
 **Result:**
@@ -26,15 +29,15 @@ git push origin main
 - New SHA will be deployed
 - Check browser at production URL
 
-### Option 2: Manual Build & Deploy
+### Option 2: Local verification + merge deploy
 
 ```bash
 # Validate locally first
 cd /Users/roberto88/Greasy-Chat
 npm run build
+npm run test:smoke
 
-# If successful, push
-git push origin main
+# If successful, merge PR to main and monitor Vercel deployment
 
 # Monitor in Vercel dashboard for deployment
 ```
@@ -57,20 +60,32 @@ npm run build
 
 # 3. Verify commits
 git log --oneline -5
-# Expected:
-#   9238018 fix: remove duplicate estimate summary message in chat
-#   2ea9f46 fix: lead submission + handoff only after explicit move forward
-#   ab616e2 fix: tolerant gallons parsing handles '2,500+' format correctly
-#   c0cd0ce (origin/main) Remove Strategic Partners section from footer
+# Expected: latest feature commits on this branch (form hardening, shared payload refactor, smoke coverage)
 
 # 4. Verify no uncommitted changes
 git status
 # Expected: working tree clean
 
-# 5. Verify main branch
+# 5. Verify active branch
 git branch
-# Expected: * main (current branch)
+# Expected: * feature/multipage-faq-tracking
 ```
+
+### Env Gate (must pass before merge)
+
+Validate required deployment vars are present in Vercel for Preview + Production:
+
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+- `QSTASH_TOKEN`
+- `QSTASH_CURRENT_SIGNING_KEY`
+- `HQ_EMAIL_DELAY_SECONDS` (or default behavior accepted)
+- `RESEND_API_KEY`
+- `RESEND_FROM`
+- `HQ_LEADS_EMAILS`
+- `OFFICE_WEBHOOK_URL` (or fallback `GOOGLE_SHEETS_WEBHOOK`)
+- `GOOGLE_MAPS_API_KEY`
+- `VITE_OFFICE_PHONE`
 
 ---
 
