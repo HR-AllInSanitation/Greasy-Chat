@@ -723,7 +723,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // --- ENV VARS normalization ---
-  const officeWebhookUrl = process.env.OFFICE_WEBHOOK_URL || '';
+  const officeWebhookUrl = process.env.OFFICE_WEBHOOK_URL || process.env.GOOGLE_SHEETS_WEBHOOK || '';
   const scriptUrlValid = officeWebhookUrl.startsWith('https://');
   const resendKey = process.env.RESEND_API_KEY || '';
   const hqEmailsRaw = process.env.HQ_LEADS_EMAILS || '';

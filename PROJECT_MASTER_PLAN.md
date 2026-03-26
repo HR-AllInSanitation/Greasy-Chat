@@ -73,8 +73,8 @@ Build a conversion-first web experience that maximizes revenue by:
 ## WS6 — Integrations and Env Governance
 - [x] Create canonical env var mapping table
 - [x] Align webhook variable naming across code/docs
-- [ ] Verify Redis/QStash/Resend/Google Maps dependencies
-- [ ] Add deploy-time env validation checklist
+- [x] Verify Redis/QStash/Resend/Google Maps dependencies
+- [x] Add deploy-time env validation checklist
 
 ## WS7 — SEO / Sitelinks / Structured Data
 - [x] Expand sitemap to include all live indexable pages
@@ -162,3 +162,7 @@ Deliverables in Phase 1:
 - 2026-03-26: Normalized docs to use `GOOGLE_SHEETS_WEBHOOK` as canonical webhook env variable name.
 - 2026-03-26: Added complex-case widget beside the intelligent form and restored `ais-trigger-chat` event handling in chat UI.
 - 2026-03-26: Extracted shared chat intake/question helpers and shared manual-review estimate utility.
+- 2026-03-26: Hardened intelligent estimate form with per-field validation, service frequency, preferred contact, and richer result state.
+- 2026-03-26: Aligned chat lead assembly with shared `buildLeadPayload()` + shared contact validators.
+- 2026-03-26: Expanded smoke suite to 11 tests covering instant-estimate validation and payload fields (`frequency`, `preferred_contact`).
+- 2026-03-26: Finalized deploy-time environment governance checklist and aligned env mapping with runtime usage; added webhook alias fallback (`OFFICE_WEBHOOK_URL` or `GOOGLE_SHEETS_WEBHOOK`).
