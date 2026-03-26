@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
+import { ComplexCaseWidget } from '../components/ComplexCaseWidget';
 import { IntelligentEstimateForm } from '../components/IntelligentEstimateForm';
 import { StructuredData, buildBreadcrumbSchema, buildServiceSchema } from '../components/StructuredData';
 
@@ -49,7 +50,10 @@ const InstantEstimate: React.FC = () => {
             </p>
           </header>
 
-          <IntelligentEstimateForm initialServiceKey={serviceKey} />
+          <div className="grid lg:grid-cols-[1fr,320px] gap-8 items-start">
+            <IntelligentEstimateForm initialServiceKey={serviceKey} />
+            <ComplexCaseWidget serviceKey={serviceKey} />
+          </div>
         </div>
       </div>
     </>

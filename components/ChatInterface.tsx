@@ -476,6 +476,25 @@ export const ChatInterface: React.FC = () => {
       if (glowTimeout) clearTimeout(glowTimeout);
     };
   }, []);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const customEvent = event as CustomEvent<{ message?: string; focusOnly?: boolean }>;
+      const detail = customEvent.detail || {};
+
+      if (detail.message && !detail.focusOnly) {
+        setInput(detail.message);
+      }
+
+      requestAnimationFrame(() => {
+        inputRef.current?.focus?.();
+      });
+    };
+
+    window.addEventListener('ais-trigger-chat', handler as EventListener);
+    return () => window.removeEventListener('ais-trigger-chat', handler as EventListener);
+  }, []);
+
   // Idempotent initial bot message guard
   const didInitRef = useRef(false);
 
