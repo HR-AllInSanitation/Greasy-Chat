@@ -1,104 +1,105 @@
 import React, { useState, useEffect } from 'react';
-import { ChatInterface } from './components/ChatInterface';
-import { estimatorServiceQueryMap } from './data/serviceOptions';
+import { Link } from 'react-router-dom';
+import { IntelligentEstimateForm } from './components/IntelligentEstimateForm';
 
 type LegalType = 'privacy' | 'compliance' | 'terms' | null;
 
 const App: React.FC = () => {
-  const didHandleEstimatorRouteRef = React.useRef(false);
+  const [selectedServiceKey, setSelectedServiceKey] = useState<string | null>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
-    if (didHandleEstimatorRouteRef.current || typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     const serviceKey = url.searchParams.get('service')?.trim().toLowerCase();
-    const selectedLabel = serviceKey ? estimatorServiceQueryMap[serviceKey] : null;
-    if (!selectedLabel) return;
+    if (!serviceKey) return;
+
+    const validKeys = new Set([
+      'grease-trap-interceptor',
+      'septic-holding-tank',
+      'hydro-jetting',
+      'uco-recycling',
+      'restroom-rentals',
+      'compliance-audit',
+      'hood-cleaning',
+      'janitorial-services',
+    ]);
+    if (!validKeys.has(serviceKey)) return;
+
+    setSelectedServiceKey(serviceKey);
 
     const estimator = document.getElementById('estimator');
     if (estimator) {
       estimator.scrollIntoView({ behavior: 'smooth' });
     }
-
-    const timeoutId = setTimeout(() => {
-      didHandleEstimatorRouteRef.current = true;
-      window.dispatchEvent(new CustomEvent('greasy-select-service', { detail: { label: selectedLabel } }));
-    }, 650);
-
-    return () => clearTimeout(timeoutId);
   }, []);
   const [activeLegal, setActiveLegal] = useState<LegalType>(null);
 
   const services = [
     {
       title: "Grease Trap / Interceptor Pumping",
+      key: 'grease-trap-interceptor',
       desc: "Specialized indoor and exterior grease system maintenance with full scrape and high-volume extraction.",
       icon: "fa-faucet",
       tag: "Indoor/Exterior"
     },
     {
       title: "Septic / Holding Tank Pumping",
+      key: 'septic-holding-tank',
       desc: "Scheduled or emergency pumping for septic and holding tanks to keep sites compliant and odor-free.",
       icon: "fa-water",
       tag: "Septic"
     },
     {
       title: "Main Sewer Line Jetting / Hydro Jetting",
+      key: 'hydro-jetting',
       desc: "High-pressure line clearing to eliminate stubborn FOG (Fat, Oil, Grease) build-up.",
       icon: "fa-water-ladder",
       tag: "Emergency"
     },
     {
       title: "UCO Recycling",
+      key: 'uco-recycling',
       desc: "Used Cooking Oil collection and recycling. Sustainable solutions for your kitchen oil.",
       icon: "fa-recycle",
       tag: "Eco-Friendly"
     },
     {
       title: "Restroom Rentals",
+      key: 'restroom-rentals',
       desc: "Premium portable restroom solutions for outdoor dining or facility renovations.",
       icon: "fa-restroom",
       tag: "Auxiliary"
     },
     {
       title: "Compliance Audit",
+      key: 'compliance-audit',
       desc: "Full documentation and FOG reporting to keep your facility 100% health-code compliant.",
       icon: "fa-file-shield",
       tag: "Legal"
     },
     {
       title: "Hood Cleaning",
+      key: 'hood-cleaning',
       desc: "Professional kitchen exhaust hood cleaning for fire safety and code compliance. Includes degreasing and filter service.",
       icon: "fa-broom",
       tag: "Kitchen"
     },
     {
       title: "Janitorial Services",
+      key: 'janitorial-services',
       desc: "Comprehensive facility cleaning and sanitation for restrooms, dining areas, and kitchens. Nightly and deep-clean options available.",
       icon: "fa-soap",
       tag: "Sanitation"
     }
   ];
 
-  const didDispatchRef = React.useRef(false);
-  const triggerChatAction = (message?: string, focusOnly: boolean = false) => {
+  const focusEstimator = () => {
     const element = document.getElementById('estimator');
-    if (!element) return;
-
-    element.scrollIntoView({ behavior: 'smooth' });
-    const timeoutId = setTimeout(() => {
-      if (didDispatchRef.current) return;
-      didDispatchRef.current = true;
-      window.dispatchEvent(new CustomEvent('ais-trigger-chat', {
-        detail: { message, focusOnly }
-      }));
-    }, 500);
-
-    // In StrictMode dev, effect cleanup can run; return cleanup to avoid double dispatch.
-    return () => clearTimeout(timeoutId);
+    if (element) element.scrollIntoView({ behavior: 'smooth' });
   };
 
   const scrollToSection = (id: string) => {
@@ -153,16 +154,20 @@ const App: React.FC = () => {
           <div className="hidden lg:flex items-center gap-10 text-[12px] font-black text-slate-500 uppercase tracking-widest">
             <button type="button" onClick={() => scrollToSection('services')} className="hover:text-amber-600 transition-colors">Services</button>
             <div className="h-4 w-px bg-slate-200"></div>
-            <a href="/faq" className="hover:text-amber-600 transition-colors">FAQ</a>
+            <Link to="/faq" className="hover:text-amber-600 transition-colors">FAQ</Link>
             <div className="h-4 w-px bg-slate-200"></div>
-            <a href="/best-practices" className="hover:text-amber-600 transition-colors">Best Practices</a>
+            <Link to="/about-us" className="hover:text-amber-600 transition-colors">About</Link>
             <div className="h-4 w-px bg-slate-200"></div>
-            <a
-              href="/instant-estimate"
+            <Link to="/best-practices" className="hover:text-amber-600 transition-colors">Best Practices</Link>
+            <div className="h-4 w-px bg-slate-200"></div>
+            <Link to="/environmental-impact" className="hover:text-amber-600 transition-colors">Environmental</Link>
+            <div className="h-4 w-px bg-slate-200"></div>
+            <Link
+              to="/instant-estimate"
               className="bg-amber-500 text-slate-950 px-10 py-4 rounded-full hover:bg-amber-400 transition-all font-black shadow-lg shadow-amber-200/50"
             >
               Instant Estimate
-            </a>
+            </Link>
           </div>
         </div>
       </nav>
@@ -237,11 +242,8 @@ const App: React.FC = () => {
                       aria-label={`Request ${service.title}`}
                       className="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 relative overflow-hidden cursor-pointer text-left w-full"
                       onClick={() => {
-                        if (service.title === 'Grease Trap / Interceptor Pumping') {
-                          window.dispatchEvent(new CustomEvent('greasy-agent:glow'));
-                        }
-                        window.dispatchEvent(new CustomEvent('greasy-select-service', { detail: { label: service.title } }));
-                        window.dispatchEvent(new CustomEvent('ais-trigger-chat', { detail: { focusOnly: true } }));
+                        setSelectedServiceKey(service.key);
+                        focusEstimator();
                       }}
                     >
                       <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
@@ -273,13 +275,13 @@ const App: React.FC = () => {
                     </p>
                   </div>
                   <div className="w-full lg:w-auto">
-                    <a
-                      href="/faq"
+                    <Link
+                      to="/faq"
                       className="inline-flex w-full lg:w-auto items-center justify-center gap-3 bg-slate-950 text-white px-8 py-4 rounded-xl font-black uppercase tracking-[0.16em] text-xs hover:bg-black transition-all shadow-xl"
                     >
                       <i className="fas fa-book-open"></i>
                       <span>Open Full FAQ Page</span>
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </section>
@@ -292,19 +294,24 @@ const App: React.FC = () => {
                 <div className="relative bg-slate-950 text-white p-6 rounded-t-[2.5rem] shadow-2xl flex items-center justify-between border-b border-white/5 shrink-0">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-amber-500 text-slate-950 rounded-[1rem] flex items-center justify-center transform group-hover:rotate-6 transition-transform shadow-lg shadow-amber-500/20">
-                      <i className="fas fa-robot text-xl" aria-hidden="true"></i>
+                      <i className="fas fa-file-invoice-dollar text-xl" aria-hidden="true"></i>
                     </div>
                     <div>
-                      <h3 className="font-black text-sm uppercase tracking-widest leading-none">THE GREASY AGENT</h3>
+                      <h3 className="font-black text-sm uppercase tracking-widest leading-none">INTELLIGENT ESTIMATOR</h3>
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Optimizing Route...</span>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Form-first quote flow</span>
                       </div>
                     </div>
                   </div>
                 </div>
                 <div className="flex-1 min-h-0 overflow-hidden bg-white rounded-b-[2.5rem]">
-                  <ChatInterface />
+                  <div className="h-full overflow-y-auto p-4">
+                    <IntelligentEstimateForm
+                      key={`home-estimator-${selectedServiceKey ?? 'default'}`}
+                      initialServiceKey={selectedServiceKey}
+                    />
+                  </div>
                 </div>
               </div>
             </aside>
@@ -344,22 +351,22 @@ const App: React.FC = () => {
             <div className="pt-6 border-t border-white/5">
               <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-amber-500 mb-4">Resources</h4>
               <div className="flex flex-wrap gap-x-8 gap-y-4">
-                <a href="/about-us" className="group flex items-center gap-3 hover:text-white transition-colors">
+                <Link to="/about-us" className="group flex items-center gap-3 hover:text-white transition-colors">
                   <i className="fas fa-building text-base text-amber-500"></i>
                   <span className="text-[13px] font-black uppercase tracking-widest">About Us</span>
-                </a>
-                <a href="/faq" className="group flex items-center gap-3 hover:text-white transition-colors">
+                </Link>
+                <Link to="/faq" className="group flex items-center gap-3 hover:text-white transition-colors">
                   <i className="fas fa-circle-question text-base text-amber-500"></i>
                   <span className="text-[13px] font-black uppercase tracking-widest">FAQ</span>
-                </a>
-                <a href="/best-practices" className="group flex items-center gap-3 hover:text-white transition-colors">
+                </Link>
+                <Link to="/best-practices" className="group flex items-center gap-3 hover:text-white transition-colors">
                   <i className="fas fa-lightbulb text-base text-amber-500"></i>
                   <span className="text-[13px] font-black uppercase tracking-widest">Best Practices</span>
-                </a>
-                <a href="/environmental-impact" className="group flex items-center gap-3 hover:text-white transition-colors">
+                </Link>
+                <Link to="/environmental-impact" className="group flex items-center gap-3 hover:text-white transition-colors">
                   <i className="fas fa-leaf text-base text-amber-500"></i>
                   <span className="text-[13px] font-black uppercase tracking-widest">Environmental Impact</span>
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -371,10 +378,8 @@ const App: React.FC = () => {
                 <button 
                   type="button"
                   onClick={() => {
-                    if (didDispatchRef.current) return; // debounce/guard
-                    didDispatchRef.current = true;
-                    triggerChatAction("I'd like to request a regional callback for a site survey.");
-                    setTimeout(() => { didDispatchRef.current = false; }, 1200);
+                    setSelectedServiceKey('grease-trap-interceptor');
+                    focusEstimator();
                   }}
                   className="w-full bg-amber-500 text-slate-950 font-black py-4 rounded-xl hover:bg-amber-400 transition-all uppercase tracking-[0.2em] text-[11px]"
                 >

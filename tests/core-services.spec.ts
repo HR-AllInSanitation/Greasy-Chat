@@ -97,25 +97,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('core services flows', () => {
-  test('CTA hides when phone is invalid', async ({ page }) => {
+  test('homepage is form-first (chat shell is not rendered)', async ({ page }) => {
     await page.goto('/');
-
-    await page.evaluate(() => {
-      (window as any).__APP_CONFIG__ = { VITE_OFFICE_PHONE: 'abc' };
-    });
-
-    await page.getByText('Septic / Holding Tank Pumping', { exact: true }).click();
-
-    await page.evaluate(() => {
-      (window as any).__setContactState?.({
-        contact_name: 'No Phone',
-        contact_phone: '5551112222',
-        contact_email: 'nofone@example.com',
-      });
-      (window as any).__triggerLeadSend?.();
-    });
-
-    await expect(page.getByRole('link', { name: /Call\/Text/i })).toHaveCount(0);
+    await expect(page.locator('[data-testid="chat-shell"]')).toHaveCount(0);
+    await expect(page.getByText('INTELLIGENT ESTIMATOR', { exact: false })).toBeVisible();
   });
 
   test('SEO assets are served', async ({ request }) => {
@@ -148,8 +133,8 @@ test.describe('core services flows', () => {
   test('service query preselects estimator context from deep link', async ({ page }) => {
     await page.goto('/?service=uco-recycling#estimator');
 
-    await expect(page.getByText('UCO Recycling', { exact: false })).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText('What is the best contact name?', { exact: true })).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#estimator').getByText('UCO Recycling', { exact: false }).first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#estimator textarea[placeholder*="Estimated gallons per week"]')).toBeVisible({ timeout: 5000 });
   });
 
   test('instant estimate route preselects service card context', async ({ page }) => {
@@ -223,127 +208,90 @@ test.describe('core services flows', () => {
     await expect(page.getByText('Enter a valid email address.', { exact: true })).toBeVisible();
   });
 
-  test('Grease Trap / Interceptor Pumping glows and runs intake with estimate summary', async ({ page }) => {
+  test('homepage grease-trap card preselects form and submits lead', async ({ page }) => {
     const payloads: any[] = [];
-    await page.route('**/api/estimate', async route => {
-      const bodyText = route.request().postData() || '{}';
-      let parsed: any = null;
-      try {
-        parsed = JSON.parse(bodyText);
-      } catch {
-        parsed = null;
-      }
-      payloads.push(parsed);
-      await route.fulfill({ status: 200, body: 'ok' });
-    });
-
-    await page.goto('/');
-
-    const chatShell = page.locator('[data-testid="chat-shell"]');
-
-    await page.getByText('Grease Trap / Interceptor Pumping', { exact: true }).click();
-
-    await expect(chatShell).toHaveAttribute('data-glowing', '1', { timeout: 800 });
-    await expect(chatShell).toHaveAttribute('data-glowing', '0', { timeout: 2000 });
-
-    const firstQuestion = page.locator('text=What is your business name?').first();
-    await expect(firstQuestion).toBeVisible();
-
-    await answerIntakeAndContact(page);
-
-    await expect(page.getByText('Estimated total:', { exact: false })).toBeVisible({ timeout: 8000 });
-    await expect(page.getByRole('button', { name: 'Yes, move forward' })).toBeVisible({ timeout: 8000 });
-
-    const payload = await waitForPayload(page, payloads);
-    expect(payload).not.toBeNull();
-    expect(payload?.meta?.source).toBe('core-services');
-    expect(payload?.meta?.service).toBe('Grease Trap / Interceptor Pumping');
-  });
-
-  test('Septic / Holding Tank Pumping is contact-only with manual quote lead', async ({ page }) => {
-    const payloads: any[] = [];
-    await page.route('**/api/estimate', async route => {
-      const bodyText = route.request().postData() || '{}';
-      let parsed: any = null;
-      try {
-        parsed = JSON.parse(bodyText);
-      } catch {
-        parsed = null;
-      }
-      payloads.push(parsed);
-      await route.fulfill({ status: 200, body: 'ok' });
-    });
-
-    await page.goto('/');
-    await page.getByText('Septic / Holding Tank Pumping', { exact: true }).click();
-
-    await expect(page.getByText('ESTIMATE SUMMARY')).toHaveCount(0);
-
-    await page.evaluate(() => {
-      (window as any).__setContactState?.({
-        contact_name: 'Casey Contact',
-        contact_phone: '5559876543',
-        contact_email: 'casey@example.com',
+    await page.route('**/api/geocode', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ verified: false }),
       });
-      (window as any).__triggerLeadSend?.();
     });
-
-    const payload = await waitForPayload(page, payloads);
-    expect(payload).not.toBeNull();
-    await expect(page.getByText('request received', { exact: false })).toBeVisible({ timeout: 12000 });
-    await expect(page.getByRole('link', { name: /Call\/Text/i })).toBeVisible({ timeout: 12000 });
-    expect(payload?.meta?.source).toBe('core-services');
-    expect(payload?.meta?.service).toBe('Septic / Holding Tank Pumping');
-    expect(payload?.estimate?.manualQuote || payload?.estimate?.manual_quote).toBeTruthy();
-  });
-
-  test('Main Sewer Line Jetting / Hydro Jetting is contact-only with manual quote lead', async ({ page }) => {
-    const payloads: any[] = [];
     await page.route('**/api/estimate', async route => {
       const bodyText = route.request().postData() || '{}';
-      let parsed: any = null;
-      try {
-        parsed = JSON.parse(bodyText);
-      } catch {
-        parsed = null;
-      }
-      payloads.push(parsed);
+      payloads.push(JSON.parse(bodyText));
       await route.fulfill({ status: 200, body: 'ok' });
     });
 
     await page.goto('/');
-    await page.getByText('Main Sewer Line Jetting / Hydro Jetting', { exact: true }).click();
 
-    await expect(page.getByText('ESTIMATE SUMMARY')).toHaveCount(0);
+    await page.locator('button[aria-label="Request Grease Trap / Interceptor Pumping"]').click();
+    await expect(page.locator('#estimator').getByRole('heading', { name: 'Grease Trap / Interceptor Pumping' })).toBeVisible();
 
-    await page.evaluate(() => {
-      (window as any).__setContactState?.({
-        contact_name: 'Casey Contact',
-        contact_phone: '5559876543',
-        contact_email: 'casey@example.com',
-      });
-      (window as any).__triggerLeadSend?.();
-    });
+    await page.locator('input[placeholder="Your business or property name"]').fill('Main Kitchen LA');
+    await page.locator('input[placeholder="123 Main St"]').fill('123 Main St');
+    await page.locator('input[placeholder="Los Angeles"]').fill('Sylmar');
+    await page.locator('input[placeholder="CA"]').fill('CA');
+    await page.locator('input[placeholder="90001"]').fill('90001');
+    await page.locator('input[placeholder="e.g. 1000 or 2500+"]').fill('1000');
+    await page.locator('input[placeholder="e.g. 50  (use 0 if truck parks at the trap)"]').fill('50');
+    await page.getByRole('button', { name: 'Continue' }).click();
 
-    const payload = await waitForPayload(page, payloads);
-    expect(payload).not.toBeNull();
-    await expect(page.getByText('request received', { exact: false })).toBeVisible({ timeout: 12000 });
-    expect(payload?.meta?.source).toBe('core-services');
-    expect(payload?.meta?.service).toBe('Main Sewer Line Jetting / Hydro Jetting');
-    expect(payload?.estimate?.manualQuote || payload?.estimate?.manual_quote).toBeTruthy();
+    await page.locator('input[placeholder="Full name"]').fill('Pat Tester');
+    await page.locator('input[placeholder="(818) 000-0000"]').fill('5551234567');
+    await page.locator('input[placeholder="you@restaurant.com"]').fill('pat@example.com');
+    await page.getByRole('button', { name: 'Submit Request' }).click();
+
+    await expect(page.getByText('Here is your estimate', { exact: false })).toBeVisible({ timeout: 10000 });
+    expect(payloads.length).toBeGreaterThan(0);
+    expect(payloads[0]?.meta?.service).toContain('Grease Trap / Interceptor Pumping');
   });
 
-  test('Repeated core-service clicks do not spam interest messages', async ({ page }) => {
+  test('homepage septic card starts contact-only form flow', async ({ page }) => {
+    const payloads: any[] = [];
+    await page.route('**/api/estimate', async route => {
+      const bodyText = route.request().postData() || '{}';
+      payloads.push(JSON.parse(bodyText));
+      await route.fulfill({ status: 200, body: 'ok' });
+    });
+
     await page.goto('/');
-    const label = 'Septic / Holding Tank Pumping';
+    await page.locator('button[aria-label="Request Septic / Holding Tank Pumping"]').click();
+    await expect(page.getByText('Describe the system', { exact: true })).toBeVisible();
 
-    await page.getByText(label, { exact: true }).click();
-    await page.waitForTimeout(150);
-    await page.getByText(label, { exact: true }).click();
+    await page.locator('input[placeholder="Your business or property name"]').fill('Septic Site');
+    await page.locator('textarea').fill('Holding tank near loading dock.');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.locator('input[placeholder="Full name"]').fill('Casey Contact');
+    await page.locator('input[placeholder="(818) 000-0000"]').fill('5559876543');
+    await page.locator('input[placeholder="you@restaurant.com"]').fill('casey@example.com');
+    await page.getByRole('button', { name: 'Submit Request' }).click();
 
-    const interest = page.locator(`text=interested in "${label}"`);
-    await expect(interest).toHaveCount(1);
-    const updated = page.locator(`text=Updated — noted request for "${label}".`);
-    await expect(updated).toHaveCount(0);
+    await expect(page.getByText('Request captured', { exact: false })).toBeVisible({ timeout: 12000 });
+    expect(payloads.length).toBeGreaterThan(0);
+    expect(payloads[0]?.estimate?.manualQuote || payloads[0]?.estimate?.manual_quote).toBeTruthy();
+  });
+
+  test('header resource links navigate to real pages (no 404)', async ({ page }) => {
+    await page.goto('/');
+
+    await page.locator('nav a[href="/faq"]').click();
+    await expect(page).toHaveURL(/\/faq$/);
+    await expect(page.locator('h1').first()).toBeVisible();
+
+    await page.goto('/');
+    await page.locator('nav a[href="/about-us"]').click();
+    await expect(page).toHaveURL(/\/about-us$/);
+    await expect(page.locator('h1').first()).toBeVisible();
+
+    await page.goto('/');
+    await page.locator('nav a[href="/best-practices"]').click();
+    await expect(page).toHaveURL(/\/best-practices$/);
+    await expect(page.locator('h1').first()).toBeVisible();
+
+    await page.goto('/');
+    await page.locator('nav a[href="/environmental-impact"]').click();
+    await expect(page).toHaveURL(/\/environmental-impact$/);
+    await expect(page.locator('h1').first()).toBeVisible();
   });
 });
