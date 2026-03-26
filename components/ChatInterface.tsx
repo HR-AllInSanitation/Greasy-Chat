@@ -8,6 +8,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { calculateServiceEstimate } from '../services/pricingEngine';
 import { EstimationInputs, EstimationResult, Frequency, ServiceType } from '../types';
 import { trackConversion, trackEvent } from '../api/gtag-utils';
+import { getEstimatorServiceByLabel, type EstimatorServiceOption } from '../data/serviceOptions';
 import {
   defaultContactState,
   defaultIntakeState,
@@ -21,7 +22,14 @@ import {
   type IntakeState,
   type Language,
 } from '../utils/chatFlow';
-import { createManualReviewEstimate } from '../utils/estimateFlow';
+import {
+  buildLeadPayload,
+  createManualReviewEstimate,
+  hasMinPhoneDigits,
+  isValidEmail,
+  type EstimateContactValues,
+  type EstimateFormValues,
+} from '../utils/estimateFlow';
 
 const OFFICE_PHONE = typeof __OFFICE_PHONE__ === 'string' ? __OFFICE_PHONE__ : '';
 if (import.meta.env.DEV && !OFFICE_PHONE.trim()) {
@@ -227,11 +235,10 @@ const isValidFallback = (field: string, text: string): boolean => {
       return ['yes', 'no', 'y', 'n', 'true', 'false'].includes(lower);
     }
     case 'contact_phone': {
-      const digits = clean.replace(/\D/g, '');
-      return digits.length >= 10;
+      return hasMinPhoneDigits(clean);
     }
     case 'contact_email':
-      return /@/.test(clean) && /\./.test(clean);
+      return isValidEmail(clean);
     case 'contact_name':
       if (isInterjection(clean)) return false;
       return clean.length >= 2 && /[a-zA-Z]/.test(clean);
@@ -377,6 +384,31 @@ const parseAdditionalServices = (raw: string): string[] =>
     .split(',')
     .map(s => s.trim())
     .filter(Boolean);
+
+const chatIntakeToEstimateForm = (intakeState: IntakeState): EstimateFormValues => ({
+  businessName: intakeState.business_name || '',
+  addressLine: intakeState.address_line || '',
+  city: intakeState.city || '',
+  state: intakeState.state || 'CA',
+  zip: intakeState.zip || '',
+  systemType: (intakeState.system_type as ServiceType) || ServiceType.GREASE_TRAP,
+  frequency: Frequency.MONTHLY,
+  gallons: intakeState.gallons || '',
+  parkingDistance: intakeState.parking_distance || '',
+  additionalServices: parseAdditionalServices(intakeState.additional_services || ''),
+  notes: [
+    intakeState.last_service_months ? `Last service (months): ${intakeState.last_service_months}` : '',
+    intakeState.last_cleaned_at ? `Last cleaned: ${intakeState.last_cleaned_at}` : '',
+    intakeState.needs_uco ? `Needs UCO: ${intakeState.needs_uco}` : '',
+  ].filter(Boolean).join(' | '),
+});
+
+const chatContactToEstimateContact = (contactState: ContactState): EstimateContactValues => ({
+  contactName: contactState.contact_name || '',
+  contactPhone: contactState.contact_phone || '',
+  contactEmail: contactState.contact_email || '',
+  preferredContact: 'either',
+});
 
 export const ChatInterface: React.FC = () => {
   // Track selected core service label
@@ -725,13 +757,38 @@ export const ChatInterface: React.FC = () => {
     if (estimate?.tierUsed) meta.tier_used = estimate.tierUsed;
     if (typeof estimate?.baseServicePrice === 'number') meta.base_price = estimate.baseServicePrice;
 
+    const selectedServiceLabel = selectedServiceLabelRef.current;
+    const sharedServiceOption: EstimatorServiceOption = getEstimatorServiceByLabel(selectedServiceLabel) || {
+      key: selectedServiceLabel ? selectedServiceLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : 'chat-intake',
+      label: selectedServiceLabel || 'Chat Intake',
+      description: 'Lead captured from chat workflow.',
+      icon: 'fa-comments',
+      tag: 'Chat',
+      mode: 'contact',
+      defaultServiceType: ServiceType.GREASE_TRAP,
+    };
+
+    const sharedPayload = buildLeadPayload({
+      service: sharedServiceOption,
+      form: chatIntakeToEstimateForm(intakeRef.current),
+      contact: chatContactToEstimateContact(contactRef.current),
+      estimate,
+      source: selectedServiceLabel ? 'core-services' : 'greasy-agent',
+    });
+
     const payload = {
+      ...sharedPayload,
       intake: {
+        ...sharedPayload.intake,
         ...intakeRef.current,
         system_label: systemLabel,
       },
-      contact: contactRef.current,
+      contact: {
+        ...sharedPayload.contact,
+        ...contactRef.current,
+      },
       estimate: {
+        ...sharedPayload.estimate,
         ...estimate,
         distanceMiles: estimate.distanceMiles ?? estimate.distance,
         distanceSource: estimate.distanceSource || 'computed',
@@ -753,7 +810,10 @@ export const ChatInterface: React.FC = () => {
         baseServicePrice: estimate.baseServicePrice,
         totalPrice: estimate.totalPrice,
       },
-      meta,
+      meta: {
+        ...sharedPayload.meta,
+        ...meta,
+      },
       createdAt: new Date().toISOString(),
     };
 

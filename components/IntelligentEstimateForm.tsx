@@ -8,6 +8,8 @@ import {
   createManualReviewEstimate,
   defaultEstimateContactValues,
   defaultEstimateFormValues,
+  hasMinPhoneDigits,
+  isValidEmail,
   parseGallonsInput,
   submitLeadPayload,
   type EstimateContactValues,
@@ -137,10 +139,10 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
     }
     if (stepNum === 2) {
       if (!contact.contactName.trim()) errors.contactName = 'Contact name is required.';
-      if (contact.contactPhone.replace(/\D/g, '').length < 10) {
+      if (!hasMinPhoneDigits(contact.contactPhone)) {
         errors.contactPhone = 'Enter a valid 10-digit US phone number.';
       }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contact.contactEmail.trim())) {
+      if (!isValidEmail(contact.contactEmail)) {
         errors.contactEmail = 'Enter a valid email address.';
       }
     }

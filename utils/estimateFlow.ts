@@ -55,6 +55,10 @@ export const parseGallonsInput = (raw: string): { num: number; plus: boolean } =
   };
 };
 
+export const hasMinPhoneDigits = (value: string, minDigits = 10): boolean => value.replace(/\D/g, '').length >= minDigits;
+
+export const isValidEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim());
+
 export const createManualReviewEstimate = (): EstimationResult => ({
   minPrice: null,
   maxPrice: null,
