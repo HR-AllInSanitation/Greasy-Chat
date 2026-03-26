@@ -8,6 +8,9 @@ import UsedCookingOilPickupLA from './pages/UsedCookingOilPickupLA';
 import RestroomTrailerRentalsLA from './pages/RestroomTrailerRentalsLA';
 import RestaurantWasteServicesLA from './pages/RestaurantWasteServicesLA';
 import FAQPage from './pages/FAQ';
+import AboutUs from './pages/AboutUs';
+import BestPractices from './pages/BestPractices';
+import EnvironmentalImpact from './pages/EnvironmentalImpact';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -25,6 +28,9 @@ root.render(
         <Route path="/restroom-trailer-rentals-los-angeles" element={<RestroomTrailerRentalsLA />} />
         <Route path="/restaurant-waste-services" element={<RestaurantWasteServicesLA />} />
         <Route path="/faq" element={<FAQPage />} />
+        <Route path="/about-us" element={<AboutUs />} />
+        <Route path="/best-practices" element={<BestPractices />} />
+        <Route path="/environmental-impact" element={<EnvironmentalImpact />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

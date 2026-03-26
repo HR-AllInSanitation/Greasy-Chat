@@ -24,4 +24,16 @@
     <loc>https://www.larestaurantservices.com/restaurant-waste-services</loc>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/about-us</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/best-practices</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/environmental-impact</loc>
+    <priority>0.7</priority>
+  </url>
 </urlset>

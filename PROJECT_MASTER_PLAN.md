@@ -52,7 +52,7 @@ Build a conversion-first web experience that maximizes revenue by:
 - [ ] Define page map (core, support, conversion pages)
 - [x] Move full FAQ out of homepage
 - [x] Publish dedicated FAQ page
-- [ ] Define About / Best Practices / Environmental Impact page briefs
+- [x] Define About / Best Practices / Environmental Impact page briefs
 
 ## WS3 — Routing & Runtime Integrity
 - [x] Ensure active runtime uses the intended router entrypoint
@@ -151,3 +151,6 @@ Deliverables in Phase 1:
 - 2026-03-26: Switched runtime entry to router and expanded sitemap with active service + FAQ routes.
 - 2026-03-26: Work moved to branch `feature/multipage-faq-tracking` to avoid impacting main.
 - 2026-03-26: Updated Google Ads conversion snippet target to `AW-17824333319/Tqz6CM_jnZAcEIf8prNC` in tracking utility.
+- 2026-03-26: Added support pages: `/about-us`, `/best-practices`, `/environmental-impact`.
+- 2026-03-26: Added homepage navigation and footer resource links to support pages.
+- 2026-03-26: Expanded sitemap with support page routes.

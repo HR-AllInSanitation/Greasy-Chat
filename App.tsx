@@ -130,6 +130,10 @@ const App: React.FC = () => {
           <div className="hidden lg:flex items-center gap-10 text-[12px] font-black text-slate-500 uppercase tracking-widest">
             <button type="button" onClick={() => scrollToSection('services')} className="hover:text-amber-600 transition-colors">Services</button>
             <div className="h-4 w-px bg-slate-200"></div>
+            <a href="/faq" className="hover:text-amber-600 transition-colors">FAQ</a>
+            <div className="h-4 w-px bg-slate-200"></div>
+            <a href="/best-practices" className="hover:text-amber-600 transition-colors">Best Practices</a>
+            <div className="h-4 w-px bg-slate-200"></div>
             <button 
               type="button"
               onClick={() => {
@@ -316,6 +320,28 @@ const App: React.FC = () => {
                 <a href="https://www.saltedlightlycommissary.com" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 hover:text-white transition-colors">
                   <i className="fas fa-utensils text-base text-amber-500"></i>
                   <span className="text-[13px] font-black uppercase tracking-widest">Salted Lightly</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-white/5">
+              <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-amber-500 mb-4">Resources</h4>
+              <div className="flex flex-wrap gap-x-8 gap-y-4">
+                <a href="/about-us" className="group flex items-center gap-3 hover:text-white transition-colors">
+                  <i className="fas fa-building text-base text-amber-500"></i>
+                  <span className="text-[13px] font-black uppercase tracking-widest">About Us</span>
+                </a>
+                <a href="/faq" className="group flex items-center gap-3 hover:text-white transition-colors">
+                  <i className="fas fa-circle-question text-base text-amber-500"></i>
+                  <span className="text-[13px] font-black uppercase tracking-widest">FAQ</span>
+                </a>
+                <a href="/best-practices" className="group flex items-center gap-3 hover:text-white transition-colors">
+                  <i className="fas fa-lightbulb text-base text-amber-500"></i>
+                  <span className="text-[13px] font-black uppercase tracking-widest">Best Practices</span>
+                </a>
+                <a href="/environmental-impact" className="group flex items-center gap-3 hover:text-white transition-colors">
+                  <i className="fas fa-leaf text-base text-amber-500"></i>
+                  <span className="text-[13px] font-black uppercase tracking-widest">Environmental Impact</span>
                 </a>
               </div>
             </div>
