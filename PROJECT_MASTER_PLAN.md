@@ -154,3 +154,4 @@ Deliverables in Phase 1:
 - 2026-03-26: Added support pages: `/about-us`, `/best-practices`, `/environmental-impact`.
 - 2026-03-26: Added homepage navigation and footer resource links to support pages.
 - 2026-03-26: Expanded sitemap with support page routes.
+- 2026-03-26: Added support-page analytics events (`page_view_support`, `support_page_cta_click`) on FAQ/About/Best Practices/Environmental pages.

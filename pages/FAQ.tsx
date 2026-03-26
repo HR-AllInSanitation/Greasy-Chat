@@ -2,8 +2,13 @@ import React from 'react';
 import { FAQSection } from '../components/FAQSection';
 import { faqs } from '../data/faqData';
 import { StructuredData, buildFAQPageSchema, buildBreadcrumbSchema } from '../components/StructuredData';
+import { trackEvent } from '../api/gtag-utils';
 
 const FAQPage: React.FC = () => {
+  React.useEffect(() => {
+    trackEvent('page_view_support', { page_type: 'faq' });
+  }, []);
+
   const faqSchema = buildFAQPageSchema(faqs);
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: 'Home', url: 'https://www.larestaurantservices.com' },
@@ -43,6 +48,7 @@ const FAQPage: React.FC = () => {
             </div>
             <a
               href="/#estimator"
+              onClick={() => trackEvent('support_page_cta_click', { page_type: 'faq', cta: 'instant_estimate' })}
               className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-400 transition-all shadow-lg"
             >
               Go to Instant Estimate

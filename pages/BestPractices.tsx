@@ -1,5 +1,6 @@
 import React from 'react';
 import { StructuredData, buildBreadcrumbSchema } from '../components/StructuredData';
+import { trackEvent } from '../api/gtag-utils';
 
 const articleSchema = {
   '@context': 'https://schema.org',
@@ -22,6 +23,10 @@ const articleSchema = {
 };
 
 const BestPractices: React.FC = () => {
+  React.useEffect(() => {
+    trackEvent('page_view_support', { page_type: 'best_practices' });
+  }, []);
+
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: 'Home', url: 'https://www.larestaurantservices.com' },
     { name: 'Best Practices', url: 'https://www.larestaurantservices.com/best-practices' },
@@ -101,7 +106,11 @@ const BestPractices: React.FC = () => {
               <h2 className="text-2xl font-black uppercase tracking-tight">Need a practical maintenance schedule?</h2>
               <p className="text-slate-300 text-sm font-medium mt-1">We can map your volume into a recurring service plan.</p>
             </div>
-            <a href="/#estimator" className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all">
+            <a
+              href="/#estimator"
+              onClick={() => trackEvent('support_page_cta_click', { page_type: 'best_practices', cta: 'build_my_plan' })}
+              className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
+            >
               Build My Plan
             </a>
           </section>

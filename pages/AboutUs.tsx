@@ -1,7 +1,12 @@
 import React from 'react';
 import { StructuredData, buildBreadcrumbSchema, buildLocalBusinessSchema } from '../components/StructuredData';
+import { trackEvent } from '../api/gtag-utils';
 
 const AboutUs: React.FC = () => {
+  React.useEffect(() => {
+    trackEvent('page_view_support', { page_type: 'about_us' });
+  }, []);
+
   const organizationSchema = buildLocalBusinessSchema();
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: 'Home', url: 'https://www.larestaurantservices.com' },
@@ -69,10 +74,18 @@ const AboutUs: React.FC = () => {
               <p className="text-slate-300 text-sm font-medium mt-1">Get a structured estimate in about 60 seconds.</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <a href="/#estimator" className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all">
+              <a
+                href="/#estimator"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'about_us', cta: 'instant_estimate' })}
+                className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
+              >
                 Instant Estimate
               </a>
-              <a href="/restaurant-waste-services" className="bg-white/10 border border-white/20 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-white/20 transition-all">
+              <a
+                href="/restaurant-waste-services"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'about_us', cta: 'view_services' })}
+                className="bg-white/10 border border-white/20 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-white/20 transition-all"
+              >
                 View Services
               </a>
             </div>

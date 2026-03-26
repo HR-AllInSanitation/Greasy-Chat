@@ -1,5 +1,6 @@
 import React from 'react';
 import { StructuredData, buildBreadcrumbSchema } from '../components/StructuredData';
+import { trackEvent } from '../api/gtag-utils';
 
 const articleSchema = {
   '@context': 'https://schema.org',
@@ -22,6 +23,10 @@ const articleSchema = {
 };
 
 const EnvironmentalImpact: React.FC = () => {
+  React.useEffect(() => {
+    trackEvent('page_view_support', { page_type: 'environmental_impact' });
+  }, []);
+
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: 'Home', url: 'https://www.larestaurantservices.com' },
     { name: 'Environmental Impact', url: 'https://www.larestaurantservices.com/environmental-impact' },
@@ -91,10 +96,18 @@ const EnvironmentalImpact: React.FC = () => {
               <p className="text-slate-300 text-sm font-medium mt-1">Get a custom recommendation with your quote flow.</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <a href="/#estimator" className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all">
+              <a
+                href="/#estimator"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'environmental_impact', cta: 'start_estimate' })}
+                className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
+              >
                 Start Estimate
               </a>
-              <a href="/used-cooking-oil-pickup-los-angeles" className="bg-white/10 border border-white/20 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-white/20 transition-all">
+              <a
+                href="/used-cooking-oil-pickup-los-angeles"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'environmental_impact', cta: 'uco_service' })}
+                className="bg-white/10 border border-white/20 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-white/20 transition-all"
+              >
                 UCO Service
               </a>
             </div>
