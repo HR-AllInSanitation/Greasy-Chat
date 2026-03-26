@@ -75,7 +75,7 @@ const AboutUs: React.FC = () => {
             </div>
             <div className="flex flex-wrap gap-3">
               <a
-                href="/?source=about-us#estimator"
+                href="/instant-estimate?source=about-us"
                 onClick={() => trackEvent('support_page_cta_click', { page_type: 'about_us', cta: 'instant_estimate' })}
                 className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
               >

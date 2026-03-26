@@ -36,4 +36,8 @@
     <loc>https://www.larestaurantservices.com/environmental-impact</loc>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/instant-estimate</loc>
+    <priority>0.9</priority>
+  </url>
 </urlset>

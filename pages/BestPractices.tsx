@@ -107,7 +107,7 @@ const BestPractices: React.FC = () => {
               <p className="text-slate-300 text-sm font-medium mt-1">We can map your volume into a recurring service plan.</p>
             </div>
             <a
-              href="/?service=grease-trap-interceptor&source=best-practices#estimator"
+              href="/instant-estimate?service=grease-trap-interceptor&source=best-practices"
               onClick={() => trackEvent('support_page_cta_click', { page_type: 'best_practices', cta: 'build_my_plan' })}
               className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
             >

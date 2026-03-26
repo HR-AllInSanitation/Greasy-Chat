@@ -66,7 +66,7 @@ Build a conversion-first web experience that maximizes revenue by:
 
 ## WS5 — Form + Chat Hybrid Implementation
 - [ ] Extract reusable intake/validation modules from chat
-- [ ] Build intelligent multi-step form UI (same visual system)
+- [x] Build intelligent multi-step form UI (same visual system)
 - [ ] Keep chat as escalation widget for complex/manual cases
 - [x] Standardize service-button entry behavior into form context
 
@@ -158,3 +158,4 @@ Deliverables in Phase 1:
 - 2026-03-26: Added canonical env/integration map in `ENVIRONMENT_MAP.md`.
 - 2026-03-26: Added service-context deep links (`?service=...#estimator`) and homepage preselection handling to standardize estimator entry intent.
 - 2026-03-26: Added route-reachability and service deep-link smoke coverage in Playwright; suite passing.
+- 2026-03-26: Added `/instant-estimate` intelligent form route with pricing/manual-review submission path.

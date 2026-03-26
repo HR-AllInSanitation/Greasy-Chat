@@ -153,7 +153,7 @@ const GreaseTrapCleaningLA: React.FC = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <a 
-                href="/?service=grease-trap-interceptor#estimator" 
+                href="/instant-estimate?service=grease-trap-interceptor" 
                 className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-400 transition-all shadow-lg"
               >
                 Calculate Price Now
@@ -317,7 +317,7 @@ const GreaseTrapCleaningLA: React.FC = () => {
               Get your free grease trap estimate now. Our Greasy Agent provides instant pricing based on your system size and location.
             </p>
             <a 
-              href="/?service=grease-trap-interceptor#estimator" 
+              href="/instant-estimate?service=grease-trap-interceptor" 
               className="inline-block bg-slate-950 text-white px-12 py-5 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-slate-800 transition-all shadow-xl"
             >
               Get Free Estimate

@@ -136,6 +136,7 @@ test.describe('core services flows', () => {
       '/about-us',
       '/best-practices',
       '/environmental-impact',
+      '/instant-estimate',
     ];
 
     for (const route of routes) {
@@ -149,6 +150,13 @@ test.describe('core services flows', () => {
 
     await expect(page.getByText('UCO Recycling', { exact: false })).toBeVisible({ timeout: 5000 });
     await expect(page.getByText('What is the best contact name?', { exact: true })).toBeVisible({ timeout: 5000 });
+  });
+
+  test('instant estimate route preselects service card context', async ({ page }) => {
+    await page.goto('/instant-estimate?service=grease-trap-interceptor');
+
+    await expect(page.getByText('Grease Trap / Interceptor Pumping', { exact: true })).toBeVisible();
+    await expect(page.locator('input').first()).toBeVisible();
   });
 
   test('Grease Trap / Interceptor Pumping glows and runs intake with estimate summary', async ({ page }) => {

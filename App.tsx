@@ -1,18 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ChatInterface } from './components/ChatInterface';
+import { estimatorServiceQueryMap } from './data/serviceOptions';
 
 type LegalType = 'privacy' | 'compliance' | 'terms' | null;
-
-const SERVICE_QUERY_MAP: Record<string, string> = {
-  'grease-trap-interceptor': 'Grease Trap / Interceptor Pumping',
-  'septic-holding-tank': 'Septic / Holding Tank Pumping',
-  'hydro-jetting': 'Main Sewer Line Jetting / Hydro Jetting',
-  'uco-recycling': 'UCO Recycling',
-  'restroom-rentals': 'Restroom Rentals',
-  'compliance-audit': 'Compliance Audit',
-  'hood-cleaning': 'Hood Cleaning',
-  'janitorial-services': 'Janitorial Services',
-};
 
 const App: React.FC = () => {
   const didHandleEstimatorRouteRef = React.useRef(false);
@@ -25,7 +15,7 @@ const App: React.FC = () => {
     if (didHandleEstimatorRouteRef.current || typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     const serviceKey = url.searchParams.get('service')?.trim().toLowerCase();
-    const selectedLabel = serviceKey ? SERVICE_QUERY_MAP[serviceKey] : null;
+    const selectedLabel = serviceKey ? estimatorServiceQueryMap[serviceKey] : null;
     if (!selectedLabel) return;
 
     const estimator = document.getElementById('estimator');
@@ -167,18 +157,12 @@ const App: React.FC = () => {
             <div className="h-4 w-px bg-slate-200"></div>
             <a href="/best-practices" className="hover:text-amber-600 transition-colors">Best Practices</a>
             <div className="h-4 w-px bg-slate-200"></div>
-            <button 
-              type="button"
-              onClick={() => {
-                if (didDispatchRef.current) return; // debounce/guard
-                didDispatchRef.current = true;
-                triggerChatAction(undefined, true);
-                setTimeout(() => { didDispatchRef.current = false; }, 1200); // reset guard
-              }}
+            <a
+              href="/instant-estimate"
               className="bg-amber-500 text-slate-950 px-10 py-4 rounded-full hover:bg-amber-400 transition-all font-black shadow-lg shadow-amber-200/50"
             >
               Instant Estimate
-            </button>
+            </a>
           </div>
         </div>
       </nav>

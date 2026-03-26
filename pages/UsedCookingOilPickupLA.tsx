@@ -148,7 +148,7 @@ const UsedCookingOilPickupLA: React.FC = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <a 
-                href="/?service=uco-recycling#estimator" 
+                href="/instant-estimate?service=uco-recycling" 
                 className="bg-white text-emerald-600 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-emerald-50 transition-all shadow-lg"
               >
                 Request Pickup
@@ -291,7 +291,7 @@ const UsedCookingOilPickupLA: React.FC = () => {
               Request your free UCO container and start turning waste into cash while protecting the environment.
             </p>
             <a 
-              href="/?service=uco-recycling#estimator" 
+              href="/instant-estimate?service=uco-recycling" 
               className="inline-block bg-white text-emerald-600 px-12 py-5 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-emerald-50 transition-all shadow-xl"
             >
               Request Free Container

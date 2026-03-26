@@ -11,6 +11,7 @@ import FAQPage from './pages/FAQ';
 import AboutUs from './pages/AboutUs';
 import BestPractices from './pages/BestPractices';
 import EnvironmentalImpact from './pages/EnvironmentalImpact';
+import InstantEstimate from './pages/InstantEstimate';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -31,6 +32,7 @@ root.render(
         <Route path="/about-us" element={<AboutUs />} />
         <Route path="/best-practices" element={<BestPractices />} />
         <Route path="/environmental-impact" element={<EnvironmentalImpact />} />
+        <Route path="/instant-estimate" element={<InstantEstimate />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
