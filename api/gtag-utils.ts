@@ -4,6 +4,9 @@
  * Conversion ID: AW-17824333319
  */
 
+const GOOGLE_ADS_ID = 'AW-17824333319';
+const REQUEST_QUOTE_CONVERSION_SEND_TO = 'AW-17824333319/Tqz6CM_jnZAcEIf8prNC';
+
 // Declare gtag on window for TypeScript
 declare global {
   interface Window {
@@ -29,7 +32,7 @@ export function trackConversion(conversionData?: {
 
   try {
     window.gtag('event', 'conversion', {
-      send_to: 'AW-17824333319/H7e3CMyShP8bEIf8prNC',
+      send_to: REQUEST_QUOTE_CONVERSION_SEND_TO,
       value: conversionData?.estimateId || '',
       currency: 'USD',
       ...(conversionData?.phone && { phone_number: conversionData.phone }),
@@ -63,7 +66,7 @@ export function trackEvent(
 
   try {
     window.gtag('event', eventName, {
-      send_to: 'AW-17824333319',
+      send_to: GOOGLE_ADS_ID,
       ...eventData,
     });
 

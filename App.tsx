@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ChatInterface } from './components/ChatInterface';
-import { FAQSection } from './components/FAQSection';
-import { faqs } from './data/faqData';
 
 type LegalType = 'privacy' | 'compliance' | 'terms' | null;
 
@@ -241,25 +239,29 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* FAQ Section */}
-              <div id="faq" className="scroll-mt-32">
-                <FAQSection 
-                  faqs={faqs} 
-                  onCTAClick={(message) => {
-                    // Auto-fill the chat input with the contextual message
-                    const textarea = document.querySelector('#estimator textarea') as HTMLTextAreaElement;
-                    if (textarea) {
-                      textarea.value = message;
-                      textarea.focus();
-                      // Auto-submit the form
-                      const form = textarea.closest('form');
-                      if (form) {
-                        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                      }
-                    }
-                  }}
-                />
-              </div>
+              <section id="faq" className="scroll-mt-32 bg-white p-8 lg:p-10 rounded-[2rem] border border-slate-100 shadow-xl">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+                  <div className="space-y-3 max-w-2xl">
+                    <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-amber-100">
+                      <i className="fas fa-circle-question"></i>
+                      <span>Knowledge Center</span>
+                    </div>
+                    <h3 className="text-3xl lg:text-4xl font-black text-slate-950 tracking-tight">Need answers before requesting service?</h3>
+                    <p className="text-slate-600 font-medium leading-relaxed">
+                      We moved our full FAQ library into a dedicated page so this homepage stays focused on instant estimates and lead capture.
+                    </p>
+                  </div>
+                  <div className="w-full lg:w-auto">
+                    <a
+                      href="/faq"
+                      className="inline-flex w-full lg:w-auto items-center justify-center gap-3 bg-slate-950 text-white px-8 py-4 rounded-xl font-black uppercase tracking-[0.16em] text-xs hover:bg-black transition-all shadow-xl"
+                    >
+                      <i className="fas fa-book-open"></i>
+                      <span>Open Full FAQ Page</span>
+                    </a>
+                  </div>
+                </div>
+              </section>
 
             </div>
 

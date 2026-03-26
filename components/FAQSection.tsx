@@ -62,6 +62,9 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
     const estimator = document.querySelector('#estimator');
     if (estimator) {
       estimator.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      window.location.href = '/#estimator';
+      return;
     }
     
     // Send message after short delay
@@ -97,7 +100,6 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
               type="button"
               onClick={() => toggleFAQ(index)}
               className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 bg-slate-50 hover:bg-amber-50 transition-colors"
-              aria-expanded={openIndex === index ? "true" : "false"}
             >
               <div className="flex-1">
                 {faq.category && (

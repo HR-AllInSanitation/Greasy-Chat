@@ -6,6 +6,7 @@ import GreaseTrapCleaningLA from './pages/GreaseTrapCleaningLA';
 import UsedCookingOilPickupLA from './pages/UsedCookingOilPickupLA';
 import RestroomTrailerRentalsLA from './pages/RestroomTrailerRentalsLA';
 import RestaurantWasteServicesLA from './pages/RestaurantWasteServicesLA';
+import FAQPage from './pages/FAQ';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -16,6 +17,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/used-cooking-oil-pickup-los-angeles" element={<UsedCookingOilPickupLA />} />
         <Route path="/restroom-trailer-rentals-los-angeles" element={<RestroomTrailerRentalsLA />} />
         <Route path="/restaurant-waste-services" element={<RestaurantWasteServicesLA />} />
+        <Route path="/faq" element={<FAQPage />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
