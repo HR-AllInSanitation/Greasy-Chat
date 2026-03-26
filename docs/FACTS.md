@@ -87,7 +87,7 @@ En Vercel aparecen (al menos en “All Environments”) estas keys:
 - `RESEND_API_KEY`
 - `RESEND_FROM`
 - `HQ_LEADS_EMAILS`
-- `GOOGLE_SHEETS_WEBHOOK_URL`
+- `GOOGLE_SHEETS_WEBHOOK`
 - `VITE_OFFICE_PHONE` (opcional)
 - (extra vistos): `GEMINI_MODEL`, `GEMINI_API_KEY`, `OFFICE_WEBHOOK_URL`
 

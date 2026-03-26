@@ -72,7 +72,7 @@ Build a conversion-first web experience that maximizes revenue by:
 
 ## WS6 — Integrations and Env Governance
 - [x] Create canonical env var mapping table
-- [ ] Align webhook variable naming across code/docs
+- [x] Align webhook variable naming across code/docs
 - [ ] Verify Redis/QStash/Resend/Google Maps dependencies
 - [ ] Add deploy-time env validation checklist
 
@@ -159,3 +159,4 @@ Deliverables in Phase 1:
 - 2026-03-26: Added service-context deep links (`?service=...#estimator`) and homepage preselection handling to standardize estimator entry intent.
 - 2026-03-26: Added route-reachability and service deep-link smoke coverage in Playwright; suite passing.
 - 2026-03-26: Added `/instant-estimate` intelligent form route with pricing/manual-review submission path.
+- 2026-03-26: Normalized docs to use `GOOGLE_SHEETS_WEBHOOK` as canonical webhook env variable name.

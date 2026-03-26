@@ -129,7 +129,7 @@ RESEND_API_KEY
   Description: Resend API key (for sending emails)
   Example: re_...
 
-GOOGLE_SHEETS_WEBHOOK_URL
+GOOGLE_SHEETS_WEBHOOK
   Description: Google Sheets webhook URL
   Example: https://script.google.com/macros/d/.../usercontent
 

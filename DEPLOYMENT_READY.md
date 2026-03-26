@@ -107,7 +107,7 @@ HQ_EMAIL_DELAY_SECONDS=120
 RESEND_API_KEY=<api_key>
 
 # Google Sheets (webhook)
-GOOGLE_SHEETS_WEBHOOK_URL=https://script.google.com/...
+GOOGLE_SHEETS_WEBHOOK=https://script.google.com/...
 
 # Auto-detected (no setup needed)
 # VERCEL_URL (set by Vercel, used for QStash callback URL)
@@ -248,7 +248,7 @@ Status: ✅ Production-ready, TypeScript clean, build successful
 - UPSTASH_REDIS_REST_URL/TOKEN
 - QSTASH_TOKEN and QSTASH_CURRENT_SIGNING_KEY
 - RESEND_API_KEY
-- GOOGLE_SHEETS_WEBHOOK_URL
+- GOOGLE_SHEETS_WEBHOOK
 - HQ_EMAIL_DELAY_SECONDS (optional, defaults to 120)
 
 ### Instructions
