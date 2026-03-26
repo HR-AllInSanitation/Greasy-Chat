@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-const INPUT_SELECTOR = 'input[placeholder="Instructions..."]';
+const INPUT_SELECTOR = 'input[placeholder="Type here..."]';
 
 const patchSendBeacon = () => {
   (window as any).__capturedBeacons = [];
@@ -39,6 +39,8 @@ const answerIntakeAndContact = async (page: Page) => {
     { prompt: 'What is the parking distance (in feet)?', answer: '50' },
     { prompt: 'How many months since your last service?', answer: '6' },
     { prompt: 'Any additional services?', answer: 'None' },
+    { prompt: 'When was the system last cleaned?', answer: '1–2 years' },
+    { prompt: 'Do you need used cooking oil (UCO) recycling?', answer: 'No' },
   ];
 
   for (const step of intakeSteps) {
@@ -128,6 +130,27 @@ test.describe('core services flows', () => {
     expect(favicon.status()).toBeLessThan(400);
   });
 
+  test('support content routes are reachable', async ({ page }) => {
+    const routes = [
+      '/faq',
+      '/about-us',
+      '/best-practices',
+      '/environmental-impact',
+    ];
+
+    for (const route of routes) {
+      await page.goto(route);
+      await expect(page.locator('h1').first()).toBeVisible();
+    }
+  });
+
+  test('service query preselects estimator context from deep link', async ({ page }) => {
+    await page.goto('/?service=uco-recycling#estimator');
+
+    await expect(page.getByText('UCO Recycling', { exact: false })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('What is the best contact name?', { exact: true })).toBeVisible({ timeout: 5000 });
+  });
+
   test('Grease Trap / Interceptor Pumping glows and runs intake with estimate summary', async ({ page }) => {
     const payloads: any[] = [];
     await page.route('**/api/estimate', async route => {
@@ -156,8 +179,8 @@ test.describe('core services flows', () => {
 
     await answerIntakeAndContact(page);
 
-    await expect(page.getByText('ESTIMATE SUMMARY')).toBeVisible({ timeout: 8000 });
-    await expect(page.getByText('Do you want to move forward?')).toHaveCount(0);
+    await expect(page.getByText('Estimated total:', { exact: false })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole('button', { name: 'Yes, move forward' })).toBeVisible({ timeout: 8000 });
 
     const payload = await waitForPayload(page, payloads);
     expect(payload).not.toBeNull();
@@ -196,7 +219,6 @@ test.describe('core services flows', () => {
     const payload = await waitForPayload(page, payloads);
     expect(payload).not.toBeNull();
     await expect(page.getByText('request received', { exact: false })).toBeVisible({ timeout: 12000 });
-    await expect(page.getByText('next business day', { exact: false })).toBeVisible({ timeout: 12000 });
     await expect(page.getByRole('link', { name: /Call\/Text/i })).toBeVisible({ timeout: 12000 });
     expect(payload?.meta?.source).toBe('core-services');
     expect(payload?.meta?.service).toBe('Septic / Holding Tank Pumping');

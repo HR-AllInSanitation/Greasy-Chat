@@ -28,14 +28,13 @@ const App: React.FC = () => {
     const selectedLabel = serviceKey ? SERVICE_QUERY_MAP[serviceKey] : null;
     if (!selectedLabel) return;
 
-    didHandleEstimatorRouteRef.current = true;
-
     const estimator = document.getElementById('estimator');
     if (estimator) {
       estimator.scrollIntoView({ behavior: 'smooth' });
     }
 
     const timeoutId = setTimeout(() => {
+      didHandleEstimatorRouteRef.current = true;
       window.dispatchEvent(new CustomEvent('greasy-select-service', { detail: { label: selectedLabel } }));
     }, 650);
 

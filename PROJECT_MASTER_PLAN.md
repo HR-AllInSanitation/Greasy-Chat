@@ -56,8 +56,8 @@ Build a conversion-first web experience that maximizes revenue by:
 
 ## WS3 — Routing & Runtime Integrity
 - [x] Ensure active runtime uses the intended router entrypoint
-- [ ] Confirm all target routes are accessible in prod build
-- [ ] Add route health smoke checks
+- [x] Confirm all target routes are accessible in prod build
+- [x] Add route health smoke checks
 
 ## WS4 — Homepage Desaturation + Focus
 - [x] Remove full FAQ block from homepage
@@ -157,3 +157,4 @@ Deliverables in Phase 1:
 - 2026-03-26: Added support-page analytics events (`page_view_support`, `support_page_cta_click`) on FAQ/About/Best Practices/Environmental pages.
 - 2026-03-26: Added canonical env/integration map in `ENVIRONMENT_MAP.md`.
 - 2026-03-26: Added service-context deep links (`?service=...#estimator`) and homepage preselection handling to standardize estimator entry intent.
+- 2026-03-26: Added route-reachability and service deep-link smoke coverage in Playwright; suite passing.
