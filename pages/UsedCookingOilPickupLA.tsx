@@ -1,6 +1,8 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { FAQSection, FAQItem } from '../components/FAQSection';
 import { StructuredData, buildServiceSchema, buildFAQPageSchema, buildBreadcrumbSchema } from '../components/StructuredData';
+import { ServiceLandingLinks } from '../components/ServiceLandingLinks';
 
 const UsedCookingOilPickupLA: React.FC = () => {
   const faqs: FAQItem[] = [
@@ -118,7 +120,7 @@ const UsedCookingOilPickupLA: React.FC = () => {
         <div className="max-w-5xl mx-auto space-y-12">
           {/* Breadcrumbs */}
           <nav className="flex items-center gap-2 text-sm font-medium text-slate-500">
-            <a href="/" className="hover:text-amber-600 transition-colors">Home</a>
+            <Link to="/" className="hover:text-amber-600 transition-colors">Home</Link>
             <i className="fas fa-chevron-right text-xs"></i>
             <span className="text-slate-950 font-bold">Used Cooking Oil Pickup</span>
           </nav>
@@ -158,6 +160,12 @@ const UsedCookingOilPickupLA: React.FC = () => {
                 className="bg-white/10 text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/20 transition-all border border-white/20"
               >
                 Call: 818.698.4252
+              </a>
+              <a
+                href="/instant-estimate?service=uco-recycling"
+                className="bg-transparent text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/10 transition-all border border-dashed border-white/40"
+              >
+                Complex Case Review
               </a>
             </div>
           </div>
@@ -278,6 +286,8 @@ const UsedCookingOilPickupLA: React.FC = () => {
               </div>
             </div>
           </div>
+
+          <ServiceLandingLinks currentPath="/used-cooking-oil-pickup-los-angeles" />
 
           {/* FAQ */}
           <FAQSection faqs={faqs} />

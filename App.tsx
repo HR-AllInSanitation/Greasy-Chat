@@ -97,6 +97,17 @@ const App: React.FC = () => {
     }
   ];
 
+  const serviceLandingLinks = [
+    { label: 'Grease Trap Cleaning', path: '/grease-trap-cleaning-los-angeles' },
+    { label: 'Used Cooking Oil Pickup', path: '/used-cooking-oil-pickup-los-angeles' },
+    { label: 'Restroom Trailer Rentals', path: '/restroom-trailer-rentals-los-angeles' },
+    { label: 'Septic Holding Tank Pumping', path: '/septic-holding-tank-pumping-los-angeles' },
+    { label: 'Hydro Jetting', path: '/hydro-jetting-los-angeles' },
+    { label: 'Compliance Audits', path: '/compliance-audits-los-angeles' },
+    { label: 'Hood Cleaning', path: '/hood-cleaning-los-angeles' },
+    { label: 'Janitorial Services', path: '/janitorial-services-los-angeles' },
+  ];
+
   const focusEstimator = () => {
     const element = document.getElementById('estimator');
     if (element) element.scrollIntoView({ behavior: 'smooth' });
@@ -152,7 +163,32 @@ const App: React.FC = () => {
           </div>
           
           <div className="hidden lg:flex items-center gap-10 text-[12px] font-black text-slate-500 uppercase tracking-widest">
-            <button type="button" onClick={() => scrollToSection('services')} className="hover:text-amber-600 transition-colors">Services</button>
+            <div className="relative group">
+              <button type="button" className="inline-flex items-center gap-2 hover:text-amber-600 transition-colors">
+                <span>Services</span>
+                <i className="fas fa-chevron-down text-[10px]"></i>
+              </button>
+              <div className="absolute left-0 top-full pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <div className="w-[360px] bg-white border border-slate-100 rounded-2xl shadow-2xl p-3 normal-case tracking-normal">
+                  {serviceLandingLinks.map((serviceLink) => (
+                    <Link
+                      key={serviceLink.path}
+                      to={serviceLink.path}
+                      className="block px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-[0.14em] text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                    >
+                      {serviceLink.label}
+                    </Link>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection('services')}
+                    className="mt-1 w-full text-left px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-[0.14em] text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                  >
+                    View Services Grid
+                  </button>
+                </div>
+              </div>
+            </div>
             <div className="h-4 w-px bg-slate-200"></div>
             <Link to="/faq" className="hover:text-amber-600 transition-colors">FAQ</Link>
             <div className="h-4 w-px bg-slate-200"></div>

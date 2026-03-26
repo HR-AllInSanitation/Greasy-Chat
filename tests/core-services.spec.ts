@@ -130,6 +130,32 @@ test.describe('core services flows', () => {
     }
   });
 
+  test('all service landing routes are reachable', async ({ page }) => {
+    const serviceRoutes = [
+      '/grease-trap-cleaning-los-angeles',
+      '/used-cooking-oil-pickup-los-angeles',
+      '/restroom-trailer-rentals-los-angeles',
+      '/septic-holding-tank-pumping-los-angeles',
+      '/hydro-jetting-los-angeles',
+      '/compliance-audits-los-angeles',
+      '/hood-cleaning-los-angeles',
+      '/janitorial-services-los-angeles',
+    ];
+
+    for (const route of serviceRoutes) {
+      await page.goto(route);
+      await expect(page.locator('h1').first()).toBeVisible();
+    }
+  });
+
+  test('service landings expose complex case review CTA', async ({ page }) => {
+    await page.goto('/hydro-jetting-los-angeles');
+    await expect(page.getByRole('link', { name: 'Complex Case Review' })).toBeVisible();
+
+    await page.goto('/hood-cleaning-los-angeles');
+    await expect(page.getByRole('link', { name: 'Complex Case Review' })).toBeVisible();
+  });
+
   test('service query preselects estimator context from deep link', async ({ page }) => {
     await page.goto('/?service=uco-recycling#estimator');
 
@@ -292,6 +318,21 @@ test.describe('core services flows', () => {
     await page.goto('/');
     await page.locator('nav a[href="/environmental-impact"]').click();
     await expect(page).toHaveURL(/\/environmental-impact$/);
+    await expect(page.locator('h1').first()).toBeVisible();
+  });
+
+  test('services dropdown links navigate to service landing pages', async ({ page }) => {
+    await page.goto('/');
+
+    await page.getByRole('button', { name: /Services/i }).first().hover();
+    await page.locator('nav a[href="/hydro-jetting-los-angeles"]').click();
+    await expect(page).toHaveURL(/\/hydro-jetting-los-angeles$/);
+    await expect(page.locator('h1').first()).toBeVisible();
+
+    await page.goto('/');
+    await page.getByRole('button', { name: /Services/i }).first().hover();
+    await page.locator('nav a[href="/janitorial-services-los-angeles"]').click();
+    await expect(page).toHaveURL(/\/janitorial-services-los-angeles$/);
     await expect(page.locator('h1').first()).toBeVisible();
   });
 });
