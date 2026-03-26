@@ -9,6 +9,7 @@ export interface EstimateFormValues {
   state: string;
   zip: string;
   systemType: ServiceType;
+  frequency: Frequency;
   gallons: string;
   parkingDistance: string;
   additionalServices: string[];
@@ -19,6 +20,7 @@ export interface EstimateContactValues {
   contactName: string;
   contactPhone: string;
   contactEmail: string;
+  preferredContact: 'phone' | 'email' | 'either';
 }
 
 export const defaultEstimateFormValues: EstimateFormValues = {
@@ -28,6 +30,7 @@ export const defaultEstimateFormValues: EstimateFormValues = {
   state: 'CA',
   zip: '',
   systemType: ServiceType.GREASE_TRAP,
+  frequency: Frequency.MONTHLY,
   gallons: '',
   parkingDistance: '',
   additionalServices: [],
@@ -38,6 +41,7 @@ export const defaultEstimateContactValues: EstimateContactValues = {
   contactName: '',
   contactPhone: '',
   contactEmail: '',
+  preferredContact: 'either',
 };
 
 export const parseGallonsInput = (raw: string): { num: number; plus: boolean } => {
@@ -102,7 +106,7 @@ export const createEstimateFromForm = async (values: EstimateFormValues): Promis
   const inputs: EstimationInputs = {
     serviceType: values.systemType,
     tierKey: 'matrix',
-    frequency: Frequency.MONTHLY,
+    frequency: values.frequency,
     isOpeningSoon: false,
     parkingDistance: Number(values.parkingDistance) || 0,
     gallons: gallonsParsed.num,
@@ -128,6 +132,7 @@ export const buildLeadPayload = (params: {
     state: params.form.state,
     zip: params.form.zip,
     system_type: params.form.systemType,
+    frequency: params.form.frequency,
     gallons: params.form.gallons,
     parking_distance: params.form.parkingDistance,
     additional_services: params.form.additionalServices.join(', '),
@@ -141,6 +146,7 @@ export const buildLeadPayload = (params: {
     contact_name: params.contact.contactName,
     contact_phone: params.contact.contactPhone,
     contact_email: params.contact.contactEmail,
+    preferred_contact: params.contact.preferredContact,
   },
   estimate: params.estimate,
   meta: {
