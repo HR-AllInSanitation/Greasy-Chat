@@ -70,24 +70,24 @@ const HoodCleaningLA: React.FC = () => {
               <p className="text-amber-100 text-sm font-medium">Service plans built for restaurant operating schedules</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a
-                href="/instant-estimate?service=hood-cleaning"
+              <Link
+                to="/instant-estimate?service=hood-cleaning"
                 className="bg-white text-amber-700 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-50 transition-all shadow-lg"
               >
                 Request Estimate
-              </a>
+              </Link>
               <a
                 href="tel:8186984252"
                 className="bg-white/10 text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/20 transition-all border border-white/20"
               >
                 Call: 818.698.4252
               </a>
-              <a
-                href="/instant-estimate?service=hood-cleaning"
+              <Link
+                to="/instant-estimate?service=hood-cleaning"
                 className="bg-transparent text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/10 transition-all border border-dashed border-white/40"
               >
                 Complex Case Review
-              </a>
+              </Link>
             </div>
           </div>
 

@@ -130,6 +130,57 @@ test.describe('core services flows', () => {
     }
   });
 
+  test('key public pages expose only valid internal links', async ({ page, baseURL }) => {
+    const seedRoutes = [
+      '/',
+      '/faq',
+      '/about-us',
+      '/best-practices',
+      '/environmental-impact',
+      '/instant-estimate',
+      '/restaurant-waste-services',
+      '/grease-trap-cleaning-los-angeles',
+      '/used-cooking-oil-pickup-los-angeles',
+      '/restroom-trailer-rentals-los-angeles',
+      '/septic-holding-tank-pumping-los-angeles',
+      '/hydro-jetting-los-angeles',
+      '/compliance-audits-los-angeles',
+      '/hood-cleaning-los-angeles',
+      '/janitorial-services-los-angeles',
+    ];
+
+    const discovered = new Set<string>();
+
+    for (const route of seedRoutes) {
+      await page.goto(route);
+      const hrefs = await page.locator('a[href]').evaluateAll((anchors, origin) => {
+        return anchors
+          .map(anchor => anchor.getAttribute('href') || '')
+          .filter(href => href && !href.startsWith('#') && !href.startsWith('tel:') && !href.startsWith('mailto:'))
+          .map(href => {
+            try {
+              const url = new URL(href, origin as string);
+              return url.origin === origin ? `${url.pathname}${url.search}` : '';
+            } catch {
+              return '';
+            }
+          })
+          .filter(Boolean);
+      }, baseURL || 'http://127.0.0.1:4173');
+
+      for (const href of hrefs) {
+        discovered.add(href);
+      }
+    }
+
+    for (const route of discovered) {
+      const response = await page.goto(route);
+      expect(response?.status() ?? 200).toBeLessThan(400);
+      await expect(page.locator('body')).not.toContainText(/404|not found/i);
+      await expect(page.locator('h1').first()).toBeVisible();
+    }
+  });
+
   test('all service landing routes are reachable', async ({ page }) => {
     const serviceRoutes = [
       '/grease-trap-cleaning-los-angeles',

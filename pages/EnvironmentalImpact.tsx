@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { StructuredData, buildBreadcrumbSchema } from '../components/StructuredData';
 import { trackEvent } from '../api/gtag-utils';
 
@@ -40,7 +41,7 @@ const EnvironmentalImpact: React.FC = () => {
       <div className="min-h-screen bg-[#FDFDFF] py-16 px-6">
         <div className="max-w-6xl mx-auto space-y-12">
           <nav className="flex items-center gap-2 text-sm font-medium text-slate-500">
-            <a href="/" className="hover:text-amber-600 transition-colors">Home</a>
+            <Link to="/" className="hover:text-amber-600 transition-colors">Home</Link>
             <i className="fas fa-chevron-right text-xs"></i>
             <span className="text-slate-950 font-bold">Environmental Impact</span>
           </nav>
@@ -96,20 +97,20 @@ const EnvironmentalImpact: React.FC = () => {
               <p className="text-slate-300 text-sm font-medium mt-1">Get a custom recommendation with your quote flow.</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <a
-                href="/instant-estimate?service=uco-recycling&source=environmental-impact"
+              <Link
+                to="/instant-estimate?service=uco-recycling&source=environmental-impact"
                 onClick={() => trackEvent('support_page_cta_click', { page_type: 'environmental_impact', cta: 'start_estimate' })}
                 className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
               >
                 Start Estimate
-              </a>
-              <a
-                href="/used-cooking-oil-pickup-los-angeles"
+              </Link>
+              <Link
+                to="/used-cooking-oil-pickup-los-angeles"
                 onClick={() => trackEvent('support_page_cta_click', { page_type: 'environmental_impact', cta: 'uco_service' })}
                 className="bg-white/10 border border-white/20 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-white/20 transition-all"
               >
                 UCO Service
-              </a>
+              </Link>
             </div>
           </section>
         </div>

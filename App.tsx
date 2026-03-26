@@ -325,29 +325,23 @@ const App: React.FC = () => {
             </div>
 
             <aside id="estimator" className="lg:sticky lg:top-24 self-start">
-              <div className="relative group h-[calc(100vh-160px)] max-h-[680px] flex flex-col min-h-0">
-                <div className="absolute -inset-1 bg-gradient-to-tr from-amber-500 to-amber-200 rounded-[3rem] blur opacity-20 group-hover:opacity-40 transition duration-1000 pointer-events-none -z-10"></div>
-                <div className="relative bg-slate-950 text-white p-6 rounded-t-[2.5rem] shadow-2xl flex items-center justify-between border-b border-white/5 shrink-0">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-amber-500 text-slate-950 rounded-[1rem] flex items-center justify-center transform group-hover:rotate-6 transition-transform shadow-lg shadow-amber-500/20">
-                      <i className="fas fa-file-invoice-dollar text-xl" aria-hidden="true"></i>
-                    </div>
-                    <div>
-                      <h3 className="font-black text-sm uppercase tracking-widest leading-none">INTELLIGENT ESTIMATOR</h3>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Form-first quote flow</span>
-                      </div>
-                    </div>
+              <div className="space-y-5">
+                <div className="bg-white border border-slate-100 rounded-[2rem] shadow-xl p-6 space-y-4">
+                  <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-amber-100">
+                    <i className="fas fa-file-signature"></i>
+                    <span>Intelligent Estimator</span>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-950 tracking-tight">Request pricing in a dedicated estimate box</h3>
+                    <p className="text-sm text-slate-600 font-medium mt-2">Choose a service, complete the form, and route complex cases to office review without the old chat-style shell.</p>
                   </div>
                 </div>
-                <div className="flex-1 min-h-0 overflow-hidden bg-white rounded-b-[2.5rem]">
-                  <div className="h-full overflow-y-auto p-4">
-                    <IntelligentEstimateForm
-                      key={`home-estimator-${selectedServiceKey ?? 'default'}`}
-                      initialServiceKey={selectedServiceKey}
-                    />
-                  </div>
+
+                <div className="max-h-[calc(100vh-220px)] overflow-y-auto">
+                  <IntelligentEstimateForm
+                    key={`home-estimator-${selectedServiceKey ?? 'default'}`}
+                    initialServiceKey={selectedServiceKey}
+                  />
                 </div>
               </div>
             </aside>

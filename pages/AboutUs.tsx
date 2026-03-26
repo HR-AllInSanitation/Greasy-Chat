@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { StructuredData, buildBreadcrumbSchema, buildLocalBusinessSchema } from '../components/StructuredData';
 import { trackEvent } from '../api/gtag-utils';
 
@@ -21,7 +22,7 @@ const AboutUs: React.FC = () => {
       <div className="min-h-screen bg-[#FDFDFF] py-16 px-6">
         <div className="max-w-6xl mx-auto space-y-12">
           <nav className="flex items-center gap-2 text-sm font-medium text-slate-500">
-            <a href="/" className="hover:text-amber-600 transition-colors">Home</a>
+            <Link to="/" className="hover:text-amber-600 transition-colors">Home</Link>
             <i className="fas fa-chevron-right text-xs"></i>
             <span className="text-slate-950 font-bold">About Us</span>
           </nav>
@@ -74,20 +75,20 @@ const AboutUs: React.FC = () => {
               <p className="text-slate-300 text-sm font-medium mt-1">Get a structured estimate in about 60 seconds.</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <a
-                href="/instant-estimate?source=about-us"
+              <Link
+                to="/instant-estimate?source=about-us"
                 onClick={() => trackEvent('support_page_cta_click', { page_type: 'about_us', cta: 'instant_estimate' })}
                 className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
               >
                 Instant Estimate
-              </a>
-              <a
-                href="/restaurant-waste-services"
+              </Link>
+              <Link
+                to="/restaurant-waste-services"
                 onClick={() => trackEvent('support_page_cta_click', { page_type: 'about_us', cta: 'view_services' })}
                 className="bg-white/10 border border-white/20 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-white/20 transition-all"
               >
                 View Services
-              </a>
+              </Link>
             </div>
           </section>
         </div>

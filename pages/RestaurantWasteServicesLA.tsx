@@ -171,24 +171,24 @@ const RestaurantWasteServicesLA: React.FC = () => {
               <p className="text-slate-400 text-sm font-medium">First-year discount for new restaurants • All services included</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a 
-                href="/instant-estimate?service=grease-trap-interceptor" 
+              <Link 
+                to="/instant-estimate?service=grease-trap-interceptor" 
                 className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-400 transition-all shadow-lg"
               >
                 Get Custom Quote
-              </a>
+              </Link>
               <a 
                 href="tel:8186984252" 
                 className="bg-white/10 text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/20 transition-all border border-white/20"
               >
                 Call: 818.698.4252
               </a>
-              <a
-                href="/instant-estimate?service=compliance-audit"
+              <Link
+                to="/instant-estimate?service=compliance-audit"
                 className="bg-transparent text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/10 transition-all border border-dashed border-white/40"
               >
                 Complex Case Review
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -209,9 +209,9 @@ const RestaurantWasteServicesLA: React.FC = () => {
                     <p className="text-slate-600 leading-relaxed mb-3">
                       Complete pumping, scraping, and disposal for indoor and exterior grease systems. All sizes from 50-gallon residential traps to 2000+ gallon commercial interceptors.
                     </p>
-                    <a href="/grease-trap-cleaning-los-angeles" className="text-amber-600 font-bold text-sm hover:text-amber-700 inline-flex items-center gap-2">
+                    <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-600 font-bold text-sm hover:text-amber-700 inline-flex items-center gap-2">
                       Learn More <i className="fas fa-arrow-right text-xs"></i>
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -226,9 +226,9 @@ const RestaurantWasteServicesLA: React.FC = () => {
                     <p className="text-slate-600 leading-relaxed mb-3">
                       Free containers, scheduled pickups, and payment for clean yellow grease. Turn your waste oil into revenue while staying eco-friendly.
                     </p>
-                    <a href="/used-cooking-oil-pickup-los-angeles" className="text-emerald-600 font-bold text-sm hover:text-emerald-700 inline-flex items-center gap-2">
+                    <Link to="/used-cooking-oil-pickup-los-angeles" className="text-emerald-600 font-bold text-sm hover:text-emerald-700 inline-flex items-center gap-2">
                       Learn More <i className="fas fa-arrow-right text-xs"></i>
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -271,9 +271,9 @@ const RestaurantWasteServicesLA: React.FC = () => {
                     <p className="text-slate-600 leading-relaxed mb-3">
                       Luxury portable restrooms for outdoor dining expansions or facility renovations. Climate controlled, 2-6 stations, flexible rental terms.
                     </p>
-                    <a href="/restroom-trailer-rentals-los-angeles" className="text-pink-600 font-bold text-sm hover:text-pink-700 inline-flex items-center gap-2">
+                    <Link to="/restroom-trailer-rentals-los-angeles" className="text-pink-600 font-bold text-sm hover:text-pink-700 inline-flex items-center gap-2">
                       Learn More <i className="fas fa-arrow-right text-xs"></i>
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -341,12 +341,12 @@ const RestaurantWasteServicesLA: React.FC = () => {
             <p className="text-lg font-medium text-amber-50 max-w-2xl mx-auto">
               Get a custom quote for all your waste and sanitation needs. New openings get 10% off for the first year.
             </p>
-            <a 
-              href="/instant-estimate?service=grease-trap-interceptor" 
+            <Link 
+              to="/instant-estimate?service=grease-trap-interceptor" 
               className="inline-block bg-slate-950 text-white px-12 py-5 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-slate-800 transition-all shadow-xl"
             >
               Get Your Quote
-            </a>
+            </Link>
           </div>
         </div>
       </div>

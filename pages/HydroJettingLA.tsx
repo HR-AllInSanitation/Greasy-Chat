@@ -70,24 +70,24 @@ const HydroJettingLA: React.FC = () => {
               <p className="text-purple-100 text-sm font-medium">Fast diagnosis and jetting-focused service flow</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a
-                href="/instant-estimate?service=hydro-jetting"
+              <Link
+                to="/instant-estimate?service=hydro-jetting"
                 className="bg-white text-purple-600 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-purple-50 transition-all shadow-lg"
               >
                 Request Service
-              </a>
+              </Link>
               <a
                 href="tel:8186984252"
                 className="bg-white/10 text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/20 transition-all border border-white/20"
               >
                 Call: 818.698.4252
               </a>
-              <a
-                href="/instant-estimate?service=hydro-jetting"
+              <Link
+                to="/instant-estimate?service=hydro-jetting"
                 className="bg-transparent text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/10 transition-all border border-dashed border-white/40"
               >
                 Complex Case Review
-              </a>
+              </Link>
             </div>
           </div>
 

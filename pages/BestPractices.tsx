@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { StructuredData, buildBreadcrumbSchema } from '../components/StructuredData';
 import { trackEvent } from '../api/gtag-utils';
 
@@ -73,7 +74,7 @@ const BestPractices: React.FC = () => {
       <div className="min-h-screen bg-[#FDFDFF] py-16 px-6">
         <div className="max-w-6xl mx-auto space-y-12">
           <nav className="flex items-center gap-2 text-sm font-medium text-slate-500">
-            <a href="/" className="hover:text-amber-600 transition-colors">Home</a>
+            <Link to="/" className="hover:text-amber-600 transition-colors">Home</Link>
             <i className="fas fa-chevron-right text-xs"></i>
             <span className="text-slate-950 font-bold">Best Practices</span>
           </nav>
@@ -106,13 +107,13 @@ const BestPractices: React.FC = () => {
               <h2 className="text-2xl font-black uppercase tracking-tight">Need a practical maintenance schedule?</h2>
               <p className="text-slate-300 text-sm font-medium mt-1">We can map your volume into a recurring service plan.</p>
             </div>
-            <a
-              href="/instant-estimate?service=grease-trap-interceptor&source=best-practices"
+            <Link
+              to="/instant-estimate?service=grease-trap-interceptor&source=best-practices"
               onClick={() => trackEvent('support_page_cta_click', { page_type: 'best_practices', cta: 'build_my_plan' })}
               className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
             >
               Build My Plan
-            </a>
+            </Link>
           </section>
         </div>
       </div>

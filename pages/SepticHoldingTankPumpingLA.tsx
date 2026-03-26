@@ -70,24 +70,24 @@ const SepticHoldingTankPumpingLA: React.FC = () => {
               <p className="text-blue-100 text-sm font-medium">Scheduled maintenance and emergency dispatch available</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a
-                href="/instant-estimate?service=septic-holding-tank"
+              <Link
+                to="/instant-estimate?service=septic-holding-tank"
                 className="bg-white text-blue-600 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-blue-50 transition-all shadow-lg"
               >
                 Get Instant Estimate
-              </a>
+              </Link>
               <a
                 href="tel:8186984252"
                 className="bg-white/10 text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/20 transition-all border border-white/20"
               >
                 Call: 818.698.4252
               </a>
-              <a
-                href="/instant-estimate?service=septic-holding-tank"
+              <Link
+                to="/instant-estimate?service=septic-holding-tank"
                 className="bg-transparent text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/10 transition-all border border-dashed border-white/40"
               >
                 Complex Case Review
-              </a>
+              </Link>
             </div>
           </div>
 

@@ -202,17 +202,23 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
 
   return (
     <div className="bg-white border border-slate-100 rounded-[2rem] shadow-2xl overflow-hidden">
-      <div className="bg-slate-950 text-white px-8 py-6 border-b border-white/5">
+      <div className="px-8 py-6 border-b border-slate-100 bg-gradient-to-r from-white via-amber-50/50 to-white">
         <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.25em] font-black text-amber-400">Intelligent Estimate</div>
-            <h2 className="text-2xl font-black tracking-tight">Fast Quote Form</h2>
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shadow-sm">
+              <i className="fas fa-file-invoice-dollar text-lg" aria-hidden="true"></i>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.25em] font-black text-amber-700">Intelligent Estimate</div>
+              <h2 className="text-2xl font-black tracking-tight text-slate-950">Fast Quote Form</h2>
+              <p className="text-sm text-slate-500 font-medium mt-1">Structured intake for faster pricing, cleaner follow-up, and manual review when needed.</p>
+            </div>
           </div>
           {step >= 1 && step <= 2 && (
-            <div className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Step {step} / 2</div>
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-slate-500 bg-white border border-slate-200 rounded-full px-4 py-2">Step {step} / 2</div>
           )}
           {step === 3 && (
-            <div className="text-xs font-black uppercase tracking-[0.18em] text-emerald-400">Complete</div>
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-4 py-2">Complete</div>
           )}
         </div>
       </div>

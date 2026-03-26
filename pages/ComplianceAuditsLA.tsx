@@ -70,24 +70,24 @@ const ComplianceAuditsLA: React.FC = () => {
               <p className="text-slate-300 text-sm font-medium">Fast intake and coordinated office review available</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a
-                href="/instant-estimate?service=compliance-audit"
+              <Link
+                to="/instant-estimate?service=compliance-audit"
                 className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-400 transition-all shadow-lg"
               >
                 Start Audit Request
-              </a>
+              </Link>
               <a
                 href="tel:8186984252"
                 className="bg-white/10 text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/20 transition-all border border-white/20"
               >
                 Call: 818.698.4252
               </a>
-              <a
-                href="/instant-estimate?service=compliance-audit"
+              <Link
+                to="/instant-estimate?service=compliance-audit"
                 className="bg-transparent text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/10 transition-all border border-dashed border-white/40"
               >
                 Complex Case Review
-              </a>
+              </Link>
             </div>
           </div>
 

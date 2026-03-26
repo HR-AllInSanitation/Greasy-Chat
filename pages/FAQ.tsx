@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { FAQSection } from '../components/FAQSection';
 import { faqs } from '../data/faqData';
 import { StructuredData, buildFAQPageSchema, buildBreadcrumbSchema } from '../components/StructuredData';
@@ -23,7 +24,7 @@ const FAQPage: React.FC = () => {
       <div className="min-h-screen bg-[#FDFDFF] py-16 px-6">
         <div className="max-w-5xl mx-auto space-y-10">
           <nav className="flex items-center gap-2 text-sm font-medium text-slate-500">
-            <a href="/" className="hover:text-amber-600 transition-colors">Home</a>
+            <Link to="/" className="hover:text-amber-600 transition-colors">Home</Link>
             <i className="fas fa-chevron-right text-xs"></i>
             <span className="text-slate-950 font-bold">Frequently Asked Questions</span>
           </nav>
@@ -46,13 +47,13 @@ const FAQPage: React.FC = () => {
               <h2 className="text-2xl font-black uppercase tracking-tight">Need a quote now?</h2>
               <p className="text-slate-400 text-sm font-medium">Use the instant estimator to get pricing in about 60 seconds.</p>
             </div>
-            <a
-              href="/instant-estimate?source=faq"
+            <Link
+              to="/instant-estimate?source=faq"
               onClick={() => trackEvent('support_page_cta_click', { page_type: 'faq', cta: 'instant_estimate' })}
               className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-400 transition-all shadow-lg"
             >
               Go to Instant Estimate
-            </a>
+            </Link>
           </div>
 
           <FAQSection title="Restaurant Services FAQ" faqs={faqs} />

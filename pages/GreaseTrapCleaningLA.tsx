@@ -154,28 +154,27 @@ const GreaseTrapCleaningLA: React.FC = () => {
               <p className="text-slate-400 text-sm font-medium">Free quote in 60 seconds with our Greasy Agent</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a 
-                href="/instant-estimate?service=grease-trap-interceptor" 
+              <Link 
+                to="/instant-estimate?service=grease-trap-interceptor" 
                 className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-400 transition-all shadow-lg"
               >
                 Calculate Price Now
-              </a>
+              </Link>
               <a 
                 href="tel:8186984252" 
                 className="bg-white/10 text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/20 transition-all border border-white/20"
               >
                 Call: 818.698.4252
               </a>
-              <a
-                href="/instant-estimate?service=grease-trap-interceptor"
+              <Link
+                to="/instant-estimate?service=grease-trap-interceptor"
                 className="bg-transparent text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/10 transition-all border border-dashed border-white/40"
               >
                 Complex Case Review
-              </a>
+              </Link>
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="bg-white p-8 lg:p-12 rounded-[2rem] border border-slate-100 shadow-xl space-y-8">
             <div className="space-y-6">
               <h2 className="text-3xl lg:text-4xl font-black text-slate-950 tracking-tight">
@@ -326,12 +325,12 @@ const GreaseTrapCleaningLA: React.FC = () => {
             <p className="text-lg font-medium text-amber-50 max-w-2xl mx-auto">
               Get your free grease trap estimate now. Our Greasy Agent provides instant pricing based on your system size and location.
             </p>
-            <a 
-              href="/instant-estimate?service=grease-trap-interceptor" 
+            <Link 
+              to="/instant-estimate?service=grease-trap-interceptor" 
               className="inline-block bg-slate-950 text-white px-12 py-5 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-slate-800 transition-all shadow-xl"
             >
               Get Free Estimate
-            </a>
+            </Link>
           </div>
         </div>
       </div>

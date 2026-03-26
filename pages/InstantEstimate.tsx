@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ComplexCaseWidget } from '../components/ComplexCaseWidget';
 import { IntelligentEstimateForm } from '../components/IntelligentEstimateForm';
 import { StructuredData, buildBreadcrumbSchema, buildServiceSchema } from '../components/StructuredData';
@@ -30,7 +30,7 @@ const InstantEstimate: React.FC = () => {
       <div className="min-h-screen bg-[#FDFDFF] py-16 px-6">
         <div className="max-w-6xl mx-auto space-y-10">
           <nav className="flex items-center gap-2 text-sm font-medium text-slate-500">
-            <a href="/" className="hover:text-amber-600 transition-colors">Home</a>
+            <Link to="/" className="hover:text-amber-600 transition-colors">Home</Link>
             <i className="fas fa-chevron-right text-xs"></i>
             <span className="text-slate-950 font-bold">Instant Estimate</span>
           </nav>
