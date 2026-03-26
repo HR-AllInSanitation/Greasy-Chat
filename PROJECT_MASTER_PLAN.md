@@ -65,7 +65,7 @@ Build a conversion-first web experience that maximizes revenue by:
 - [ ] Keep estimator and service CTAs prominent
 
 ## WS5 — Form + Chat Hybrid Implementation
-- [ ] Extract reusable intake/validation modules from chat
+- [x] Extract reusable intake/validation modules from chat
 - [x] Build intelligent multi-step form UI (same visual system)
 - [x] Keep chat as escalation widget for complex/manual cases
 - [x] Standardize service-button entry behavior into form context
@@ -161,3 +161,4 @@ Deliverables in Phase 1:
 - 2026-03-26: Added `/instant-estimate` intelligent form route with pricing/manual-review submission path.
 - 2026-03-26: Normalized docs to use `GOOGLE_SHEETS_WEBHOOK` as canonical webhook env variable name.
 - 2026-03-26: Added complex-case widget beside the intelligent form and restored `ais-trigger-chat` event handling in chat UI.
+- 2026-03-26: Extracted shared chat intake/question helpers and shared manual-review estimate utility.

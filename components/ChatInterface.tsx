@@ -8,6 +8,20 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { calculateServiceEstimate } from '../services/pricingEngine';
 import { EstimationInputs, EstimationResult, Frequency, ServiceType } from '../types';
 import { trackConversion, trackEvent } from '../api/gtag-utils';
+import {
+  defaultContactState,
+  defaultIntakeState,
+  getFirstMissingContactField,
+  getFirstMissingField,
+  getQuestionForContactField,
+  getQuestionForField,
+  type ContactField,
+  type ContactState,
+  type IntakeField,
+  type IntakeState,
+  type Language,
+} from '../utils/chatFlow';
+import { createManualReviewEstimate } from '../utils/estimateFlow';
 
 const OFFICE_PHONE = typeof __OFFICE_PHONE__ === 'string' ? __OFFICE_PHONE__ : '';
 if (import.meta.env.DEV && !OFFICE_PHONE.trim()) {
@@ -41,31 +55,6 @@ const normalizePhoneForTel = (raw: string): string | null => {
 const generateQuoteId = () =>
   `QT-${Math.random().toString(36).substring(2, 7).toUpperCase()}-${Date.now().toString().slice(-4)}`;
 
-type IntakeState = {
-  business_name: string;
-  address_line: string;
-  city: string;
-  state: string;
-  zip: string;
-  system_type: string;
-  gallons: string;
-  parking_distance: string;
-  last_service_months: string;
-  additional_services: string;
-  last_cleaned_at: string;
-  needs_uco: string;
-  wants_to_move_forward: boolean | 'UNSURE';
-};
-
-type ContactState = {
-  contact_name: string;
-  contact_phone: string;
-  contact_email: string;
-};
-
-type IntakeField = keyof IntakeState;
-type ContactField = keyof ContactState;
-
 interface Message {
   role: 'user' | 'model';
   text: string;
@@ -80,7 +69,6 @@ type MessageLink = {
 };
 
 type MoveForward = true | false | 'UNSURE' | null;
-type Language = 'en' | 'es';
 
 const normalizeMoveForward = (raw: unknown): MoveForward => {
   if (raw === true) return true;
@@ -450,7 +438,7 @@ export const ChatInterface: React.FC = () => {
       }
 
       if (isContactOnlyLabel) {
-        const manual = makeManualQuoteEstimate();
+        const manual = createManualReviewEstimate();
         setCurrentEstimate(manual);
         currentEstimateRef.current = manual;
       }
@@ -552,27 +540,9 @@ export const ChatInterface: React.FC = () => {
     if (msg && msg.trim()) pushModel(msg, link);
     hasSentHandoffRef.current = true;
   };
-  const [intake, setIntake] = useState<IntakeState>({
-    business_name: '',
-    address_line: '',
-    city: '',
-    state: '',
-    zip: '',
-    system_type: '',
-    gallons: '',
-    parking_distance: '',
-    last_service_months: '',
-    additional_services: '',
-    last_cleaned_at: '',
-    needs_uco: '',
-    wants_to_move_forward: 'UNSURE',
-  });
+  const [intake, setIntake] = useState<IntakeState>(defaultIntakeState);
 
-  const [contact, setContact] = useState<ContactState>({
-    contact_name: '',
-    contact_phone: '',
-    contact_email: '',
-  });
+  const [contact, setContact] = useState<ContactState>(defaultContactState);
 
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
@@ -645,76 +615,6 @@ export const ChatInterface: React.FC = () => {
     }
   }, [messages]);
 
-  const getFirstMissingField = (obj: IntakeState): IntakeField | null => {
-    if (!obj.business_name.trim()) return 'business_name';
-    if (!obj.address_line.trim()) return 'address_line';
-    if (!obj.city.trim()) return 'city';
-    if (!obj.state.trim()) return 'state';
-    if (!obj.zip.trim()) return 'zip';
-    if (!obj.system_type.trim()) return 'system_type';
-    const isGreaseTrap = obj.system_type === ServiceType.GREASE_TRAP;
-    if (!isGreaseTrap && !obj.gallons.trim()) return 'gallons';
-    if (!obj.parking_distance.trim()) return 'parking_distance';
-    if (!obj.last_service_months.trim()) return 'last_service_months';
-    if (!obj.additional_services.trim()) return 'additional_services';
-    if (!obj.last_cleaned_at.trim()) return 'last_cleaned_at';
-    if (!obj.needs_uco.trim()) return 'needs_uco';
-    return null;
-  };
-
-  const getFirstMissingContactField = (obj: ContactState): ContactField | null => {
-    if (!obj.contact_name.trim()) return 'contact_name';
-    if (!obj.contact_phone.trim()) return 'contact_phone';
-    if (!obj.contact_email.trim()) return 'contact_email';
-    return null;
-  };
-
-  const getQuestionForField = (field: IntakeField, language: Language | null = 'en') => {
-    const es = language === 'es';
-    switch (field) {
-      case 'business_name':
-        return es ? '¿Cuál es el nombre de su negocio?' : 'What is your business name?';
-      case 'address_line':
-        return es ? '¿Cuál es la dirección?' : 'What is the street address?';
-      case 'city':
-        return es ? '¿En qué ciudad está?' : 'What city is this in?';
-      case 'state':
-        return es ? '¿En qué estado está?' : 'What state is this in?';
-      case 'zip':
-        return es ? '¿Cuál es el código postal?' : 'What is the ZIP code?';
-      case 'system_type':
-        return es ? '¿Qué tipo de sistema tiene?' : 'What system do you have?';
-      case 'gallons':
-        return es ? '¿Cuántos galones tiene el sistema?' : 'How many gallons does the system hold?';
-      case 'parking_distance':
-        return es ? '¿Cuál es la distancia de estacionamiento (en pies)?' : 'What is the parking distance (in feet)?';
-      case 'last_service_months':
-        return es ? '¿Cuántos meses desde su último servicio?' : 'How many months since your last service?';
-      case 'additional_services':
-        return es ? '¿Algún servicio adicional?' : 'Any additional services?';
-      case 'last_cleaned_at':
-        return es ? '¿Cuándo fue la última limpieza?' : 'When was the system last cleaned?';
-      case 'needs_uco':
-        return es ? '¿Necesita reciclaje de aceite usado (UCO)?' : 'Do you need used cooking oil (UCO) recycling?';
-      default:
-        return '';
-    }
-  };
-
-  const getQuestionForContactField = (field: ContactField, language: Language | null = 'en') => {
-    const es = language === 'es';
-    switch (field) {
-      case 'contact_name':
-        return es ? '¿Cuál es el mejor nombre de contacto?' : 'What is the best contact name?';
-      case 'contact_phone':
-        return es ? '¿Cuál es el mejor número de teléfono?' : 'What is the best phone number?';
-      case 'contact_email':
-        return es ? '¿Cuál es la mejor dirección de correo electrónico?' : 'What is the best email address?';
-      default:
-        return '';
-    }
-  };
-
   const isIntakeComplete = (state?: IntakeState) => !getFirstMissingField(state ?? intakeRef.current);
   const isContactComplete = (state?: ContactState) => !getFirstMissingContactField(state ?? contactRef.current);
   const canShowMoveForwardPrompt = (estimate?: EstimationResult | null, intakeState?: IntakeState, contactState?: ContactState) => {
@@ -722,25 +622,6 @@ export const ChatInterface: React.FC = () => {
     const isCoreServiceFlow = !!selectedServiceLabelRef.current;
     return hasEstimate && !isCoreServiceFlow && isIntakeComplete(intakeState) && isContactComplete(contactState);
   };
-
-  const makeManualQuoteEstimate = (): EstimationResult => ({
-    minPrice: 0,
-    maxPrice: 0,
-    distance: 0,
-    appliedDiscount: 0,
-    discountType: '',
-    notes: [],
-    hydroJetRequired: false,
-    breakdown: {
-      thresholdMi: 0,
-      surchargePerMi: 0,
-      milesFromHQ: 0,
-      distanceFee: 0,
-      hoseFee: 0,
-      subtotalBeforeBuffer: 0,
-    },
-    manualQuote: true,
-  });
 
   const getSuggestions = () => {
     const nextField = getFirstMissingField(intake);
@@ -779,7 +660,7 @@ export const ChatInterface: React.FC = () => {
     const isContactOnlyCore = isContactOnlyService(serviceLabel);
     let estimate = currentEstimateRef.current;
     if (!estimate && isContactOnlyCore) {
-      const manual = makeManualQuoteEstimate();
+      const manual = createManualReviewEstimate();
       setCurrentEstimate(manual);
       currentEstimateRef.current = manual;
       estimate = manual;
