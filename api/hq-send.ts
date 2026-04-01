@@ -122,14 +122,18 @@ export default async function handler(req: any, res: any) {
   }
 
   // Verify QStash signature
-  const qstashToken = process.env.QSTASH_CURRENT_SIGNING_KEY || process.env.QSTASH_TOKEN;
-  if (!qstashToken) {
-    console.warn('QSTASH_CURRENT_SIGNING_KEY or QSTASH_TOKEN not set');
+  const qstashCurrentSigningKey = process.env.QSTASH_CURRENT_SIGNING_KEY;
+  const qstashNextSigningKey = process.env.QSTASH_NEXT_SIGNING_KEY;
+  if (!qstashCurrentSigningKey) {
+    console.warn('QSTASH_CURRENT_SIGNING_KEY not set');
     res.status(500).json({ ok: false, error: 'QSTASH signing key not configured', buildId });
     return;
   }
 
-  const receiver = new Receiver({ currentSigningKey: qstashToken });
+  const receiver = new Receiver({
+    currentSigningKey: qstashCurrentSigningKey,
+    ...(qstashNextSigningKey ? { nextSigningKey: qstashNextSigningKey } : {}),
+  });
   let body: any = {};
 
   try {
@@ -177,9 +181,23 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
+  let stateKey = '';
+  let sendLockKey = '';
+
   try {
     // Load state
-    const stateKey = `greasy:lead:${quoteId}:state`;
+    stateKey = `greasy:lead:${quoteId}:state`;
+    sendLockKey = `greasy:lead:${quoteId}:hq-sending-lock`;
+
+    // Claim in-flight lock to avoid concurrent duplicate sends.
+    const lockRaw = await redis.set(sendLockKey, '1', { nx: true, ex: 180 });
+    const lockAcquired = lockRaw === 'OK';
+    if (!lockAcquired) {
+      console.log('QSTASH_HQ_SEND_IDEMPOTENT', { quoteId, reason: 'inflight_lock' });
+      res.status(200).json({ ok: true, idempotent: true, reason: 'inflight_lock', buildId });
+      return;
+    }
+
     const state: any = await redis.hgetall(stateKey);
 
     if (!state || Object.keys(state).length === 0) {
@@ -224,9 +242,11 @@ export default async function handler(req: any, res: any) {
 
     if (!resendKey || hqEmails.length === 0) {
       console.warn('RESEND_CONFIG_MISSING', { hasKey: !!resendKey, hqEmailCount: hqEmails.length, quoteId });
-      // Still mark as sent to avoid retry loop
-      await redis.hset(stateKey, { hqSent: '1', hqSentAt: new Date().toISOString() });
-      res.status(200).json({ ok: false, error: 'Resend not configured', buildId });
+      await redis.hset(stateKey, {
+        hqLastAttemptAt: new Date().toISOString(),
+        hqSendError: 'resend_not_configured',
+      });
+      res.status(503).json({ ok: false, error: 'Resend not configured', buildId });
       return;
     }
 
@@ -240,8 +260,11 @@ export default async function handler(req: any, res: any) {
 
     if (!resolvedFrom) {
       console.warn('RESEND_FROM not configured', { quoteId });
-      await redis.hset(stateKey, { hqSent: '1', hqSentAt: new Date().toISOString() });
-      res.status(200).json({ ok: false, error: 'RESEND_FROM not configured', buildId });
+      await redis.hset(stateKey, {
+        hqLastAttemptAt: new Date().toISOString(),
+        hqSendError: 'resend_from_not_configured',
+      });
+      res.status(503).json({ ok: false, error: 'RESEND_FROM not configured', buildId });
       return;
     }
 
@@ -324,13 +347,11 @@ export default async function handler(req: any, res: any) {
 
     if (!emailResult.ok) {
       console.error('Failed to send HQ email', { quoteId, errorCode: emailResult.errorCode });
-      // Still mark as attempted
       await redis.hset(stateKey, {
-        hqSent: '1',
-        hqSentAt: new Date().toISOString(),
+        hqLastAttemptAt: new Date().toISOString(),
         hqSendError: emailResult.errorCode || 'unknown',
       });
-      res.status(500).json({ ok: false, error: 'Failed to send email', buildId });
+      res.status(502).json({ ok: false, error: 'Failed to send email', buildId });
       return;
     }
 
@@ -356,7 +377,25 @@ export default async function handler(req: any, res: any) {
       buildId,
     });
   } catch (err: any) {
+    if (redis && stateKey) {
+      try {
+        await redis.hset(stateKey, {
+          hqLastAttemptAt: new Date().toISOString(),
+          hqSendError: (err?.message || 'internal_error').slice(0, 200),
+        });
+      } catch {
+        // ignore secondary persistence errors
+      }
+    }
     console.error('Unexpected error in hq-send handler:', err?.message || err);
     res.status(500).json({ ok: false, error: err?.message || 'Internal error', buildId });
+  } finally {
+    if (redis && sendLockKey) {
+      try {
+        await redis.del(sendLockKey);
+      } catch {
+        // ignore lock cleanup errors
+      }
+    }
   }
 }

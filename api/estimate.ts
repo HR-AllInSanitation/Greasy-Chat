@@ -68,11 +68,15 @@ interface LeadState {
   quoteId: string;
   decision?: 'YES' | 'NO' | 'PENDING';
   hqScheduled?: number; // 0 or 1
+  hqScheduledAt?: string;
   hqSent?: number; // 0 or 1
   createdAt?: string;
   decisionAt?: string;
   hqSentAt?: string;
   hqMessageId?: string;
+  customerEmailSent?: number; // 0 or 1
+  customerEmailSentAt?: string;
+  customerEmailMessageId?: string;
 }
 
 const storeLeadState = async (quoteId: string, state: Partial<LeadState>): Promise<boolean> => {
@@ -900,38 +904,90 @@ export default async function handler(req: any, res: any) {
   // --- EVENT A (estimate_created): Store state, schedule HQ email, NO customer email ---
   if (isEventA) {
     console.log('LEAD_EVENT_A_ESTIMATE_CREATED', { quoteId });
-    
+
+    const redis = getRedisClient();
+    const stateKey = `greasy:lead:${quoteId}:state`;
+    const scheduleLockKey = `greasy:lead:${quoteId}:hq-schedule-claimed`;
+
     // Store full payload and initial state in Redis
-    await storeLeadPayload(quoteId, { intake, contact: normalizedContact, estimate, meta: metaObj });
-    await storeLeadState(quoteId, {
+    const payloadStored = await storeLeadPayload(quoteId, { intake, contact: normalizedContact, estimate, meta: metaObj });
+    if (!payloadStored) {
+      warnings.push('redis_payload_store_failed');
+    }
+
+    const stateStored = await storeLeadState(quoteId, {
       quoteId,
       decision: 'PENDING',
       hqScheduled: 0, // **HARDENING**: Track if QStash scheduled to prevent duplicates
       hqSent: 0,
+      customerEmailSent: 0,
       createdAt: new Date().toISOString(),
     });
-    
-    // Schedule QStash to send HQ email after delay (but only if not already scheduled)
-    const redis = getRedisClient();
-    const stateKey = `greasy:lead:${quoteId}:state`;
-    const existingState = redis ? await redis.hgetall(stateKey) : null;
-    const alreadyScheduled = existingState?.hqScheduled === '1' || existingState?.hqScheduled === 1;
-    
-    if (!alreadyScheduled) {
-      const queuedHq = await scheduleHqEmailViaQStash(quoteId);
-      if (queuedHq) {
-        // Mark as scheduled to prevent re-scheduling
-        if (redis) {
-          await redis.hset(stateKey, { hqScheduled: '1' });
+
+    if (!stateStored) {
+      warnings.push('redis_state_store_failed');
+    }
+
+    // Schedule QStash once using an atomic Redis claim key.
+    let queuedHq = false;
+    let scheduleAlreadyClaimed = false;
+
+    if (redis) {
+      try {
+        const claimedRaw = await redis.set(scheduleLockKey, '1', { nx: true, ex: 30 * 24 * 60 * 60 });
+        const claimed = claimedRaw === 'OK';
+        scheduleAlreadyClaimed = !claimed;
+
+        if (claimed) {
+          queuedHq = await scheduleHqEmailViaQStash(quoteId);
+          if (queuedHq) {
+            await redis.hset(stateKey, { hqScheduled: '1', hqScheduledAt: new Date().toISOString() });
+          } else {
+            warnings.push('qstash_hq_schedule_failed');
+            await redis.del(scheduleLockKey);
+            console.warn('Failed to schedule HQ email via QStash', { quoteId });
+          }
+        }
+      } catch (err: any) {
+        warnings.push('qstash_hq_schedule_exception');
+        console.warn('QStash schedule claim exception', { quoteId, error: err?.message || 'unknown' });
+      }
+    } else {
+      warnings.push('redis_unavailable_event_a');
+    }
+
+    if (scheduleAlreadyClaimed) {
+      console.log('QSTASH_ALREADY_SCHEDULED', { quoteId, reason: 'duplicate_event_a' });
+      emailed = true;
+    } else {
+      emailed = queuedHq;
+    }
+
+    // If queueing is unavailable, fall back to immediate HQ email send so leads are not dropped.
+    if (!queuedHq && !scheduleAlreadyClaimed) {
+      if (hasResendKey && hasOfficeEmails) {
+        try {
+          logJson('EVENT_A_HQ_IMMEDIATE_FALLBACK_START', { quoteId, reason: 'qstash_unavailable_or_failed' });
+          const hqResult = await sendHqEmail({ intake, contact: normalizedContact, estimate, meta: metaObj }, hqEmails, resolvedFrom);
+          if (hqResult.ok) {
+            emailed = true;
+            if (redis) {
+              await redis.hset(stateKey, {
+                hqSent: '1',
+                hqSentAt: new Date().toISOString(),
+                hqMessageId: hqResult.messageId || 'unknown',
+              });
+            }
+          } else {
+            warnings.push(hqResult.errorCode || 'event_a_hq_fallback_failed');
+          }
+        } catch (err: any) {
+          warnings.push('event_a_hq_fallback_exception');
+          console.warn('Event A immediate HQ fallback failed', { quoteId, error: err?.message || 'unknown' });
         }
       } else {
-        warnings.push('qstash_hq_schedule_failed');
-        console.warn('Failed to schedule HQ email via QStash', { quoteId });
+        warnings.push('event_a_hq_fallback_skipped_missing_resend');
       }
-      emailed = queuedHq; // Mark as "queued" for HQ
-    } else {
-      console.log('QSTASH_ALREADY_SCHEDULED', { quoteId, reason: 'duplicate_event_a' });
-      emailed = true; // Already queued
     }
     
     // **NO customer email for Event A**
@@ -957,32 +1013,56 @@ export default async function handler(req: any, res: any) {
     const stateKey = `greasy:lead:${quoteId}:state`;
     if (redis) {
       await redis.hset(stateKey, {
+        quoteId,
         decision: decisionValue,
         decisionAt: new Date().toISOString(),
       });
     }
-    
+
     // Send customer email ONLY if decision is YES
     if (moveForward && customerEmail && isValidEmail(customerEmail)) {
-      customerEmailAttempted = true;
-      const apiKey = process.env.RESEND_API_KEY || '';
-      if (apiKey) {
+      let alreadySentToCustomer = false;
+      if (redis) {
         try {
-          logJson('EMAIL_SEND_CUSTOMER_START', { to: maskEmail(customerEmail), from: resolvedFrom, quoteId });
-          const customerResult = await sendCustomerEmail({ intake, contact: normalizedContact, estimate, meta: metaObj }, resolvedFrom);
-          logJson('EMAIL_SEND_CUSTOMER_RESULT', { to: maskEmail(customerEmail), from: resolvedFrom, status: customerResult.status ?? null, ok: customerResult.ok, messageId: customerResult.messageId || null, errorCode: customerResult.errorCode || null, quoteId });
-          if (customerResult.ok) {
-            emailed = true;
-          } else {
-            warnings.push(customerResult.errorCode || 'customer_email_failed');
-          }
+          const existingState: any = await redis.hgetall(stateKey);
+          alreadySentToCustomer = existingState?.customerEmailSent === '1' || existingState?.customerEmailSent === 1;
         } catch (err: any) {
-          warnings.push('customer_email_exception');
-          console.error('RESEND_CUSTOMER_ERR', { to: maskEmail(customerEmail), from: resolvedFrom, error: (err?.message || 'customer_email_exception').slice(0, 120), quoteId });
+          warnings.push('customer_email_idempotency_check_failed');
+          console.warn('Failed customer email idempotency check', { quoteId, error: err?.message || 'unknown' });
         }
+      }
+
+      if (alreadySentToCustomer) {
+        customerSkipReason = 'customer_email_already_sent';
+        logJson('EMAIL_SEND_CUSTOMER_SKIPPED', { reason: customerSkipReason, moveForward, hasEmail: !!customerEmail, quoteId });
       } else {
-        customerSkipReason = 'missing_resend_key';
-        warnings.push('customer_email_skipped_missing_key');
+        customerEmailAttempted = true;
+        const apiKey = process.env.RESEND_API_KEY || '';
+        if (apiKey) {
+          try {
+            logJson('EMAIL_SEND_CUSTOMER_START', { to: maskEmail(customerEmail), from: resolvedFrom, quoteId });
+            const customerResult = await sendCustomerEmail({ intake, contact: normalizedContact, estimate, meta: metaObj }, resolvedFrom);
+            logJson('EMAIL_SEND_CUSTOMER_RESULT', { to: maskEmail(customerEmail), from: resolvedFrom, status: customerResult.status ?? null, ok: customerResult.ok, messageId: customerResult.messageId || null, errorCode: customerResult.errorCode || null, quoteId });
+            if (customerResult.ok) {
+              emailed = true;
+              if (redis) {
+                await redis.hset(stateKey, {
+                  customerEmailSent: '1',
+                  customerEmailSentAt: new Date().toISOString(),
+                  customerEmailMessageId: customerResult.messageId || 'unknown',
+                });
+              }
+            } else {
+              warnings.push(customerResult.errorCode || 'customer_email_failed');
+            }
+          } catch (err: any) {
+            warnings.push('customer_email_exception');
+            console.error('RESEND_CUSTOMER_ERR', { to: maskEmail(customerEmail), from: resolvedFrom, error: (err?.message || 'customer_email_exception').slice(0, 120), quoteId });
+          }
+        } else {
+          customerSkipReason = 'missing_resend_key';
+          warnings.push('customer_email_skipped_missing_key');
+        }
       }
     } else {
       customerSkipReason = moveForward ? 'missing_or_invalid_email' : 'move_forward_false';
