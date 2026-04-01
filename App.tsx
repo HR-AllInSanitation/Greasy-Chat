@@ -325,25 +325,10 @@ const App: React.FC = () => {
             </div>
 
             <aside id="estimator" className="lg:sticky lg:top-24 self-start">
-              <div className="space-y-5">
-                <div className="bg-white border border-slate-100 rounded-[2rem] shadow-xl p-6 space-y-4">
-                  <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-amber-100">
-                    <i className="fas fa-file-signature"></i>
-                    <span>Intelligent Estimator</span>
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-black text-slate-950 tracking-tight">Request pricing in a dedicated estimate box</h3>
-                    <p className="text-sm text-slate-600 font-medium mt-2">Choose a service, complete the form, and route complex cases to office review without the old chat-style shell.</p>
-                  </div>
-                </div>
-
-                <div className="max-h-[calc(100vh-220px)] overflow-y-auto">
-                  <IntelligentEstimateForm
-                    key={`home-estimator-${selectedServiceKey ?? 'default'}`}
-                    initialServiceKey={selectedServiceKey}
-                  />
-                </div>
-              </div>
+              <IntelligentEstimateForm
+                key={`home-estimator-${selectedServiceKey ?? 'default'}`}
+                initialServiceKey={selectedServiceKey}
+              />
             </aside>
           </div>
         </div>

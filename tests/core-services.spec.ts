@@ -100,7 +100,7 @@ test.describe('core services flows', () => {
   test('homepage is form-first (chat shell is not rendered)', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('[data-testid="chat-shell"]')).toHaveCount(0);
-    await expect(page.getByText('INTELLIGENT ESTIMATOR', { exact: false })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Fast Quote Form/i })).toBeVisible();
   });
 
   test('SEO assets are served', async ({ request }) => {
