@@ -352,21 +352,25 @@ test.describe('core services flows', () => {
   test('header resource links navigate to real pages (no 404)', async ({ page }) => {
     await page.goto('/');
 
+    await page.getByRole('button', { name: /Company/i }).first().hover();
     await page.locator('nav a[href="/faq"]').click();
     await expect(page).toHaveURL(/\/faq$/);
     await expect(page.locator('h1').first()).toBeVisible();
 
     await page.goto('/');
+    await page.getByRole('button', { name: /Company/i }).first().hover();
     await page.locator('nav a[href="/about-us"]').click();
     await expect(page).toHaveURL(/\/about-us$/);
     await expect(page.locator('h1').first()).toBeVisible();
 
     await page.goto('/');
+    await page.getByRole('button', { name: /Resources/i }).first().hover();
     await page.locator('nav a[href="/best-practices"]').click();
     await expect(page).toHaveURL(/\/best-practices$/);
     await expect(page.locator('h1').first()).toBeVisible();
 
     await page.goto('/');
+    await page.getByRole('button', { name: /Resources/i }).first().hover();
     await page.locator('nav a[href="/environmental-impact"]').click();
     await expect(page).toHaveURL(/\/environmental-impact$/);
     await expect(page.locator('h1').first()).toBeVisible();

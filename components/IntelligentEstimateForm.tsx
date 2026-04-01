@@ -201,7 +201,7 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
   }, [initialServiceKey]);
 
   return (
-    <div className="bg-white border border-slate-100 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col lg:h-[calc(100vh-7rem)]">
+    <div className="bg-white border border-slate-100 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col lg:h-[calc(100dvh-12rem)]">
       <div className="shrink-0 px-8 py-6 border-b border-slate-100 bg-gradient-to-r from-white via-amber-50/50 to-white">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-start gap-4">

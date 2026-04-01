@@ -17,6 +17,7 @@ import AboutUs from './pages/AboutUs';
 import BestPractices from './pages/BestPractices';
 import EnvironmentalImpact from './pages/EnvironmentalImpact';
 import InstantEstimate from './pages/InstantEstimate';
+import { SiteLayout } from './components/SiteLayout';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -28,21 +29,23 @@ root.render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/grease-trap-cleaning-los-angeles" element={<GreaseTrapCleaningLA />} />
-        <Route path="/used-cooking-oil-pickup-los-angeles" element={<UsedCookingOilPickupLA />} />
-        <Route path="/restroom-trailer-rentals-los-angeles" element={<RestroomTrailerRentalsLA />} />
-        <Route path="/restaurant-waste-services" element={<RestaurantWasteServicesLA />} />
-        <Route path="/septic-holding-tank-pumping-los-angeles" element={<SepticHoldingTankPumpingLA />} />
-        <Route path="/hydro-jetting-los-angeles" element={<HydroJettingLA />} />
-        <Route path="/compliance-audits-los-angeles" element={<ComplianceAuditsLA />} />
-        <Route path="/hood-cleaning-los-angeles" element={<HoodCleaningLA />} />
-        <Route path="/janitorial-services-los-angeles" element={<JanitorialServicesLA />} />
-        <Route path="/faq" element={<FAQPage />} />
-        <Route path="/about-us" element={<AboutUs />} />
-        <Route path="/best-practices" element={<BestPractices />} />
-        <Route path="/environmental-impact" element={<EnvironmentalImpact />} />
-        <Route path="/instant-estimate" element={<InstantEstimate />} />
+        <Route element={<SiteLayout />}>
+          <Route path="/" element={<App />} />
+          <Route path="/grease-trap-cleaning-los-angeles" element={<GreaseTrapCleaningLA />} />
+          <Route path="/used-cooking-oil-pickup-los-angeles" element={<UsedCookingOilPickupLA />} />
+          <Route path="/restroom-trailer-rentals-los-angeles" element={<RestroomTrailerRentalsLA />} />
+          <Route path="/restaurant-waste-services" element={<RestaurantWasteServicesLA />} />
+          <Route path="/septic-holding-tank-pumping-los-angeles" element={<SepticHoldingTankPumpingLA />} />
+          <Route path="/hydro-jetting-los-angeles" element={<HydroJettingLA />} />
+          <Route path="/compliance-audits-los-angeles" element={<ComplianceAuditsLA />} />
+          <Route path="/hood-cleaning-los-angeles" element={<HoodCleaningLA />} />
+          <Route path="/janitorial-services-los-angeles" element={<JanitorialServicesLA />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/about-us" element={<AboutUs />} />
+          <Route path="/best-practices" element={<BestPractices />} />
+          <Route path="/environmental-impact" element={<EnvironmentalImpact />} />
+          <Route path="/instant-estimate" element={<InstantEstimate />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
