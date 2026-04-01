@@ -21,6 +21,11 @@ import WhichRestaurantsNeedGreaseTrapsLA from './pages/WhichRestaurantsNeedGreas
 import HowToVerifyGreaseTrapService from './pages/HowToVerifyGreaseTrapService';
 import GreaseTrapCleaningFrequency from './pages/GreaseTrapCleaningFrequency';
 import FOGSewerImpactLA from './pages/FOGSewerImpactLA';
+import LAHealthInspectionGuide from './pages/LAHealthInspectionGuide';
+import LAFOGProgramExplained from './pages/LAFOGProgramExplained';
+import WasteManifestExplained from './pages/WasteManifestExplained';
+import FOGViolationsFinesLA from './pages/FOGViolationsFinesLA';
+import NewRestaurantFOGComplianceLA from './pages/NewRestaurantFOGComplianceLA';
 import { SiteLayout } from './components/SiteLayout';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -48,6 +53,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="/how-to-tell-if-grease-trap-was-serviced" element={<HowToVerifyGreaseTrapService />} />
           <Route path="/grease-trap-cleaning-frequency-guide" element={<GreaseTrapCleaningFrequency />} />
           <Route path="/fats-oils-grease-sewer-impact-los-angeles" element={<FOGSewerImpactLA />} />
+          <Route path="/la-restaurant-health-inspection-guide" element={<LAHealthInspectionGuide />} />
+          <Route path="/la-fog-program-explained" element={<LAFOGProgramExplained />} />
+          <Route path="/grease-trap-waste-manifest-explained" element={<WasteManifestExplained />} />
+          <Route path="/restaurant-fog-violations-fines-los-angeles" element={<FOGViolationsFinesLA />} />
+          <Route path="/new-restaurant-grease-trap-compliance-la" element={<NewRestaurantFOGComplianceLA />} />
         </Route>
       </Routes>
     </BrowserRouter>

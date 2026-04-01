@@ -15,7 +15,7 @@ const companyMenu = [
   { label: 'FAQ', path: '/faq' },
 ];
 
-const resourcesMenu = [
+const resourcesMenuSection1 = [
   { label: 'Best Practices', path: '/best-practices' },
   { label: 'Environmental Impact', path: '/environmental-impact' },
   { label: 'How a Grease Trap Works', path: '/how-a-grease-trap-works' },
@@ -23,6 +23,14 @@ const resourcesMenu = [
   { label: 'How to Verify Service Quality', path: '/how-to-tell-if-grease-trap-was-serviced' },
   { label: 'Cleaning Frequency Guide', path: '/grease-trap-cleaning-frequency-guide' },
   { label: 'FOG & the LA Sewer System', path: '/fats-oils-grease-sewer-impact-los-angeles' },
+];
+
+const resourcesMenuSection2 = [
+  { label: 'Health Inspection 101', path: '/la-restaurant-health-inspection-guide' },
+  { label: 'The LA FOG Program Explained', path: '/la-fog-program-explained' },
+  { label: 'Understanding Your Waste Manifest', path: '/grease-trap-waste-manifest-explained' },
+  { label: 'FOG Violations & Fines in LA', path: '/restaurant-fog-violations-fines-los-angeles' },
+  { label: 'New Restaurant Compliance Checklist', path: '/new-restaurant-grease-trap-compliance-la' },
 ];
 
 export const SiteHeader: React.FC = () => {
@@ -90,8 +98,20 @@ export const SiteHeader: React.FC = () => {
                 <i className="fas fa-chevron-down text-[10px]"></i>
               </button>
               <div className="absolute left-0 top-full pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <div className="w-[320px] bg-white border border-slate-100 rounded-2xl shadow-2xl p-3 normal-case tracking-normal">
-                  {resourcesMenu.map((item) => (
+                <div className="w-[340px] bg-white border border-slate-100 rounded-2xl shadow-2xl p-3 normal-case tracking-normal">
+                  {resourcesMenuSection1.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className="block px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-[0.14em] text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                  <div className="px-4 pt-3 pb-1">
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Regulations</span>
+                  </div>
+                  {resourcesMenuSection2.map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
