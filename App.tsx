@@ -111,7 +111,7 @@ const App: React.FC = () => {
                 </h2>
                 
                 <p className="text-2xl text-slate-500 leading-relaxed max-w-xl font-medium">
-                  Scale without interruptions. OUR <span className="text-amber-600 font-black uppercase tracking-tight">GREASY AGENT</span> calculates <span className="text-slate-950 font-bold">precise service estimates</span> keeping your facility health-code ready.
+                  Scale without interruptions. Get a <span className="text-slate-950 font-bold">precise service estimate</span> in under 2 minutes — grease traps, jetting, compliance, and more. <span className="text-amber-600 font-black">Health-code ready, every time.</span>
                 </p>
 
                 <div className="flex flex-wrap gap-6 pt-6">

@@ -18,6 +18,11 @@ const companyMenu = [
 const resourcesMenu = [
   { label: 'Best Practices', path: '/best-practices' },
   { label: 'Environmental Impact', path: '/environmental-impact' },
+  { label: 'How a Grease Trap Works', path: '/how-a-grease-trap-works' },
+  { label: 'Which Kitchens Need a Grease Trap', path: '/which-restaurants-need-grease-traps-los-angeles' },
+  { label: 'How to Verify Service Quality', path: '/how-to-tell-if-grease-trap-was-serviced' },
+  { label: 'Cleaning Frequency Guide', path: '/grease-trap-cleaning-frequency-guide' },
+  { label: 'FOG & the LA Sewer System', path: '/fats-oils-grease-sewer-impact-los-angeles' },
 ];
 
 export const SiteHeader: React.FC = () => {
@@ -85,7 +90,7 @@ export const SiteHeader: React.FC = () => {
                 <i className="fas fa-chevron-down text-[10px]"></i>
               </button>
               <div className="absolute left-0 top-full pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <div className="w-[260px] bg-white border border-slate-100 rounded-2xl shadow-2xl p-3 normal-case tracking-normal">
+                <div className="w-[320px] bg-white border border-slate-100 rounded-2xl shadow-2xl p-3 normal-case tracking-normal">
                   {resourcesMenu.map((item) => (
                     <Link
                       key={item.path}
