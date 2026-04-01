@@ -170,7 +170,7 @@ const GreaseTrapCleaningLA: React.FC = () => {
                 to="/instant-estimate?service=grease-trap-interceptor"
                 className="bg-transparent text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/10 transition-all border border-dashed border-white/40"
               >
-                Complex Case Review
+                Talk to Dispatch
               </Link>
             </div>
           </div>

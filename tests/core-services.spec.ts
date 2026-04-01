@@ -199,12 +199,12 @@ test.describe('core services flows', () => {
     }
   });
 
-  test('service landings expose complex case review CTA', async ({ page }) => {
+  test('service landings expose dispatch CTA', async ({ page }) => {
     await page.goto('/hydro-jetting-los-angeles');
-    await expect(page.getByRole('link', { name: 'Complex Case Review' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Talk to Dispatch' })).toBeVisible();
 
     await page.goto('/hood-cleaning-los-angeles');
-    await expect(page.getByRole('link', { name: 'Complex Case Review' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Talk to Dispatch' })).toBeVisible();
   });
 
   test('service query preselects estimator context from deep link', async ({ page }) => {
