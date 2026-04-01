@@ -5,7 +5,7 @@ import { IntelligentEstimateForm } from './components/IntelligentEstimateForm';
 type LegalType = 'privacy' | 'compliance' | 'terms' | null;
 
 const App: React.FC = () => {
-  const [selectedServiceKey, setSelectedServiceKey] = useState<string | null>(null);
+  const [selectedServiceKey, setSelectedServiceKey] = useState<string | null>('grease-trap-interceptor');
 
   useEffect(() => {
     window.scrollTo(0, 0);

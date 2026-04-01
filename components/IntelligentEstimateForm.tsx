@@ -509,7 +509,8 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
         {submitError && <div className="rounded-2xl bg-red-50 text-red-700 px-4 py-3 text-sm font-bold border border-red-100">{submitError}</div>}
 
         {step >= 1 && step <= 2 && (
-          <div className="flex items-center justify-between gap-4 pt-2">
+          <div className="sticky bottom-0 z-20 -mx-8 lg:-mx-10 mt-2 px-8 lg:px-10 py-4 bg-white/95 backdrop-blur border-t border-slate-100">
+            <div className="flex items-center justify-between gap-4">
             <button
               type="button"
               onClick={() => { setStep(prev => Math.max(0, prev - 1)); setFieldErrors({}); setSubmitError(''); }}
@@ -526,6 +527,7 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
             >
               {isSubmitting ? 'Submitting...' : step === 2 ? 'Submit Request' : 'Continue'}
             </button>
+            </div>
           </div>
         )}
       </div>
