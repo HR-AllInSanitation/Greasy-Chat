@@ -82,16 +82,28 @@ export const createManualReviewEstimate = (): EstimationResult => ({
 
 export const geocodeAddress = async (values: EstimateFormValues) => {
   if (!values.addressLine || !values.city || !values.state || !values.zip) return undefined;
-  const response = await fetch('/api/geocode', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      addressLine1: values.addressLine,
-      city: values.city,
-      state: values.state,
-      zip: values.zip,
-    }),
-  });
+  const ac = new AbortController();
+  const timeout = setTimeout(() => ac.abort(), 5000);
+
+  let response: Response;
+  try {
+    response = await fetch('/api/geocode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        addressLine1: values.addressLine,
+        city: values.city,
+        state: values.state,
+        zip: values.zip,
+      }),
+      signal: ac.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === 'AbortError') return undefined;
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) return undefined;
   const data = await response.json();
@@ -163,11 +175,25 @@ export const buildLeadPayload = (params: {
 });
 
 export const submitLeadPayload = async (payload: ReturnType<typeof buildLeadPayload>) => {
-  const response = await fetch('/api/estimate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
+  const ac = new AbortController();
+  const timeout = setTimeout(() => ac.abort(), 12000);
+
+  let response: Response;
+  try {
+    response = await fetch('/api/estimate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: ac.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === 'AbortError') {
+      throw new Error('The request took too long. Please try again or call dispatch at (818) 698-4252.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   return response.ok;
 };

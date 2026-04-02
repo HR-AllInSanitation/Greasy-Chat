@@ -34,6 +34,20 @@ const logJson = (event: string, data: Record<string, unknown>) => {
   }
 };
 
+const withTimeout = async <T>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`${label}_timeout`)), ms);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+};
+
 // Redis helper: get or create Redis client
 const getRedisClient = (): Redis | null => {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -87,9 +101,9 @@ const storeLeadState = async (quoteId: string, state: Partial<LeadState>): Promi
   }
   try {
     const key = `greasy:lead:${quoteId}:state`;
-    await redis.hset(key, state as Record<string, string | number>);
+    await withTimeout(redis.hset(key, state as Record<string, string | number>), 1500, 'redis_hset_state');
     // Set expiry to 30 days
-    await redis.expire(key, 30 * 24 * 60 * 60);
+    await withTimeout(redis.expire(key, 30 * 24 * 60 * 60), 1500, 'redis_expire_state');
     if (process.env.DEV) console.log('Lead state stored', { quoteId, key });
     return true;
   } catch (err: any) {
@@ -107,7 +121,7 @@ const storeLeadPayload = async (quoteId: string, payload: any): Promise<boolean>
   try {
     const key = `greasy:lead:${quoteId}:payload`;
     const json = JSON.stringify(payload);
-    await redis.set(key, json, { ex: 30 * 24 * 60 * 60 });
+    await withTimeout(redis.set(key, json, { ex: 30 * 24 * 60 * 60 }), 1500, 'redis_set_payload');
     if (process.env.DEV) console.log('Lead payload stored', { quoteId, key });
     return true;
   } catch (err: any) {
@@ -132,11 +146,15 @@ const scheduleHqEmailViaQStash = async (quoteId: string): Promise<boolean> => {
       hqSendUrl = `https://${process.env.VERCEL_URL}/api/hq-send`;
     }
     
-    const messageId = await qstash.publishJSON({
-      url: hqSendUrl,
-      body: { quoteId },
-      delay: delaySeconds,
-    });
+    const messageId = await withTimeout(
+      qstash.publishJSON({
+        url: hqSendUrl,
+        body: { quoteId },
+        delay: delaySeconds,
+      }),
+      2500,
+      'qstash_publish'
+    );
     
     console.log('QSTASH_SCHEDULED', { quoteId, delaySeconds, hqSendUrl, messageId });
     return true;
@@ -158,6 +176,8 @@ const sendResendEmail = async (params: { apiKey: string; from: string; to: strin
   console.log('Sending email to Resend...', { toCount, subject, quoteId, bodyLength: text?.length ?? 0 });
   console.log('RESEND_SEND_START', { toCount, subject, quoteId });
   try {
+    const ac = new AbortController();
+    const timeout = setTimeout(() => ac.abort(), 4000);
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -165,7 +185,9 @@ const sendResendEmail = async (params: { apiKey: string; from: string; to: strin
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({ from, to: toList, subject, text, attachments }),
+      signal: ac.signal,
     });
+    clearTimeout(timeout);
 
     const status = resp.status;
     let messageId: string | undefined;
@@ -934,17 +956,17 @@ export default async function handler(req: any, res: any) {
 
     if (redis) {
       try {
-        const claimedRaw = await redis.set(scheduleLockKey, '1', { nx: true, ex: 30 * 24 * 60 * 60 });
+        const claimedRaw = await withTimeout(redis.set(scheduleLockKey, '1', { nx: true, ex: 30 * 24 * 60 * 60 }), 1500, 'redis_claim_schedule_lock');
         const claimed = claimedRaw === 'OK';
         scheduleAlreadyClaimed = !claimed;
 
         if (claimed) {
           queuedHq = await scheduleHqEmailViaQStash(quoteId);
           if (queuedHq) {
-            await redis.hset(stateKey, { hqScheduled: '1', hqScheduledAt: new Date().toISOString() });
+            await withTimeout(redis.hset(stateKey, { hqScheduled: '1', hqScheduledAt: new Date().toISOString() }), 1500, 'redis_mark_hq_scheduled');
           } else {
             warnings.push('qstash_hq_schedule_failed');
-            await redis.del(scheduleLockKey);
+            await withTimeout(redis.del(scheduleLockKey), 1500, 'redis_delete_schedule_lock');
             console.warn('Failed to schedule HQ email via QStash', { quoteId });
           }
         }
@@ -972,11 +994,11 @@ export default async function handler(req: any, res: any) {
           if (hqResult.ok) {
             emailed = true;
             if (redis) {
-              await redis.hset(stateKey, {
+              await withTimeout(redis.hset(stateKey, {
                 hqSent: '1',
                 hqSentAt: new Date().toISOString(),
                 hqMessageId: hqResult.messageId || 'unknown',
-              });
+              }), 1500, 'redis_mark_hq_sent');
             }
           } else {
             warnings.push(hqResult.errorCode || 'event_a_hq_fallback_failed');
@@ -1001,7 +1023,7 @@ export default async function handler(req: any, res: any) {
     const redis = getRedisClient();
     if (redis) {
       const payloadKey = `greasy:lead:${quoteId}:payload`;
-      const payloadExists = await redis.exists(payloadKey);
+      const payloadExists = await withTimeout(redis.exists(payloadKey), 1500, 'redis_check_payload_exists');
       if (!payloadExists) {
         console.warn('EVENT_B_PAYLOAD_MISSING', { quoteId, reason: 'event_a_may_have_failed' });
         // Still continue - we have intake/contact in current request
@@ -1012,11 +1034,11 @@ export default async function handler(req: any, res: any) {
     const decisionValue = moveForward ? 'YES' : 'NO';
     const stateKey = `greasy:lead:${quoteId}:state`;
     if (redis) {
-      await redis.hset(stateKey, {
+      await withTimeout(redis.hset(stateKey, {
         quoteId,
         decision: decisionValue,
         decisionAt: new Date().toISOString(),
-      });
+      }), 1500, 'redis_store_decision');
     }
 
     // Send customer email ONLY if decision is YES
@@ -1024,7 +1046,7 @@ export default async function handler(req: any, res: any) {
       let alreadySentToCustomer = false;
       if (redis) {
         try {
-          const existingState: any = await redis.hgetall(stateKey);
+          const existingState: any = await withTimeout(redis.hgetall(stateKey), 1500, 'redis_get_existing_state');
           alreadySentToCustomer = existingState?.customerEmailSent === '1' || existingState?.customerEmailSent === 1;
         } catch (err: any) {
           warnings.push('customer_email_idempotency_check_failed');
@@ -1046,11 +1068,11 @@ export default async function handler(req: any, res: any) {
             if (customerResult.ok) {
               emailed = true;
               if (redis) {
-                await redis.hset(stateKey, {
+                await withTimeout(redis.hset(stateKey, {
                   customerEmailSent: '1',
                   customerEmailSentAt: new Date().toISOString(),
                   customerEmailMessageId: customerResult.messageId || 'unknown',
-                });
+                }), 1500, 'redis_mark_customer_email_sent');
               }
             } else {
               warnings.push(customerResult.errorCode || 'customer_email_failed');
