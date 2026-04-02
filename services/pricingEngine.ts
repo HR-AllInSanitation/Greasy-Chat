@@ -1,5 +1,5 @@
 import { EstimationInputs, EstimationResult, ServiceType } from '../types';
-import { BASE_LOCATION } from '../constants';
+import { BASE_LOCATION, HOSE_FEE_SCHEDULE } from '../constants';
 
 const GREASE_TRAP_BANDS: { max: number; price: number }[] = [
   { max: 10, price: 450 },
@@ -96,7 +96,7 @@ const normalizeAddOnKey = (name: string): string | null => {
 };
 
 export function calculateServiceEstimate(inputs: EstimationInputs): EstimationResult {
-  const { serviceType, gallons, gallonsPlus, location, additionalServices, capacityTier, capacityUnsure, manualQuoteFlag } = inputs;
+  const { serviceType, gallons, gallonsPlus, location, additionalServices, capacityTier, capacityUnsure, manualQuoteFlag, parkingDistance } = inputs;
 
   let distanceMiles = 0;
   let distanceSource: 'computed' | 'assumed_25mi' = 'computed';
@@ -215,8 +215,12 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
 
   const addOnTotal = addOns.reduce((sum, item) => sum + item.price, 0);
 
+  // Hose / parking-distance surcharge
+  const hoseFt = typeof parkingDistance === 'number' ? parkingDistance : 0;
+  const hoseFee = HOSE_FEE_SCHEDULE[hoseFt] ?? 0;
+
   // BLOCKER #2 FIX: Return null (not 0) for office review cases
-  const totalPrice = manualQuote ? null : baseServicePrice + addOnTotal;
+  const totalPrice = manualQuote ? null : baseServicePrice + addOnTotal + hoseFee;
 
   if (distanceSource === 'assumed_25mi') requiresVerification = true;
   if (gallonsUncertain) requiresVerification = true;
@@ -257,8 +261,8 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
       surchargePerMi: 0,
       milesFromHQ: Math.round(distanceMiles * 10) / 10,
       distanceFee: 0,
-      hoseFee: 0,
-      subtotalBeforeBuffer: Math.round(totalPrice),
+      hoseFee,
+      subtotalBeforeBuffer: Math.round(totalPrice ?? 0),
     },
   };
 }

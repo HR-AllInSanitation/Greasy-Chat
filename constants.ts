@@ -42,6 +42,17 @@ export const FREQUENCY_ADJUSTMENTS: Record<string, number> = {
 
 export const NEW_RESTAURANT_DISCOUNT = 0.10; // 10% discount for new openings
 
+// Hose / parking-distance fee schedule (feet → surcharge $).
+// Base service price includes up to 50 ft. Options mirror the form dropdown.
+export const HOSE_FEE_SCHEDULE: Record<number, number> = {
+  0:   0,   // Under 50 ft — included in base price
+  50:  50,
+  100: 100,
+  150: 150,
+  200: 200,
+  250: 250,
+};
+
 
 export const AI_SYSTEM_INSTRUCTION = `
 You are “The Greasy Agent”, a professional, friendly dispatch concierge for LA Restaurant Services.

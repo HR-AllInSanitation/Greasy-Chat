@@ -129,11 +129,10 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
         if (!form.city.trim()) errors.city = 'City is required.';
         if (!/^[A-Za-z]{2}$/.test(form.state.trim())) errors.state = 'Enter a valid 2-letter state (e.g. CA).';
         if (!/^\d{5}$/.test(form.zip.trim())) errors.zip = 'Enter a valid 5-digit ZIP code.';
-        const { num } = parseGallonsInput(form.gallons);
-        if (!form.gallons.trim() || num === 0) errors.gallons = 'Enter a capacity in gallons (e.g. 1000 or 2500+).';
-        const pd = Number(form.parkingDistance);
-        if (form.parkingDistance.trim() === '' || Number.isNaN(pd) || pd < 0) {
-          errors.parkingDistance = 'Enter distance in feet (use 0 if the truck parks at the trap).';
+        const isGreaseTrap = form.systemType === ServiceType.GREASE_TRAP;
+        if (!isGreaseTrap) {
+          const { num } = parseGallonsInput(form.gallons);
+          if (!form.gallons.trim() || num === 0) errors.gallons = 'Enter a capacity in gallons (e.g. 1000 or 2500+).';
         }
       }
     }
@@ -341,23 +340,31 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
                       <option value={Frequency.ONCE}>One-time / as needed</option>
                     </select>
                   </Field>
-                  <Field label="Capacity (gallons)" error={fe.gallons}>
-                    <input
-                      value={form.gallons}
-                      onChange={e => updateForm('gallons', e.target.value)}
-                      placeholder="e.g. 1000 or 2500+"
-                      inputMode="numeric"
-                      className={inputCls('gallons')}
-                    />
-                  </Field>
-                  <Field label="Parking distance (ft)" error={fe.parkingDistance}>
-                    <input
+                  {form.systemType !== ServiceType.GREASE_TRAP && (
+                    <Field label="Capacity (gallons)" error={fe.gallons}>
+                      <input
+                        value={form.gallons}
+                        onChange={e => updateForm('gallons', e.target.value)}
+                        placeholder="e.g. 1000 or 2500+"
+                        inputMode="numeric"
+                        className={inputCls('gallons')}
+                      />
+                    </Field>
+                  )}
+                  <Field label="Hose / parking distance" error={fe.parkingDistance}>
+                    <select
+                      aria-label="Hose / parking distance"
                       value={form.parkingDistance}
-                      onChange={e => updateForm('parkingDistance', e.target.value.replace(/[^\d.]/g, ''))}
-                      placeholder="e.g. 50  (use 0 if truck parks at the trap)"
-                      inputMode="decimal"
-                      className={inputCls('parkingDistance')}
-                    />
+                      onChange={e => updateForm('parkingDistance', e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 font-semibold bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400/60"
+                    >
+                      <option value="0">Under 50 ft — no extra charge</option>
+                      <option value="50">50 ft (+$50)</option>
+                      <option value="100">100 ft (+$100)</option>
+                      <option value="150">150 ft (+$150)</option>
+                      <option value="200">200 ft (+$200)</option>
+                      <option value="250">250 ft (+$250)</option>
+                    </select>
                   </Field>
                   <div className="space-y-2 md:col-span-2">
                     <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Add-ons (optional)</span>
@@ -469,14 +476,20 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
               <div className="bg-slate-950 text-white rounded-3xl p-8 space-y-4">
                 <div className="text-[10px] uppercase tracking-[0.25em] font-black text-amber-400">{selectedService.label}</div>
                 <div className="text-5xl font-black tracking-tight leading-none">{formatPriceRange(estimateResult)}</div>
-                {estimateResult.addOns && estimateResult.addOns.length > 0 && (
+                {(estimateResult.addOns && estimateResult.addOns.length > 0 || (estimateResult.breakdown?.hoseFee ?? 0) > 0) && (
                   <div className="border-t border-white/10 pt-4 space-y-1">
-                    {estimateResult.addOns.map(ao => (
+                    {estimateResult.addOns?.map(ao => (
                       <div key={ao.name} className="flex justify-between text-sm font-semibold text-slate-300">
                         <span>{ao.name}</span>
                         <span>+${ao.price.toLocaleString()}</span>
                       </div>
                     ))}
+                    {(estimateResult.breakdown?.hoseFee ?? 0) > 0 && (
+                      <div className="flex justify-between text-sm font-semibold text-slate-300">
+                        <span>Hose / parking distance</span>
+                        <span>+${estimateResult.breakdown.hoseFee.toLocaleString()}</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 <p className="text-xs text-slate-400 font-medium pt-2 border-t border-white/10">
