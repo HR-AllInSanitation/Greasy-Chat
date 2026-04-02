@@ -43,14 +43,14 @@ export const FREQUENCY_ADJUSTMENTS: Record<string, number> = {
 export const NEW_RESTAURANT_DISCOUNT = 0.10; // 10% discount for new openings
 
 // Hose / parking-distance fee schedule (feet → surcharge $).
-// Base service price includes up to 50 ft. Options mirror the form dropdown.
+// Base service price includes the first 50 ft of hose. Each additional 50 ft = $50.
 export const HOSE_FEE_SCHEDULE: Record<number, number> = {
   0:   0,   // Under 50 ft — included in base price
-  50:  50,
-  100: 100,
-  150: 150,
-  200: 200,
-  250: 250,
+  50:  0,   // 50 ft — still within the included length
+  100: 50,  // 50 ft additional
+  150: 100, // 100 ft additional
+  200: 150, // 150 ft additional
+  250: 200, // 200 ft additional
 };
 
 

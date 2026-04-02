@@ -359,11 +359,11 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
                       className="w-full rounded-xl border border-slate-200 px-4 py-3 font-semibold bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400/60"
                     >
                       <option value="0">Under 50 ft — no extra charge</option>
-                      <option value="50">50 ft (+$50)</option>
-                      <option value="100">100 ft (+$100)</option>
-                      <option value="150">150 ft (+$150)</option>
-                      <option value="200">200 ft (+$200)</option>
-                      <option value="250">250 ft (+$250)</option>
+                      <option value="50">50 ft — no extra charge</option>
+                      <option value="100">100 ft (+$50)</option>
+                      <option value="150">150 ft (+$100)</option>
+                      <option value="200">200 ft (+$150)</option>
+                      <option value="250">250 ft (+$200)</option>
                     </select>
                   </Field>
                   <div className="space-y-2 md:col-span-2">
