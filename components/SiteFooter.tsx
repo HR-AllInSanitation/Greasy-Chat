@@ -42,7 +42,13 @@ export const SiteFooter: React.FC = () => {
               to="/instant-estimate?service=grease-trap-interceptor"
               className="block w-full bg-amber-500 text-slate-950 font-black py-4 rounded-xl hover:bg-amber-400 transition-all uppercase tracking-[0.2em] text-[11px] text-center"
             >
-              Request Callback
+              Get Instant Estimate
+            </Link>
+            <Link
+              to="/instant-estimate?service=grease-trap-interceptor&contact=message#dispatch-help"
+              className="block w-full border border-white/20 text-white font-black py-4 rounded-xl hover:border-amber-500 hover:text-amber-400 transition-all uppercase tracking-[0.2em] text-[11px] text-center"
+            >
+              Send Us a Message
             </Link>
           </div>
         </div>
