@@ -47,13 +47,29 @@ const FAQPage: React.FC = () => {
               <h2 className="text-2xl font-black uppercase tracking-tight">Need a quote now?</h2>
               <p className="text-slate-400 text-sm font-medium">Use the instant estimator to get pricing in about 60 seconds.</p>
             </div>
-            <Link
-              to="/instant-estimate?source=faq"
-              onClick={() => trackEvent('support_page_cta_click', { page_type: 'faq', cta: 'instant_estimate' })}
-              className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-400 transition-all shadow-lg"
-            >
-              Go to Instant Estimate
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="/instant-estimate?source=faq"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'faq', cta: 'instant_estimate' })}
+                className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-400 transition-all shadow-lg"
+              >
+                Get Instant Estimate
+              </Link>
+              <a
+                href="tel:8186984252"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'faq', cta: 'call_dispatch' })}
+                className="bg-white/10 border border-white/20 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/20 transition-all"
+              >
+                Call Dispatch
+              </a>
+              <Link
+                to="/instant-estimate?contact=message&source=faq#dispatch-help"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'faq', cta: 'send_message' })}
+                className="bg-transparent text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/10 transition-all border border-dashed border-white/40"
+              >
+                Send Us a Message
+              </Link>
+            </div>
           </div>
 
           <FAQSection title="Restaurant Services FAQ" faqs={faqs} />

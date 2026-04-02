@@ -80,14 +80,21 @@ const AboutUs: React.FC = () => {
                 onClick={() => trackEvent('support_page_cta_click', { page_type: 'about_us', cta: 'instant_estimate' })}
                 className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
               >
-                Instant Estimate
+                Get Instant Estimate
               </Link>
-              <Link
-                to="/restaurant-waste-services"
-                onClick={() => trackEvent('support_page_cta_click', { page_type: 'about_us', cta: 'view_services' })}
+              <a
+                href="tel:8186984252"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'about_us', cta: 'call_dispatch' })}
                 className="bg-white/10 border border-white/20 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-white/20 transition-all"
               >
-                View Services
+                Call Dispatch
+              </a>
+              <Link
+                to="/instant-estimate?contact=message&source=about-us#dispatch-help"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'about_us', cta: 'send_message' })}
+                className="bg-transparent text-white px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-white/10 transition-all border border-dashed border-white/40"
+              >
+                Send Us a Message
               </Link>
             </div>
           </section>

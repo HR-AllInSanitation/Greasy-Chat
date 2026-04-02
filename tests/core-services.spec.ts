@@ -115,13 +115,16 @@ test.describe('core services flows', () => {
     expect(favicon.status()).toBeLessThan(400);
   });
 
-  test('support content routes are reachable', async ({ page }) => {
+  test('support and resource content routes are reachable', async ({ page }) => {
     const routes = [
       '/faq',
       '/about-us',
       '/best-practices',
       '/environmental-impact',
       '/instant-estimate',
+      '/how-a-grease-trap-works',
+      '/grease-trap-cleaning-frequency-guide',
+      '/la-fog-program-explained',
     ];
 
     for (const route of routes) {
@@ -199,12 +202,16 @@ test.describe('core services flows', () => {
     }
   });
 
-  test('service landings expose dispatch CTA', async ({ page }) => {
+  test('service landings expose consistent estimate/call/message CTAs', async ({ page }) => {
     await page.goto('/hydro-jetting-los-angeles');
-    await expect(page.getByRole('link', { name: 'Talk to Dispatch' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Get Instant Estimate' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Call Dispatch' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Send Us a Message' })).toBeVisible();
 
     await page.goto('/hood-cleaning-los-angeles');
-    await expect(page.getByRole('link', { name: 'Talk to Dispatch' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Get Instant Estimate' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Call Dispatch' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Send Us a Message' })).toBeVisible();
   });
 
   test('service query preselects estimator context from deep link', async ({ page }) => {

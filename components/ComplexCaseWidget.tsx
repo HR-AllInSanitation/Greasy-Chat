@@ -15,6 +15,14 @@ export const ComplexCaseWidget: React.FC<ComplexCaseWidgetProps> = ({ serviceKey
   const [submitSuccess, setSubmitSuccess] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('contact') === 'message') {
+      setShowMessageForm(true);
+    }
+  }, []);
+
   const updateField = (key: 'name' | 'email' | 'phone' | 'message', value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
     setErrors(prev => {
@@ -70,7 +78,7 @@ export const ComplexCaseWidget: React.FC<ComplexCaseWidgetProps> = ({ serviceKey
   };
 
   return (
-    <aside className="bg-slate-950 text-white rounded-[2rem] p-6 lg:p-7 shadow-2xl border border-white/5 space-y-5">
+    <aside id="dispatch-help" className="bg-slate-950 text-white rounded-[2rem] p-6 lg:p-7 shadow-2xl border border-white/5 space-y-5">
       <div className="inline-flex items-center gap-2 bg-white/10 text-amber-300 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.22em] border border-white/10">
         <i className="fas fa-comments"></i>
         <span>Dispatch Help</span>

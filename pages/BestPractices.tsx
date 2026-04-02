@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { StructuredData, buildBreadcrumbSchema } from '../components/StructuredData';
+import { ResourceGuidesSection } from '../components/ResourceGuidesSection';
 import { trackEvent } from '../api/gtag-utils';
 
 const articleSchema = {
@@ -102,18 +103,36 @@ const BestPractices: React.FC = () => {
             ))}
           </section>
 
+          <ResourceGuidesSection />
+
           <section className="bg-slate-950 text-white rounded-3xl p-8 lg:p-10 shadow-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div>
               <h2 className="text-2xl font-black uppercase tracking-tight">Need a practical maintenance schedule?</h2>
               <p className="text-slate-300 text-sm font-medium mt-1">We can map your volume into a recurring service plan.</p>
             </div>
-            <Link
-              to="/instant-estimate?service=grease-trap-interceptor&source=best-practices"
-              onClick={() => trackEvent('support_page_cta_click', { page_type: 'best_practices', cta: 'build_my_plan' })}
-              className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
-            >
-              Build My Plan
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="/instant-estimate?service=grease-trap-interceptor&source=best-practices"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'best_practices', cta: 'instant_estimate' })}
+                className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
+              >
+                Get Instant Estimate
+              </Link>
+              <a
+                href="tel:8186984252"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'best_practices', cta: 'call_dispatch' })}
+                className="bg-white/10 border border-white/20 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-white/20 transition-all"
+              >
+                Call Dispatch
+              </a>
+              <Link
+                to="/instant-estimate?service=grease-trap-interceptor&contact=message&source=best-practices#dispatch-help"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'best_practices', cta: 'send_message' })}
+                className="bg-transparent text-white px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-white/10 transition-all border border-dashed border-white/40"
+              >
+                Send Us a Message
+              </Link>
+            </div>
           </section>
         </div>
       </div>

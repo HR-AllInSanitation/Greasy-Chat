@@ -99,17 +99,24 @@ const EnvironmentalImpact: React.FC = () => {
             <div className="flex flex-wrap gap-3">
               <Link
                 to="/instant-estimate?service=uco-recycling&source=environmental-impact"
-                onClick={() => trackEvent('support_page_cta_click', { page_type: 'environmental_impact', cta: 'start_estimate' })}
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'environmental_impact', cta: 'instant_estimate' })}
                 className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all"
               >
-                Start Estimate
+                Get Instant Estimate
               </Link>
-              <Link
-                to="/used-cooking-oil-pickup-los-angeles"
-                onClick={() => trackEvent('support_page_cta_click', { page_type: 'environmental_impact', cta: 'uco_service' })}
+              <a
+                href="tel:8186984252"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'environmental_impact', cta: 'call_dispatch' })}
                 className="bg-white/10 border border-white/20 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-white/20 transition-all"
               >
-                UCO Service
+                Call Dispatch
+              </a>
+              <Link
+                to="/instant-estimate?service=uco-recycling&contact=message&source=environmental-impact#dispatch-help"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'environmental_impact', cta: 'send_message' })}
+                className="bg-transparent text-white px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-white/10 transition-all border border-dashed border-white/40"
+              >
+                Send Us a Message
               </Link>
             </div>
           </section>

@@ -17,6 +17,16 @@ import AboutUs from './pages/AboutUs';
 import BestPractices from './pages/BestPractices';
 import EnvironmentalImpact from './pages/EnvironmentalImpact';
 import InstantEstimate from './pages/InstantEstimate';
+import HowGreaseTrapWorks from './pages/HowGreaseTrapWorks';
+import WhichRestaurantsNeedGreaseTrapsLA from './pages/WhichRestaurantsNeedGreaseTrapsLA';
+import HowToVerifyGreaseTrapService from './pages/HowToVerifyGreaseTrapService';
+import GreaseTrapCleaningFrequency from './pages/GreaseTrapCleaningFrequency';
+import FOGSewerImpactLA from './pages/FOGSewerImpactLA';
+import LAHealthInspectionGuide from './pages/LAHealthInspectionGuide';
+import LAFOGProgramExplained from './pages/LAFOGProgramExplained';
+import WasteManifestExplained from './pages/WasteManifestExplained';
+import FOGViolationsFinesLA from './pages/FOGViolationsFinesLA';
+import NewRestaurantFOGComplianceLA from './pages/NewRestaurantFOGComplianceLA';
 import { SiteLayout } from './components/SiteLayout';
 
 const rootElement = document.getElementById('root');
@@ -45,6 +55,16 @@ root.render(
           <Route path="/best-practices" element={<BestPractices />} />
           <Route path="/environmental-impact" element={<EnvironmentalImpact />} />
           <Route path="/instant-estimate" element={<InstantEstimate />} />
+          <Route path="/how-a-grease-trap-works" element={<HowGreaseTrapWorks />} />
+          <Route path="/which-restaurants-need-grease-traps-los-angeles" element={<WhichRestaurantsNeedGreaseTrapsLA />} />
+          <Route path="/how-to-tell-if-grease-trap-was-serviced" element={<HowToVerifyGreaseTrapService />} />
+          <Route path="/grease-trap-cleaning-frequency-guide" element={<GreaseTrapCleaningFrequency />} />
+          <Route path="/fats-oils-grease-sewer-impact-los-angeles" element={<FOGSewerImpactLA />} />
+          <Route path="/la-restaurant-health-inspection-guide" element={<LAHealthInspectionGuide />} />
+          <Route path="/la-fog-program-explained" element={<LAFOGProgramExplained />} />
+          <Route path="/grease-trap-waste-manifest-explained" element={<WasteManifestExplained />} />
+          <Route path="/restaurant-fog-violations-fines-los-angeles" element={<FOGViolationsFinesLA />} />
+          <Route path="/new-restaurant-grease-trap-compliance-la" element={<NewRestaurantFOGComplianceLA />} />
         </Route>
       </Routes>
     </BrowserRouter>

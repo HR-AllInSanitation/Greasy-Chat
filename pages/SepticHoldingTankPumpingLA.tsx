@@ -80,13 +80,13 @@ const SepticHoldingTankPumpingLA: React.FC = () => {
                 href="tel:8186984252"
                 className="bg-white/10 text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/20 transition-all border border-white/20"
               >
-                Call: 818.698.4252
+                Call Dispatch
               </a>
               <Link
-                to="/instant-estimate?service=septic-holding-tank"
+                to="/instant-estimate?service=septic-holding-tank&contact=message#dispatch-help"
                 className="bg-transparent text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/10 transition-all border border-dashed border-white/40"
               >
-                Talk to Dispatch
+                Send Us a Message
               </Link>
             </div>
           </div>

@@ -50,6 +50,15 @@ export const buildLocalBusinessSchema = (overrides: Partial<any> = {}) => ({
   ...overrides
 });
 
+const buildAreaServedPlace = (area: string) => {
+  const normalized = area.trim().toLowerCase();
+  const isAdministrativeArea = normalized.includes('county') || normalized === 'southern california';
+  return {
+    "@type": isAdministrativeArea ? "AdministrativeArea" : "City",
+    "name": area,
+  };
+};
+
 export const buildServiceSchema = (service: {
   name: string;
   description: string;
@@ -67,10 +76,7 @@ export const buildServiceSchema = (service: {
     "@id": "https://www.larestaurantservices.com/#organization",
     "name": "LA Restaurant Services"
   },
-  "areaServed": service.areaServed.map(area => ({
-    "@type": "City",
-    "name": area
-  })),
+  "areaServed": service.areaServed.map(area => buildAreaServedPlace(area)),
   "url": service.url || "https://www.larestaurantservices.com"
 });
 

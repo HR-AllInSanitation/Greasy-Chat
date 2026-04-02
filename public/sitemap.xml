@@ -5,6 +5,10 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://www.larestaurantservices.com/instant-estimate</loc>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://www.larestaurantservices.com/faq</loc>
     <priority>0.9</priority>
   </url>
@@ -50,14 +54,50 @@
   </url>
   <url>
     <loc>https://www.larestaurantservices.com/best-practices</loc>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.larestaurantservices.com/environmental-impact</loc>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.larestaurantservices.com/instant-estimate</loc>
-    <priority>0.9</priority>
+    <loc>https://www.larestaurantservices.com/how-a-grease-trap-works</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/which-restaurants-need-grease-traps-los-angeles</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/how-to-tell-if-grease-trap-was-serviced</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/grease-trap-cleaning-frequency-guide</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/fats-oils-grease-sewer-impact-los-angeles</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/la-restaurant-health-inspection-guide</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/la-fog-program-explained</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/grease-trap-waste-manifest-explained</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/restaurant-fog-violations-fines-los-angeles</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.larestaurantservices.com/new-restaurant-grease-trap-compliance-la</loc>
+    <priority>0.7</priority>
   </url>
 </urlset>
