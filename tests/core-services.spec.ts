@@ -221,6 +221,32 @@ test.describe('core services flows', () => {
     await expect(page.locator('input').first()).toBeVisible();
   });
 
+  test('instant estimate dispatch widget sends inline message', async ({ page }) => {
+    const payloads: any[] = [];
+    await page.route('**/api/dispatch-message', async route => {
+      const bodyText = route.request().postData() || '{}';
+      payloads.push(JSON.parse(bodyText));
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+    });
+
+    await page.goto('/instant-estimate?service=hydro-jetting');
+
+    await expect(page.getByRole('link', { name: 'Call Dispatch' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Send Us a Message' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Send Us a Message' }).click();
+    await page.getByLabel('Dispatch message name').fill('Pat Tester');
+    await page.getByLabel('Dispatch message email').fill('pat@example.com');
+    await page.getByLabel('Dispatch message phone').fill('5551234567');
+    await page.getByLabel('Dispatch message body').fill('Need to confirm access timing before scheduling.');
+    await page.getByRole('button', { name: 'Send Message' }).click();
+
+    await expect(page.getByText('Message sent. Dispatch will follow up shortly.')).toBeVisible();
+    expect(payloads.length).toBe(1);
+    expect(payloads[0]?.serviceKey).toBe('hydro-jetting');
+    expect(payloads[0]?.serviceLabel).toContain('Hydro Jetting');
+  });
+
   test('instant estimate quote flow validates fields and sends frequency + preferred contact', async ({ page }) => {
     const payloads: any[] = [];
     await page.route('**/api/geocode', async route => {
