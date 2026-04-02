@@ -95,8 +95,43 @@ const normalizeAddOnKey = (name: string): string | null => {
   return ADD_ON_PRICES[key] ? key : null;
 };
 
+const ALLOWED_HOSE_FEET = [50, 100, 150, 200, 250] as const;
+
+const normalizeParkingDistance = (raw: number | undefined): { feet: number; outOfRange: boolean; normalized: boolean } => {
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 50) {
+    return { feet: 50, outOfRange: false, normalized: Number.isFinite(value) ? value !== 50 : true };
+  }
+
+  for (const feet of ALLOWED_HOSE_FEET) {
+    if (value <= feet) {
+      return { feet, outOfRange: false, normalized: value !== feet };
+    }
+  }
+
+  return { feet: 250, outOfRange: true, normalized: true };
+};
+
+const normalizeCapacityForInterceptorFamily = (rawGallons: number): {
+  bucket: 1600 | 2500 | 2501;
+  uncertain: boolean;
+  normalized: boolean;
+} => {
+  if (!Number.isFinite(rawGallons) || rawGallons <= 0) {
+    return { bucket: 1600, uncertain: true, normalized: false };
+  }
+  if (rawGallons <= 1600) {
+    return { bucket: 1600, uncertain: false, normalized: rawGallons !== 1600 };
+  }
+  if (rawGallons <= 2500) {
+    return { bucket: 2500, uncertain: false, normalized: rawGallons !== 2500 };
+  }
+  return { bucket: 2501, uncertain: false, normalized: rawGallons !== 2501 };
+};
+
 export function calculateServiceEstimate(inputs: EstimationInputs): EstimationResult {
   const { serviceType, gallons, gallonsPlus, location, additionalServices, capacityTier, capacityUnsure, manualQuoteFlag, parkingDistance } = inputs;
+  const parking = normalizeParkingDistance(parkingDistance);
 
   let distanceMiles = 0;
   let distanceSource: 'computed' | 'assumed_25mi' = 'computed';
@@ -139,11 +174,12 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
     baseServiceLabel = 'Grease Trap Cleaning (Indoor)';
   } else if (serviceType === ServiceType.INTERCEPTOR || serviceType === ServiceType.CLARIFIER) {
     const rawGallons = typeof gallons === 'number' ? gallons : 0;
+    const normalizedCapacity = normalizeCapacityForInterceptorFamily(rawGallons);
     const isClarifier = serviceType === ServiceType.CLARIFIER;
-    const uncertain = !gallons || gallons <= 0 || capacityUnsureFlag;
+    const uncertain = normalizedCapacity.uncertain || capacityUnsureFlag;
     gallonsUncertain = uncertain;
 
-    if (rawGallons > 2500) {
+    if (normalizedCapacity.bucket > 2500) {
       manualQuote = true;
       capacityTierUsed = 'UP_TO_2500';
       tierUsed = '<=2500';
@@ -153,7 +189,7 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
         tierUsed = '<=1600';
         capacityTierUsed = 'UP_TO_1600';
         notes.push('Capacity unsure — defaulted to up to 1,600 for estimate.');
-      } else if (capacityTier === 'UP_TO_2500' || rawGallons > 1600) {
+      } else if (capacityTier === 'UP_TO_2500' || normalizedCapacity.bucket > 1600) {
         tierUsed = '<=2500';
         capacityTierUsed = 'UP_TO_2500';
       } else {
@@ -169,7 +205,10 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
       }
     }
     if (!capacityTierUsed) {
-      capacityTierUsed = (capacityTier === 'UP_TO_2500' || rawGallons > 1600) ? 'UP_TO_2500' : 'UP_TO_1600';
+      capacityTierUsed = (capacityTier === 'UP_TO_2500' || normalizedCapacity.bucket > 1600) ? 'UP_TO_2500' : 'UP_TO_1600';
+    }
+    if (normalizedCapacity.normalized && !uncertain) {
+      notes.push('Capacity normalized to supported tier input.');
     }
     if (isClarifier) {
       notes.push('Clarifier priced using interceptor table; verify.');
@@ -195,8 +234,16 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
   const addOnTotal = addOns.reduce((sum, item) => sum + item.price, 0);
 
   // Hose / parking-distance surcharge
-  const hoseFt = typeof parkingDistance === 'number' ? parkingDistance : 0;
+  const hoseFt = parking.feet;
   const hoseFee = HOSE_FEE_SCHEDULE[hoseFt] ?? 0;
+  if (parking.normalized) {
+    notes.push(`Parking distance normalized to ${hoseFt} ft pricing tier.`);
+  }
+  if (parking.outOfRange) {
+    manualQuote = true;
+    requiresVerification = true;
+    notes.push('Parking distance exceeds 250 ft; office review required.');
+  }
 
   // BLOCKER #2 FIX: Return null (not 0) for office review cases
   const totalPrice = manualQuote ? null : baseServicePrice + addOnTotal + hoseFee;

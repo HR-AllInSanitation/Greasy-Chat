@@ -246,8 +246,9 @@ test.describe('core services flows', () => {
     await page.locator('input[placeholder="Los Angeles"]').fill('Sylmar');
     await page.locator('input[placeholder="CA"]').fill('CA');
     await page.locator('input[placeholder="90001"]').fill('90001');
-    await page.locator('input[placeholder="e.g. 1000 or 2500+"]').fill('1000');
-    await page.locator('input[placeholder="e.g. 50  (use 0 if truck parks at the trap)"]').fill('50');
+    await page.locator('select[aria-label="System type"]').selectOption('Interceptor');
+    await page.locator('select[aria-label="Capacity (gallons)"]').selectOption('1600');
+    await page.locator('select[aria-label="Hose / parking distance"]').selectOption('100');
     await page.locator('select[aria-label="Service frequency"]').selectOption('Quarterly');
 
     await page.getByRole('button', { name: 'Continue' }).click();
@@ -310,8 +311,7 @@ test.describe('core services flows', () => {
     await page.locator('input[placeholder="Los Angeles"]').fill('Sylmar');
     await page.locator('input[placeholder="CA"]').fill('CA');
     await page.locator('input[placeholder="90001"]').fill('90001');
-    await page.locator('input[placeholder="e.g. 1000 or 2500+"]').fill('1000');
-    await page.locator('input[placeholder="e.g. 50  (use 0 if truck parks at the trap)"]').fill('50');
+    await page.locator('select[aria-label="Hose / parking distance"]').selectOption('50');
     await page.getByRole('button', { name: 'Continue' }).click();
 
     await page.locator('input[placeholder="Full name"]').fill('Pat Tester');

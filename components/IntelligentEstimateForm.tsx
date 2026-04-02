@@ -10,7 +10,6 @@ import {
   defaultEstimateFormValues,
   hasMinPhoneDigits,
   isValidEmail,
-  parseGallonsInput,
   submitLeadPayload,
   type EstimateContactValues,
   type EstimateFormValues,
@@ -337,7 +336,7 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
                       }}
                       className="w-full rounded-xl border border-slate-200 px-4 py-3 font-semibold bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400/60"
                     >
-                      <option value={ServiceType.GREASE_TRAP}>Grease Trap</option>
+                      <option value={ServiceType.GREASE_TRAP}>Grease Trap (up to 100 gallons)</option>
                       <option value={ServiceType.INTERCEPTOR}>Interceptor</option>
                       <option value={ServiceType.CLARIFIER}>Clarifier</option>
                     </select>
