@@ -133,31 +133,10 @@ export function calculateServiceEstimate(inputs: EstimationInputs): EstimationRe
   const capacityUnsureFlag = capacityUnsure === true;
 
   if (serviceType === ServiceType.GREASE_TRAP) {
-    const rawGallons = typeof gallons === 'number' ? gallons : 0;
-    const isGrease4000 = gallonsPlus === true || rawGallons > 2500;
-    if (isGrease4000) {
-      if (!distanceVerified) {
-        // BLOCKER #1 FIX: No assumed distance for 2,500+ tier
-        manualQuote = true;
-        tierUsed = 'GREASE_4000_NEEDS_LOCATION';
-        notes.push('4,000-gal tier requires verified address and distance (0–160 mi).');
-      } else {
-        const distanceBand = priceForGrease4000ByMiles(distanceMiles);
-        if (distanceBand) {
-          baseServicePrice = distanceBand.price;
-          baseServiceLabel = 'Grease Trap Cleaning (Indoor) — 4,000 gal tier';
-          tierUsed = 'GREASE_4000';
-          manualQuote = false;
-        } else {
-          manualQuote = true;
-          tierUsed = 'GREASE_4000_NEEDS_DISTANCE_CONFIRMATION';
-          notes.push('4,000-gal tier requires verified distance (0–160 mi).');
-        }
-      }
-    } else {
-      baseServicePrice = band ? GREASE_TRAP_BANDS.find(b => b.max === band.bandMax)?.price ?? 0 : 0;
-      baseServiceLabel = 'Grease Trap Cleaning (Indoor)';
-    }
+    // Per business rules, >2,500 gal logic applies only to Interceptor/Clarifier.
+    // Grease Trap always follows the Grease Trap distance-band pricing table.
+    baseServicePrice = band ? GREASE_TRAP_BANDS.find(b => b.max === band.bandMax)?.price ?? 0 : 0;
+    baseServiceLabel = 'Grease Trap Cleaning (Indoor)';
   } else if (serviceType === ServiceType.INTERCEPTOR || serviceType === ServiceType.CLARIFIER) {
     const rawGallons = typeof gallons === 'number' ? gallons : 0;
     const isClarifier = serviceType === ServiceType.CLARIFIER;
