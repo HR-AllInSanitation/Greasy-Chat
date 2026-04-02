@@ -130,9 +130,11 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
         if (!/^[A-Za-z]{2}$/.test(form.state.trim())) errors.state = 'Enter a valid 2-letter state (e.g. CA).';
         if (!/^\d{5}$/.test(form.zip.trim())) errors.zip = 'Enter a valid 5-digit ZIP code.';
         const isGreaseTrap = form.systemType === ServiceType.GREASE_TRAP;
-        if (!isGreaseTrap) {
-          const { num } = parseGallonsInput(form.gallons);
-          if (!form.gallons.trim() || num === 0) errors.gallons = 'Enter a capacity in gallons (e.g. 1000 or 2500+).';
+        if (!isGreaseTrap && !form.gallons.trim()) {
+          errors.gallons = 'Select a capacity tier.';
+        }
+        if (!form.parkingDistance.trim()) {
+          errors.parkingDistance = 'Select hose / parking distance.';
         }
       }
     }
@@ -319,7 +321,20 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
                     <select
                       aria-label="System type"
                       value={form.systemType}
-                      onChange={e => updateForm('systemType', e.target.value as ServiceType)}
+                      onChange={e => {
+                        const nextType = e.target.value as ServiceType;
+                        setForm(prev => ({
+                          ...prev,
+                          systemType: nextType,
+                          gallons: nextType === ServiceType.GREASE_TRAP ? '' : prev.gallons,
+                        }));
+                        setFieldErrors(prev => {
+                          const n = { ...prev };
+                          delete n.systemType;
+                          if (nextType === ServiceType.GREASE_TRAP) delete n.gallons;
+                          return n;
+                        });
+                      }}
                       className="w-full rounded-xl border border-slate-200 px-4 py-3 font-semibold bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400/60"
                     >
                       <option value={ServiceType.GREASE_TRAP}>Grease Trap</option>
@@ -342,13 +357,17 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
                   </Field>
                   {form.systemType !== ServiceType.GREASE_TRAP && (
                     <Field label="Capacity (gallons)" error={fe.gallons}>
-                      <input
+                      <select
+                        aria-label="Capacity (gallons)"
                         value={form.gallons}
                         onChange={e => updateForm('gallons', e.target.value)}
-                        placeholder="e.g. 1000 or 2500+"
-                        inputMode="numeric"
-                        className={inputCls('gallons')}
-                      />
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 font-semibold bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400/60"
+                      >
+                        <option value="">Select capacity tier</option>
+                        <option value="1600">Up to 1,600 gallons</option>
+                        <option value="2500">Up to 2,500 gallons</option>
+                        <option value="2501">Over 2,500 gallons (office review)</option>
+                      </select>
                     </Field>
                   )}
                   <Field label="Hose / parking distance" error={fe.parkingDistance}>
@@ -358,12 +377,11 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
                       onChange={e => updateForm('parkingDistance', e.target.value)}
                       className="w-full rounded-xl border border-slate-200 px-4 py-3 font-semibold bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400/60"
                     >
-                      <option value="0">Under 50 ft — no extra charge</option>
-                      <option value="50">50 ft — no extra charge</option>
-                      <option value="100">100 ft (+$50)</option>
-                      <option value="150">150 ft (+$100)</option>
-                      <option value="200">200 ft (+$150)</option>
-                      <option value="250">250 ft (+$200)</option>
+                      <option value="50">Up to 50 ft</option>
+                      <option value="100">100 ft</option>
+                      <option value="150">150 ft</option>
+                      <option value="200">200 ft</option>
+                      <option value="250">250 ft</option>
                     </select>
                   </Field>
                   <div className="space-y-2 md:col-span-2">
@@ -486,7 +504,7 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
                     ))}
                     {(estimateResult.breakdown?.hoseFee ?? 0) > 0 && (
                       <div className="flex justify-between text-sm font-semibold text-slate-300">
-                        <span>Hose / parking distance</span>
+                        <span>Additional hose charge</span>
                         <span>+${estimateResult.breakdown.hoseFee.toLocaleString()}</span>
                       </div>
                     )}

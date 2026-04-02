@@ -32,7 +32,7 @@ export const defaultEstimateFormValues: EstimateFormValues = {
   systemType: ServiceType.GREASE_TRAP,
   frequency: Frequency.MONTHLY,
   gallons: '',
-  parkingDistance: '0',
+  parkingDistance: '50',
   additionalServices: [],
   notes: '',
 };
