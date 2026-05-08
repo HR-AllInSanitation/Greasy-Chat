@@ -26,6 +26,7 @@ import LAFOGProgramExplained from './pages/LAFOGProgramExplained';
 import WasteManifestExplained from './pages/WasteManifestExplained';
 import FOGViolationsFinesLA from './pages/FOGViolationsFinesLA';
 import NewRestaurantFOGComplianceLA from './pages/NewRestaurantFOGComplianceLA';
+import GoslynInstallationLA from './pages/GoslynInstallationLA';
 import { SiteLayout } from './components/SiteLayout';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -58,6 +59,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="/grease-trap-waste-manifest-explained" element={<WasteManifestExplained />} />
           <Route path="/restaurant-fog-violations-fines-los-angeles" element={<FOGViolationsFinesLA />} />
           <Route path="/new-restaurant-grease-trap-compliance-la" element={<NewRestaurantFOGComplianceLA />} />
+          <Route path="/goslyn-installation-los-angeles" element={<GoslynInstallationLA />} />
         </Route>
       </Routes>
     </BrowserRouter>

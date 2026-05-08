@@ -22,6 +22,10 @@ interface IntelligentEstimateFormProps {
 const addOnOptions = ['Hydrojetting', 'Grease Break Down', 'Lid Removal'];
 
 const SERVICE_NOTES_CONFIG: Record<string, { prompt: string; placeholder: string }> = {
+  'goslyn-consultation': {
+    prompt: 'Tell us about your current pumping setup',
+    placeholder: 'Monthly or quarterly pumping schedule, number of 3-compartment sinks, and any active city notice...',
+  },
   'septic-holding-tank': {
     prompt: 'Describe the system',
     placeholder: 'Tank size (if known), when last pumped, any access or odor issues...',

@@ -13,7 +13,6 @@ const DEFAULT_META: RouteMeta = {
   title: 'LA Restaurant Services | Grease Trap & Sanitation Estimates',
   description:
     'Grease trap service, hydro jetting, UCO recycling, restroom rentals, and restaurant sanitation support across Los Angeles and Southern California.',
-  canonicalPath: '/',
 };
 
 const ROUTE_META: Record<string, RouteMeta> = {
@@ -143,6 +142,12 @@ const ROUTE_META: Record<string, RouteMeta> = {
     description:
       'A startup guide to grease trap compliance for new restaurants opening in Los Angeles.',
   },
+  '/goslyn-installation-los-angeles': {
+    title: 'Goslyn Installation Los Angeles | Zero-Maintenance Option',
+    description:
+      'Compare recurring pumping with Goslyn high-efficiency filtration and request a consultation for retrofit planning in Los Angeles.',
+    canonicalPath: '/goslyn-installation-los-angeles',
+  },
 };
 
 const upsertMeta = (key: string, content: string, useProperty = false) => {
@@ -188,7 +193,7 @@ export const RouteMetadata: React.FC = () => {
       ? getInstantEstimateMeta(location.search)
       : (ROUTE_META[location.pathname] || DEFAULT_META);
 
-    const canonicalUrl = `${SITE_URL}${meta.canonicalPath || location.pathname}`;
+    const canonicalUrl = `${SITE_URL}${meta.canonicalPath ?? location.pathname}`;
     document.title = meta.title;
     upsertMeta('description', meta.description);
     upsertMeta('og:title', meta.title, true);

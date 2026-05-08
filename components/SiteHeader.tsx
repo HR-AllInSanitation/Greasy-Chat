@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 const servicesMenu = [
   { label: 'Grease Trap Cleaning', path: '/grease-trap-cleaning-los-angeles' },
+  { label: 'Zero-Maintenance Option (Goslyn)', path: '/goslyn-installation-los-angeles' },
   { label: 'Used Cooking Oil Pickup', path: '/used-cooking-oil-pickup-los-angeles' },
   { label: 'Hydro Jetting', path: '/hydro-jetting-los-angeles' },
   { label: 'Restroom Trailer Rentals', path: '/restroom-trailer-rentals-los-angeles' },
@@ -129,6 +130,12 @@ export const SiteHeader: React.FC = () => {
               className="bg-amber-500 text-slate-950 px-8 py-4 rounded-full hover:bg-amber-400 transition-all font-black shadow-lg shadow-amber-200/50"
             >
               Instant Estimate
+            </Link>
+            <Link
+              to="/goslyn-installation-los-angeles"
+              className="bg-transparent border-2 border-slate-950 text-slate-950 px-8 py-4 rounded-full hover:bg-slate-950 hover:text-white transition-all font-black"
+            >
+              Zero-Maintenance Option
             </Link>
           </div>
         </div>

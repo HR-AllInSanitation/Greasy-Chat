@@ -114,6 +114,21 @@ const App: React.FC = () => {
                   Scale without interruptions. Get a <span className="text-slate-950 font-bold">precise service estimate</span> in under 2 minutes — grease traps, jetting, compliance, and more. <span className="text-amber-600 font-black">Health-code ready, every time.</span>
                 </p>
 
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    to="/instant-estimate"
+                    className="inline-flex items-center justify-center bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-[0.12em] text-xs hover:bg-amber-400 transition-colors"
+                  >
+                    Get Instant Estimate
+                  </Link>
+                  <Link
+                    to="/goslyn-installation-los-angeles"
+                    className="inline-flex items-center justify-center bg-transparent border-2 border-slate-950 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-[0.12em] text-xs hover:bg-slate-950 hover:text-white transition-colors"
+                  >
+                    Zero-Maintenance Option
+                  </Link>
+                </div>
+
                 <div className="flex flex-wrap gap-6 pt-6">
                   <div className="flex items-center gap-5 bg-white px-8 py-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50">
                     <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">

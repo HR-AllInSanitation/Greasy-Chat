@@ -4,11 +4,45 @@ interface StructuredDataProps {
   data: object;
 }
 
+const DEFAULT_ARTICLE_DATE_PUBLISHED = '2025-01-01';
+const DEFAULT_ARTICLE_DATE_MODIFIED = '2026-04-02';
+
+const enrichStructuredData = (input: any) => {
+  if (!input || typeof input !== 'object') {
+    return input;
+  }
+
+  if (input['@type'] !== 'Article') {
+    return input;
+  }
+
+  return {
+    ...input,
+    author: {
+      '@type': 'Organization',
+      name: 'LA Restaurant Services',
+      url: 'https://www.larestaurantservices.com/about-us',
+      ...(input.author || {}),
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'LA Restaurant Services',
+      url: 'https://www.larestaurantservices.com',
+      logo: { '@type': 'ImageObject', url: 'https://www.larestaurantservices.com/brand-hero.svg' },
+      ...(input.publisher || {}),
+    },
+    datePublished: input.datePublished || DEFAULT_ARTICLE_DATE_PUBLISHED,
+    dateModified: input.dateModified || DEFAULT_ARTICLE_DATE_MODIFIED,
+  };
+};
+
 export const StructuredData: React.FC<StructuredDataProps> = ({ data }) => {
+  const normalizedData = enrichStructuredData(data);
+
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(normalizedData) }}
     />
   );
 };

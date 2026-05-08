@@ -50,6 +50,12 @@ export const SiteFooter: React.FC = () => {
             >
               Send Us a Message
             </Link>
+            <Link
+              to="/goslyn-installation-los-angeles"
+              className="block w-full border border-white/20 text-white font-black py-4 rounded-xl hover:border-emerald-500 hover:text-emerald-400 transition-all uppercase tracking-[0.2em] text-[11px] text-center"
+            >
+              Zero-Maintenance Option
+            </Link>
           </div>
         </div>
       </div>

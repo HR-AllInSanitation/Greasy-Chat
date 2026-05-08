@@ -8,6 +8,7 @@ interface ServiceLandingLink {
 
 const SERVICE_LANDING_LINKS: ServiceLandingLink[] = [
   { title: 'Grease Trap Cleaning', path: '/grease-trap-cleaning-los-angeles' },
+  { title: 'Goslyn Installation', path: '/goslyn-installation-los-angeles' },
   { title: 'Used Cooking Oil Pickup', path: '/used-cooking-oil-pickup-los-angeles' },
   { title: 'Restroom Trailer Rentals', path: '/restroom-trailer-rentals-los-angeles' },
   { title: 'Septic Holding Tank Pumping', path: '/septic-holding-tank-pumping-los-angeles' },

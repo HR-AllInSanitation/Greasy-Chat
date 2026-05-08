@@ -14,6 +14,14 @@ export interface EstimatorServiceOption {
 
 export const estimatorServiceOptions: EstimatorServiceOption[] = [
   {
+    key: 'goslyn-consultation',
+    label: 'Goslyn Zero-Maintenance Consultation',
+    description: 'Evaluate retrofit options to reduce recurring pumping and improve compliance performance.',
+    icon: 'fa-filter',
+    tag: 'Zero-Maintenance',
+    mode: 'contact',
+  },
+  {
     key: 'grease-trap-interceptor',
     label: 'Grease Trap / Interceptor Pumping',
     description: 'Structured quote flow for grease trap, interceptor, and clarifier service.',

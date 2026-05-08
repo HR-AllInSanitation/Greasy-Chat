@@ -385,10 +385,13 @@ test.describe('core services flows', () => {
   test('header resource links navigate to real pages (no 404)', async ({ page }) => {
     await page.goto('/');
 
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
     await page.getByRole('button', { name: /Company/i }).first().hover();
     await page.locator('nav a[href="/faq"]').click();
     await expect(page).toHaveURL(/\/faq$/);
     await expect(page.locator('h1').first()).toBeVisible();
+    await expect.poll(async () => page.evaluate(() => window.scrollY)).toBeLessThan(120);
 
     await page.goto('/');
     await page.getByRole('button', { name: /Company/i }).first().hover();
