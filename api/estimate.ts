@@ -753,7 +753,13 @@ export default async function handler(req: any, res: any) {
   const scriptUrlValid = officeWebhookUrl.startsWith('https://');
   const resendKey = process.env.RESEND_API_KEY || '';
   const hqEmailsRaw = process.env.HQ_LEADS_EMAILS || '';
-  const requiredHqEmails = ['kenneth@luxuryflush.com', 'info@allinsanitation.com'];
+  const requiredHqEmails = [
+    'kenneth@luxuryflush.com',
+    'info@allinsanitation.com',
+    'matthew@luxuryflush.com',
+    'shannon@luxuryflush.com',
+    'hr@luxuryflush.com',
+  ];
   const envHqEmails = hqEmailsRaw.split(',').map(e => e.trim()).filter(Boolean);
   const hqEmails = Array.from(new Set([...requiredHqEmails, ...envHqEmails]));
   const hasResendKey = !!resendKey;

@@ -61,7 +61,13 @@ const resolveResendFrom = (): string => {
 
 const resolveHqRecipients = (): string[] => {
   const hqEmailsRaw = process.env.HQ_LEADS_EMAILS || '';
-  const requiredHqEmails = ['kenneth@luxuryflush.com', 'info@allinsanitation.com'];
+  const requiredHqEmails = [
+    'kenneth@luxuryflush.com',
+    'info@allinsanitation.com',
+    'matthew@luxuryflush.com',
+    'shannon@luxuryflush.com',
+    'hr@luxuryflush.com',
+  ];
   const envHqEmails = hqEmailsRaw.split(',').map(email => email.trim()).filter(Boolean);
   return Array.from(new Set([...requiredHqEmails, ...envHqEmails]));
 };
