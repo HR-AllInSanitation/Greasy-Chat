@@ -994,11 +994,19 @@ export default async function handler(req: any, res: any) {
           if (hqResult.ok) {
             emailed = true;
             if (redis) {
-              await withTimeout(redis.hset(stateKey, {
-                hqSent: '1',
-                hqSentAt: new Date().toISOString(),
-                hqMessageId: hqResult.messageId || 'unknown',
-              }), 1500, 'redis_mark_hq_sent');
+              try {
+                await withTimeout(redis.hset(stateKey, {
+                  hqSent: '1',
+                  hqSentAt: new Date().toISOString(),
+                  hqMessageId: hqResult.messageId || 'unknown',
+                }), 1500, 'redis_mark_hq_sent');
+              } catch (redisErr: any) {
+                warnings.push('redis_mark_hq_sent_failed');
+                console.warn('Failed to persist HQ sent state after fallback email', {
+                  quoteId,
+                  error: redisErr?.message || 'unknown',
+                });
+              }
             }
           } else {
             warnings.push(hqResult.errorCode || 'event_a_hq_fallback_failed');
