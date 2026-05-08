@@ -8,6 +8,8 @@
     "dev:strict": "vite --strictPort --port 3000",
     "prebuild": "node -e \"if (process.env.VITE_E2E) { console.error('VITE_E2E must not be set when building'); process.exit(1); }\"",
     "build": "vite build",
+    "prerender": "node scripts/prerender.mjs",
+    "build:prerender": "npm run build && npm run prerender",
     "preview": "vite preview",
     "test:smoke": "playwright test --config=playwright.config.ts",
     "ports:check": "lsof -iTCP -sTCP:LISTEN -n -P | grep -E ':(3000|3002|3003|4173|5173)' || true",
