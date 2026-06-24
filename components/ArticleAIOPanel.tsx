@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { trackEvent } from '../api/gtag-utils';
 import { StructuredData, buildFAQPageSchema } from './StructuredData';
 
 type ArticleAIOConfig = {
@@ -249,6 +250,7 @@ export const ArticleAIOPanel: React.FC = () => {
             </Link>
             <a
               href="tel:8186984252"
+                onClick={() => trackEvent('support_page_cta_click', { page_type: 'article_aio_panel', cta: 'call_dispatch' })}
               className="inline-flex items-center justify-center border border-slate-300 text-slate-800 px-5 py-3 rounded-xl font-black uppercase tracking-[0.16em] text-[11px] hover:border-amber-500 hover:text-amber-700 transition-colors"
             >
               Call Dispatch

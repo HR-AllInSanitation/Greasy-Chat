@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FAQSection, FAQItem } from '../components/FAQSection';
 import { StructuredData, buildServiceSchema, buildFAQPageSchema, buildBreadcrumbSchema } from '../components/StructuredData';
 import { ServiceLandingLinks } from '../components/ServiceLandingLinks';
+import { trackEvent } from '../api/gtag-utils';
 
 const UsedCookingOilPickupLA: React.FC = () => {
   const faqs: FAQItem[] = [
@@ -157,6 +158,7 @@ const UsedCookingOilPickupLA: React.FC = () => {
               </Link>
               <a 
                 href="tel:8186984252" 
+                  onClick={() => trackEvent('support_page_cta_click', { page_type: 'used_cooking_oil_pickup', cta: 'call_dispatch' })}
                 className="bg-white/10 text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/20 transition-all border border-white/20"
               >
                 Call Dispatch
