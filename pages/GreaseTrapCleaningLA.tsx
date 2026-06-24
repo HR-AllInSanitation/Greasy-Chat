@@ -102,7 +102,7 @@ const GreaseTrapCleaningLA: React.FC = () => {
 
   const serviceSchema = buildServiceSchema({
     name: "Grease Trap Cleaning Los Angeles",
-    description: "Professional grease trap and interceptor pumping services in Los Angeles. Full scraping, pumping, and EPA-certified disposal with manifests. Emergency and scheduled service available 24/7.",
+    description: "Professional grease trap and interceptor pumping services in Los Angeles. Full scraping, pumping, and EPA-certified disposal with manifests. Scheduled and urgent service support for commercial kitchens.",
     areaServed: ["Los Angeles", "Ventura", "San Bernardino", "Lancaster", "Palmdale", "Orange County", "San Diego"],
     serviceType: "Grease Trap Cleaning Service",
     url: "https://www.larestaurantservices.com/grease-trap-cleaning-los-angeles"
@@ -143,7 +143,7 @@ const GreaseTrapCleaningLA: React.FC = () => {
             </h1>
             
             <p className="text-xl text-slate-600 leading-relaxed max-w-3xl font-medium">
-              Professional grease trap and interceptor pumping for restaurants, food trucks, and commercial kitchens across Los Angeles County. Full scraping, high-volume extraction, and EPA-certified disposal with compliance documentation.
+              Professional restaurant grease trap cleaning and <Link to="/instant-estimate?service=grease-trap-interceptor" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">grease interceptor pumping</Link> for Los Angeles restaurants, food trucks, and commercial kitchens. Built to help teams prevent backups, avoid downtime, and support FOG compliance with scheduled maintenance. Need line support too? See our <Link to="/hydro-jetting-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">commercial hydro jetting</Link> and <Link to="/restaurant-waste-services" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">restaurant waste services</Link> options.
             </p>
           </div>
 
@@ -186,9 +186,9 @@ const GreaseTrapCleaningLA: React.FC = () => {
                   <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
                     <i className="fas fa-shield-check text-xl"></i>
                   </div>
-                  <h3 className="text-xl font-black text-slate-900">100% Compliance Guaranteed</h3>
+                  <h3 className="text-xl font-black text-slate-900">FOG Compliance Documentation Support</h3>
                   <p className="text-slate-600 leading-relaxed">
-                    Every service includes waste manifests, compliance certificates, and digital documentation for Health Department inspections. Never worry about violations again.
+                    Every service includes manifests and service records to support Health Department and FOG documentation workflows.
                   </p>
                 </div>
 
@@ -196,9 +196,9 @@ const GreaseTrapCleaningLA: React.FC = () => {
                   <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
                     <i className="fas fa-clock text-xl"></i>
                   </div>
-                  <h3 className="text-xl font-black text-slate-900">Emergency Response 24/7</h3>
+                  <h3 className="text-xl font-black text-slate-900">Priority Dispatch for Active Backup Scenarios</h3>
                   <p className="text-slate-600 leading-relaxed">
-                    Grease trap overflowing? We respond within 1-2 hours in Los Angeles core areas. Emergency service available nights, weekends, and holidays.
+                    When a kitchen backup threatens service, dispatch prioritizes overflow and downtime scenarios for faster follow-up.
                   </p>
                 </div>
 

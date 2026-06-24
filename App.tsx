@@ -39,7 +39,7 @@ const App: React.FC = () => {
     {
       title: "Grease Trap / Interceptor Pumping",
       key: 'grease-trap-interceptor',
-      desc: "Specialized indoor and exterior grease system maintenance with full scrape and high-volume extraction.",
+      desc: "Commercial kitchen grease trap cleaning and interceptor pumping with full scrape and high-volume extraction.",
       icon: "fa-faucet",
       tag: "Indoor/Exterior"
     },
@@ -53,14 +53,14 @@ const App: React.FC = () => {
     {
       title: "Main Sewer Line Jetting / Hydro Jetting",
       key: 'hydro-jetting',
-      desc: "High-pressure line clearing to eliminate stubborn FOG (Fat, Oil, Grease) build-up.",
+      desc: "Commercial hydro jetting for kitchen and sewer lines to clear stubborn FOG (fat, oil, grease) buildup.",
       icon: "fa-water-ladder",
       tag: "Emergency"
     },
     {
       title: "UCO Recycling",
       key: 'uco-recycling',
-      desc: "Used Cooking Oil collection and recycling. Sustainable solutions for your kitchen oil.",
+      desc: "Used cooking oil pickup and recycling with cleaner handling for restaurants and foodservice operations.",
       icon: "fa-recycle",
       tag: "Eco-Friendly"
     },
@@ -88,7 +88,7 @@ const App: React.FC = () => {
     {
       title: "Janitorial Services",
       key: 'janitorial-services',
-      desc: "Comprehensive facility cleaning and sanitation for restrooms, dining areas, and kitchens. Nightly and deep-clean options available.",
+      desc: "Restaurant sanitation and janitorial support for restrooms, dining areas, prep spaces, and back-of-house zones.",
       icon: "fa-soap",
       tag: "Sanitation"
     }
@@ -99,19 +99,26 @@ const App: React.FC = () => {
     if (element) element.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const relatedPages = [
+    { label: 'Grease Trap Cleaning', to: '/grease-trap-cleaning-los-angeles' },
+    { label: 'Hydro Jetting', to: '/hydro-jetting-los-angeles' },
+    { label: 'Compliance Audits', to: '/compliance-audits-los-angeles' },
+    { label: 'Goslyn Installation', to: '/goslyn-installation-los-angeles' },
+  ];
+
   return (
     <main className="py-12 lg:pt-16 pb-20">
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid lg:grid-cols-[1fr,420px] gap-12 items-start">
             <div className="space-y-16">
               <div className="space-y-10">
-                <h2 className="text-6xl lg:text-8xl font-black text-slate-950 leading-[0.9] tracking-tighter">
-                  Opening a New Restaurant <br/>
-                  in Los Angeles? 
-                </h2>
+                <h1 className="text-6xl lg:text-8xl font-black text-slate-950 leading-[0.9] tracking-tighter">
+                  Running or Opening a <br/>
+                  Commercial Kitchen in Los Angeles?
+                </h1>
                 
                 <p className="text-2xl text-slate-500 leading-relaxed max-w-xl font-medium">
-                  Scale without interruptions. Get a <span className="text-slate-950 font-bold">precise service estimate</span> in under 2 minutes — grease traps, jetting, compliance, and more. <span className="text-amber-600 font-black">Health-code ready, every time.</span>
+                  LA Restaurant Services supports existing restaurants and new foodservice operators with <span className="text-slate-950 font-bold">grease trap cleaning, interceptor pumping, commercial hydro jetting, used cooking oil pickup, and sanitation support</span> across Los Angeles and Southern California.
                 </p>
 
                 <div className="flex flex-wrap gap-3">
@@ -143,7 +150,7 @@ const App: React.FC = () => {
               </div>
 
               <section className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl space-y-6" aria-labelledby="seo-content-heading">
-                <h1 id="seo-content-heading" className="text-4xl font-black text-slate-950 tracking-tight">Grease Trap Services in Los Angeles</h1>
+                <h2 id="seo-content-heading" className="text-4xl font-black text-slate-950 tracking-tight">Grease Trap Services in Los Angeles</h2>
                 <p className="text-slate-600 text-lg leading-relaxed font-medium">
                   Our grease trap pumping services in Los Angeles keep your restaurant ready for health inspections while minimizing downtime. We specialize in eco-friendly collection, compliant hauling, and proactive maintenance plans.
                 </p>
@@ -216,6 +223,17 @@ const App: React.FC = () => {
                     <p className="text-slate-600 font-medium leading-relaxed">
                       We moved our full FAQ library into a dedicated page so this homepage stays focused on instant estimates and lead capture.
                     </p>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {relatedPages.map((page) => (
+                        <Link
+                          key={page.to}
+                          to={page.to}
+                          className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-600 hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                        >
+                          {page.label}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                   <div className="w-full lg:w-auto">
                     <Link

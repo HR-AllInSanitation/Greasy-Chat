@@ -60,14 +60,14 @@ const HydroJettingLA: React.FC = () => {
             </h1>
 
             <p className="text-xl text-slate-600 leading-relaxed max-w-3xl font-medium">
-              Clear persistent grease and debris from restaurant sewer lines with professional hydro jetting. Built for high-volume kitchens and recurring drain issues.
+              Clear persistent grease and debris from restaurant sewer lines with <Link to="/instant-estimate?service=hydro-jetting" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">commercial hydro jetting</Link>. Built for Los Angeles restaurants with recurring drain issues, including <Link to="/restaurant-waste-services" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">restaurant drain cleaning</Link> cases tied to heavy FOG output. This helps prevent backups, avoid downtime, and support scheduled maintenance plans for commercial kitchen operations. Pair this with <Link to="/grease-trap-cleaning-los-angeles" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">restaurant grease trap cleaning</Link> to reduce repeat blockages.
             </p>
           </div>
 
           <div className="bg-purple-600 text-white p-8 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xl">
             <div className="space-y-2">
               <h3 className="text-2xl font-black uppercase tracking-tight">Solve Recurring Backups</h3>
-              <p className="text-purple-100 text-sm font-medium">Fast diagnosis and jetting-focused service flow</p>
+              <p className="text-purple-100 text-sm font-medium">Commercial-kitchen line clearing for high-volume operations</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
@@ -99,7 +99,7 @@ const HydroJettingLA: React.FC = () => {
                 <ul className="space-y-2 text-slate-700 text-sm">
                   <li>• High-pressure cleaning focused on grease-heavy segments</li>
                   <li>• Better residual removal than basic snaking alone</li>
-                  <li>• Deployable as preventive or emergency service</li>
+                  <li>• Deployable for preventive and urgent service scenarios</li>
                   <li>• Streamlined intake through instant estimate workflow</li>
                 </ul>
               </div>

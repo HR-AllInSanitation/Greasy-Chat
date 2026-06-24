@@ -10,17 +10,22 @@ type RouteMeta = {
 
 const SITE_URL = 'https://www.larestaurantservices.com';
 const DEFAULT_META: RouteMeta = {
-  title: 'LA Restaurant Services | Grease Trap & Sanitation Estimates',
+  title: 'LA Restaurant Services | Los Angeles Restaurant Waste & Sanitation',
   description:
-    'Grease trap service, hydro jetting, UCO recycling, restroom rentals, and restaurant sanitation support across Los Angeles and Southern California.',
+    'Grease trap service, hydro jetting, UCO recycling, restroom rentals, and restaurant sanitation support for Los Angeles and Southern California businesses.',
 };
 
 const ROUTE_META: Record<string, RouteMeta> = {
-  '/': DEFAULT_META,
+  '/': {
+    title: 'LA Restaurant Services | Los Angeles Restaurant Waste & Sanitation',
+    description:
+      'Request grease trap pumping, hydro jetting, UCO recycling, compliance help, and restaurant sanitation support across Los Angeles and Southern California.',
+    canonicalPath: '/',
+  },
   '/instant-estimate': {
     title: 'Instant Estimate | LA Restaurant Services',
     description:
-      'Use the structured form to request a fast service estimate, call dispatch, or send a message for follow-up.',
+      'Use the structured form to request a fast restaurant service estimate, call dispatch, or send a message for follow-up.',
     canonicalPath: '/instant-estimate',
   },
   '/faq': {
@@ -50,7 +55,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/grease-trap-cleaning-los-angeles': {
     title: 'Grease Trap Cleaning Los Angeles | LA Restaurant Services',
     description:
-      'Grease trap and interceptor pumping for restaurants in Los Angeles with full scraping, manifests, and dispatch support.',
+      'Grease trap and interceptor pumping for restaurants in Los Angeles with full scraping, manifests, and fast dispatch support.',
   },
   '/used-cooking-oil-pickup-los-angeles': {
     title: 'Used Cooking Oil Pickup Los Angeles | LA Restaurant Services',
@@ -66,6 +71,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
     title: 'Restaurant Waste Services Los Angeles | LA Restaurant Services',
     description:
       'All-in-one restaurant waste services including grease trap pumping, UCO recycling, hydro jetting, septic pumping, and compliance support.',
+    canonicalPath: '/restaurant-waste-services',
   },
   '/septic-holding-tank-pumping-los-angeles': {
     title: 'Septic & Holding Tank Pumping Los Angeles | LA Restaurant Services',
@@ -196,9 +202,13 @@ export const RouteMetadata: React.FC = () => {
     const canonicalUrl = `${SITE_URL}${meta.canonicalPath ?? location.pathname}`;
     document.title = meta.title;
     upsertMeta('description', meta.description);
+    upsertMeta('robots', 'index,follow');
+    upsertMeta('og:site_name', 'LA Restaurant Services', true);
+    upsertMeta('og:type', 'website', true);
     upsertMeta('og:title', meta.title, true);
     upsertMeta('og:description', meta.description, true);
     upsertMeta('og:url', canonicalUrl, true);
+    upsertMeta('twitter:card', 'summary_large_image');
     upsertMeta('twitter:title', meta.title);
     upsertMeta('twitter:description', meta.description);
     upsertCanonical(canonicalUrl);

@@ -46,7 +46,7 @@ const InstantEstimate: React.FC = () => {
               <span className="text-amber-600">Structured for Speed</span>
             </h1>
             <p className="text-xl text-slate-600 leading-relaxed max-w-4xl font-medium">
-              Use the intelligent form to get a cleaner intake, faster quote generation, and a more trackable lead path.
+              Use the intelligent form to request pricing for <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">restaurant grease trap cleaning</Link>, <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">grease interceptor pumping</Link>, <Link to="/hydro-jetting-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">commercial hydro jetting</Link>, <Link to="/used-cooking-oil-pickup-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">used cooking oil pickup</Link>, and broader <Link to="/restaurant-waste-services" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">restaurant waste services</Link> across Southern California.
             </p>
           </header>
 

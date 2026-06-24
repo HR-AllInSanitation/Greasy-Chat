@@ -160,7 +160,7 @@ const RestaurantWasteServicesLA: React.FC = () => {
             </h1>
             
             <p className="text-xl text-slate-600 leading-relaxed max-w-3xl font-medium">
-              From grease traps to used cooking oil, septic tanks to line jetting — we handle all your sanitation and waste compliance needs so you can focus on serving customers.
+              From <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">restaurant grease trap cleaning</Link> and <Link to="/instant-estimate?service=grease-trap-interceptor" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">grease interceptor pumping</Link> to <Link to="/used-cooking-oil-pickup-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">used cooking oil pickup</Link> and <Link to="/hydro-jetting-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">commercial hydro jetting</Link>, we support commercial kitchen operations with scheduled maintenance built to prevent backups, reduce downtime risk, and support FOG compliance workflows for Los Angeles restaurants.
             </p>
           </div>
 
@@ -257,6 +257,9 @@ const RestaurantWasteServicesLA: React.FC = () => {
                     <p className="text-slate-600 leading-relaxed mb-3">
                       High-pressure water jetting (3000-4000 PSI) clears stubborn FOG build-up in main sewer lines. Camera inspection included to locate blockages.
                     </p>
+                    <Link to="/hydro-jetting-los-angeles" className="text-purple-600 font-bold text-sm hover:text-purple-700 inline-flex items-center gap-2">
+                      Learn More <i className="fas fa-arrow-right text-xs"></i>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -306,8 +309,8 @@ const RestaurantWasteServicesLA: React.FC = () => {
                 <div className="flex items-start gap-3">
                   <i className="fas fa-check-circle text-emerald-600 text-xl mt-1"></i>
                   <div>
-                    <h4 className="font-black text-slate-900 mb-1">24/7 Emergency Response</h4>
-                    <p className="text-slate-600 text-sm">Backup or overflow? We respond within 1-2 hours in LA core areas, day or night.</p>
+                    <h4 className="font-black text-slate-900 mb-1">Priority Dispatch Coordination</h4>
+                    <p className="text-slate-600 text-sm">Backup or overflow scenarios are prioritized to reduce service interruptions in active kitchens.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">

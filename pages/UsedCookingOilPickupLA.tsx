@@ -138,7 +138,7 @@ const UsedCookingOilPickupLA: React.FC = () => {
             </h1>
             
             <p className="text-xl text-slate-600 leading-relaxed max-w-3xl font-medium">
-              Turn your used cooking oil into cash while staying eco-friendly. Free containers, scheduled pickups, payment for clean oil, and full compliance documentation for restaurants across Los Angeles.
+              Turn your <Link to="/instant-estimate?service=uco-recycling" className="text-emerald-600 hover:text-emerald-700 transition-colors font-semibold">used cooking oil pickup</Link> program into a cleaner revenue stream while supporting commercial kitchen operations. Free containers, scheduled pickups, and compliance documentation for Los Angeles restaurants. For bundled support, compare our <Link to="/restaurant-waste-services" className="text-emerald-600 hover:text-emerald-700 transition-colors font-semibold">restaurant waste services</Link>, <Link to="/grease-trap-cleaning-los-angeles" className="text-emerald-600 hover:text-emerald-700 transition-colors font-semibold">restaurant grease trap cleaning</Link>, and <Link to="/hydro-jetting-los-angeles" className="text-emerald-600 hover:text-emerald-700 transition-colors font-semibold">commercial hydro jetting</Link> options.
             </p>
           </div>
 
@@ -203,7 +203,7 @@ const UsedCookingOilPickupLA: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-black text-slate-900">Stay Compliant</h3>
                 <p className="text-slate-600 text-sm leading-relaxed">
-                  Get collection receipts and recycling certificates for Health Dept audits.
+                  Get collection receipts and recycling records that support FOG and Health Department documentation workflows.
                 </p>
               </div>
             </div>
