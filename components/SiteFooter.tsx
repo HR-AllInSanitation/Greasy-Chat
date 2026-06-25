@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { trackEvent } from '../api/gtag-utils';
 
 export const SiteFooter: React.FC = () => {
   return (
@@ -37,7 +38,7 @@ export const SiteFooter: React.FC = () => {
         <div className="md:col-span-4">
           <div className="bg-white/[0.03] border border-white/5 p-8 rounded-[2.5rem] space-y-6 shadow-2xl relative overflow-hidden group">
             <h5 className="text-amber-500 font-black uppercase text-[9px] tracking-[0.3em]">Regional Dispatch</h5>
-            <a href="tel:8186984252" className="text-4xl lg:text-5xl font-black text-white tracking-tighter hover:text-amber-500 transition-colors block">818.698.4252</a>
+            <a href="tel:8186984252" onClick={() => trackEvent('support_page_cta_click', { page_type: 'site_footer', cta: 'call_dispatch' })} className="text-4xl lg:text-5xl font-black text-white tracking-tighter hover:text-amber-500 transition-colors block">818.698.4252</a>
             <Link
               to="/instant-estimate?service=grease-trap-interceptor"
               className="block w-full bg-amber-500 text-slate-950 font-black py-4 rounded-xl hover:bg-amber-400 transition-all uppercase tracking-[0.2em] text-[11px] text-center"
