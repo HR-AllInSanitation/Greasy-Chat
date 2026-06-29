@@ -43,7 +43,7 @@ const LAFOGProgramExplained: React.FC = () => {
       icon: 'fa-gauge-high',
       title: 'Service the interceptor before reaching 25% capacity',
       detail:
-        'This is the core maintenance requirement. The combined depth of the FOG layer and bottom sludge must not exceed 25% of the total liquid capacity. You are responsible for scheduling service proactively — waiting until it overflows is not a defense.',
+        'This is the core maintenance requirement. The combined depth of the FOG layer and bottom sludge must not exceed 25% of the total liquid capacity. You are responsible for scheduling service proactively — waiting until it overflows is not a defense. For guidance on how often to schedule service based on your kitchen type and Los Angeles seasonal factors, see our <Link to="/restaurant-grease-trap-cleaning-frequency-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap frequency guide</Link>.',
     },
     {
       icon: 'fa-file-lines',

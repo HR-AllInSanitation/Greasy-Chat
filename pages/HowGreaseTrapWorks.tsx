@@ -43,7 +43,8 @@ const HowGreaseTrapWorks: React.FC = () => {
     {
       icon: 'fa-cubes-stacked',
       heading: 'Under-sink traps vs. outdoor interceptors',
-      body: `There are two common configurations in Los Angeles kitchens:\n\n**Under-sink (interior) grease traps** — These are compact units, typically 10 to 50 gallons, installed directly under a prep sink or dishwasher. They fill fast. A busy taqueria or sandwich shop might need service every one to two weeks. They're easier to access but easier to ignore, which is where most violations start.\n\n**Outdoor grease interceptors** — These are larger in-ground tanks, commonly 500 to 2,000+ gallons, installed outside in a parking lot or alley. They're mandated by LA County for most full-service restaurants and high-volume operations. Because they hold more, they tolerate longer service intervals — but they also cause much bigger problems when they overflow.`,
+      body: `There are two common configurations in Los Angeles kitchens:\n\n**Under-sink (interior) grease traps** — These are compact units, typically 10 to 50 gallons, installed directly under a prep sink or dishwasher. They fill fast. A busy taqueria or sandwich shop might need service every one to two weeks. They're easier to access but easier to ignore, which is where most violations start.\n\n**Outdoor grease interceptors** — These are larger in-ground tanks, commonly 500 to 2,000+ gallons, installed outside in a parking lot or alley. They're mandated by LA County for most full-service restaurants and high-volume operations. Because they hold more, they tolerate longer service intervals — but they also cause much bigger problems when they overflow.\n\nNot sure which one you have or the difference between a trap and an interceptor? [LINK_GREASE_TRAP_VS_INTERCEPTOR]`,
+      needsLink: true,
     },
     {
       icon: 'fa-chart-line',
@@ -108,12 +109,20 @@ const HowGreaseTrapWorks: React.FC = () => {
                 </div>
                 <div className="text-slate-600 font-medium leading-relaxed whitespace-pre-line pl-14">
                   {section.body.split('\n').map((line, i) => {
-                    const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    // Handle special markdown link for grease-trap-vs-grease-interceptor
+                    let content = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    if (line.includes('[LINK_GREASE_TRAP_VS_INTERCEPTOR]')) {
+                      return (
+                        <p key={i} className="mt-2">
+                          Not sure which one you have or the difference between a trap and an interceptor? <Link to="/grease-trap-vs-grease-interceptor-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">Read our comprehensive comparison</Link>.
+                        </p>
+                      );
+                    }
                     return (
                       <p
                         key={i}
                         className={line.startsWith('•') ? 'ml-2 mt-1' : line.startsWith('**') ? 'mt-3' : 'mt-2 first:mt-0'}
-                        dangerouslySetInnerHTML={{ __html: bold }}
+                        dangerouslySetInnerHTML={{ __html: content }}
                       />
                     );
                   })}

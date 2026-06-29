@@ -130,7 +130,7 @@ const GreaseTrapCleaningFrequency: React.FC = () => {
             <p className="pl-14 text-slate-600 font-medium leading-relaxed">
               These intervals are starting points. Your actual frequency depends on menu type, shift volume, and
               seasonal factors. Use this table to establish a baseline, then adjust after your first two or three
-              services based on how full the trap is at service time.
+              services based on how full the trap is at service time. For detailed frequency recommendations by kitchen type and Los Angeles seasonal factors, see our <Link to="/restaurant-grease-trap-cleaning-frequency-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">restaurant grease trap frequency guide</Link>.
             </p>
             <div className="overflow-x-auto">
               <table className="w-full text-sm mt-2">

@@ -144,7 +144,7 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
 
           <article className="bg-amber-50 border border-amber-100 rounded-3xl p-8 space-y-3">
             <p className="text-slate-700 font-medium leading-relaxed">
-              Need help confirming grease trap service for a Los Angeles restaurant? LA Restaurant Services provides <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap cleaning</Link> and grease interceptor pumping, plus <Link to="/restaurant-waste-services" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">restaurant waste support</Link> for commercial kitchens across Los Angeles and Southern California.
+              Need help confirming grease trap service for a Los Angeles restaurant? LA Restaurant Services provides <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap cleaning</Link> and grease interceptor pumping, plus <Link to="/restaurant-waste-services" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">restaurant waste support</Link> for commercial kitchens across Los Angeles and Southern California. (Not sure about the difference between a trap and an interceptor? <Link to="/grease-trap-vs-grease-interceptor-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">Read our guide</Link>.)
             </p>
           </article>
 
