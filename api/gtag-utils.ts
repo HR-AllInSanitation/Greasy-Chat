@@ -49,7 +49,8 @@ export function trackConversion(conversionData?: {
 }
 
 /**
- * Track a custom event for Google Ads (e.g., estimate_created)
+ * Track a general analytics event for GA4.
+ * Google Ads conversion tracking is handled separately by trackConversion().
  * @param eventName - Event name to track
  * @param eventData - Additional event data
  */
@@ -65,13 +66,10 @@ export function trackEvent(
   }
 
   try {
-    window.gtag('event', eventName, {
-      send_to: GOOGLE_ADS_ID,
-      ...eventData,
-    });
+    window.gtag('event', eventName, eventData || {});
 
     if (import.meta.env.DEV) {
-      console.log(`✓ Google Ads event tracked: ${eventName}`, { eventData });
+      console.log(`✓ GA4 event tracked: ${eventName}`, { eventData });
     }
   } catch (error) {
     console.error(`Error tracking event ${eventName}:`, error);
