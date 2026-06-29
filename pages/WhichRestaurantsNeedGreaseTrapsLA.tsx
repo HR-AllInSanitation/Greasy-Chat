@@ -105,7 +105,7 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
               <span>LA County Compliance</span>
             </div>
             <h1 className="text-5xl lg:text-6xl font-black text-slate-950 leading-tight tracking-tighter">
-              Which Kitchens Are Required to Have a Grease Trap in LA?
+              Which Restaurants in Los Angeles Need a Grease Trap?
             </h1>
             <p className="text-xl text-slate-600 leading-relaxed max-w-3xl font-medium">
               More operations than you would expect — here is how LACDPH classifies your kitchen and what the law actually requires.
@@ -140,6 +140,12 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
                 formal approval — not a judgment call on your part.
               </p>
             </div>
+          </article>
+
+          <article className="bg-amber-50 border border-amber-100 rounded-3xl p-8 space-y-3">
+            <p className="text-slate-700 font-medium leading-relaxed">
+              Need help confirming grease trap service for a Los Angeles restaurant? LA Restaurant Services provides <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap cleaning</Link> and grease interceptor pumping, plus <Link to="/restaurant-waste-services" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">restaurant waste support</Link> for commercial kitchens across Los Angeles and Southern California.
+            </p>
           </article>
 
           <div className="space-y-5">

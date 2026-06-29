@@ -104,9 +104,9 @@ const ROUTE_META: Record<string, RouteMeta> = {
       'A plain-language explanation of grease trap anatomy, separation layers, service thresholds, and compliance implications.',
   },
   '/which-restaurants-need-grease-traps-los-angeles': {
-    title: 'Which Restaurants Need Grease Traps in Los Angeles? | LA Restaurant Services',
+    title: 'Which Restaurants in Los Angeles Need Grease Traps? | LA Restaurant Services',
     description:
-      'Guide to which restaurant types typically need grease traps or interceptors in Los Angeles and why compliance matters.',
+      'Learn which Los Angeles restaurants and commercial kitchens may need grease traps or interceptors, FOG compliance requirements, and when to request grease trap service.',
   },
   '/how-to-tell-if-grease-trap-was-serviced': {
     title: 'How to Tell If a Grease Trap Was Serviced | LA Restaurant Services',
