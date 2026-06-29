@@ -27,6 +27,10 @@ import WasteManifestExplained from './pages/WasteManifestExplained';
 import FOGViolationsFinesLA from './pages/FOGViolationsFinesLA';
 import NewRestaurantFOGComplianceLA from './pages/NewRestaurantFOGComplianceLA';
 import GoslynInstallationLA from './pages/GoslynInstallationLA';
+import RestaurantGreaseTrapCleaningFrequencyLA from './pages/RestaurantGreaseTrapCleaningFrequencyLA';
+import WhyRestaurantDrainsBackUpLA from './pages/WhyRestaurantDrainsBackUpLA';
+import GreaseTrapVsInterceptorLA from './pages/GreaseTrapVsInterceptorLA';
+import SignsRestaurantNeedsHydroJettingLA from './pages/SignsRestaurantNeedsHydroJettingLA';
 import { SiteLayout } from './components/SiteLayout';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -60,6 +64,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="/restaurant-fog-violations-fines-los-angeles" element={<FOGViolationsFinesLA />} />
           <Route path="/new-restaurant-grease-trap-compliance-la" element={<NewRestaurantFOGComplianceLA />} />
           <Route path="/goslyn-installation-los-angeles" element={<GoslynInstallationLA />} />
+          <Route path="/restaurant-grease-trap-cleaning-frequency-los-angeles" element={<RestaurantGreaseTrapCleaningFrequencyLA />} />
+          <Route path="/why-restaurant-kitchen-drains-back-up-los-angeles" element={<WhyRestaurantDrainsBackUpLA />} />
+          <Route path="/grease-trap-vs-grease-interceptor-los-angeles" element={<GreaseTrapVsInterceptorLA />} />
+          <Route path="/signs-restaurant-needs-hydro-jetting-los-angeles" element={<SignsRestaurantNeedsHydroJettingLA />} />
         </Route>
       </Routes>
     </BrowserRouter>

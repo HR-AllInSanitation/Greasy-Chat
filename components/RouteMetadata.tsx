@@ -154,6 +154,26 @@ const ROUTE_META: Record<string, RouteMeta> = {
       'Compare recurring pumping with Goslyn high-efficiency filtration and request a consultation for retrofit planning in Los Angeles.',
     canonicalPath: '/goslyn-installation-los-angeles',
   },
+  '/restaurant-grease-trap-cleaning-frequency-los-angeles': {
+    title: 'Restaurant Grease Trap Cleaning Frequency Los Angeles | LA Restaurant Services',
+    description:
+      'Learn how often Los Angeles restaurants and commercial kitchens may need grease trap cleaning, what affects service frequency, and when to request scheduled maintenance.',
+  },
+  '/why-restaurant-kitchen-drains-back-up-los-angeles': {
+    title: 'Why Restaurant Kitchen Drains Back Up | LA Restaurant Services',
+    description:
+      'Learn why Los Angeles restaurant drains back up, how grease buildup affects commercial kitchens, and when hydro jetting or grease trap service may help.',
+  },
+  '/grease-trap-vs-grease-interceptor-los-angeles': {
+    title: 'Grease Trap vs Grease Interceptor Los Angeles | LA Restaurant Services',
+    description:
+      'Understand the difference between grease traps and grease interceptors for Los Angeles restaurants, commercial kitchens, and FOG maintenance planning.',
+  },
+  '/signs-restaurant-needs-hydro-jetting-los-angeles': {
+    title: 'Signs Your Restaurant Needs Hydro Jetting | LA Restaurant Services',
+    description:
+      'Slow drains, recurring clogs, odors, or grease buildup may signal that a Los Angeles restaurant needs commercial hydro jetting support.',
+  },
 };
 
 const upsertMeta = (key: string, content: string, useProperty = false) => {
