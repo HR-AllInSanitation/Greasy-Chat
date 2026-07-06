@@ -6,6 +6,7 @@ type RouteMeta = {
   title: string;
   description: string;
   canonicalPath?: string;
+  robots?: string;
 };
 
 const SITE_URL = 'https://www.larestaurantservices.com';
@@ -13,6 +14,15 @@ const DEFAULT_META: RouteMeta = {
   title: 'LA Restaurant Services | Los Angeles Restaurant Waste & Sanitation',
   description:
     'Grease trap service, hydro jetting, UCO recycling, restroom rentals, and restaurant sanitation support for Los Angeles and Southern California businesses.',
+  robots: 'index,follow',
+};
+
+const NOT_FOUND_META: RouteMeta = {
+  title: 'Page Not Found | LA Restaurant Services',
+  description:
+    'The page you requested could not be found. Explore service pages or request an instant estimate from LA Restaurant Services.',
+  canonicalPath: '/404',
+  robots: 'noindex,follow',
 };
 
 const ROUTE_META: Record<string, RouteMeta> = {
@@ -174,6 +184,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
     description:
       'Slow drains, recurring clogs, odors, or grease buildup may signal that a Los Angeles restaurant needs commercial hydro jetting support.',
   },
+  '/404': NOT_FOUND_META,
 };
 
 const upsertMeta = (key: string, content: string, useProperty = false) => {
@@ -198,6 +209,16 @@ const upsertCanonical = (href: string) => {
   link.setAttribute('href', href);
 };
 
+const upsertHttpEquiv = (httpEquiv: string, content: string) => {
+  let element = document.head.querySelector(`meta[http-equiv="${httpEquiv}"]`) as HTMLMetaElement | null;
+  if (!element) {
+    element = document.createElement('meta');
+    element.setAttribute('http-equiv', httpEquiv);
+    document.head.appendChild(element);
+  }
+  element.setAttribute('content', content);
+};
+
 const getInstantEstimateMeta = (search: string): RouteMeta => {
   const params = new URLSearchParams(search);
   const serviceKey = params.get('service');
@@ -215,14 +236,22 @@ export const RouteMetadata: React.FC = () => {
   const location = useLocation();
 
   React.useEffect(() => {
-    const meta = location.pathname === '/instant-estimate'
-      ? getInstantEstimateMeta(location.search)
-      : (ROUTE_META[location.pathname] || DEFAULT_META);
+    let meta: RouteMeta;
+    if (location.pathname === '/instant-estimate') {
+      meta = getInstantEstimateMeta(location.search);
+    } else if (location.pathname === '/404') {
+      meta = NOT_FOUND_META;
+    } else if (ROUTE_META[location.pathname]) {
+      meta = ROUTE_META[location.pathname];
+    } else {
+      meta = { ...DEFAULT_META, robots: 'noindex,follow' };
+    }
 
     const canonicalUrl = `${SITE_URL}${meta.canonicalPath ?? location.pathname}`;
     document.title = meta.title;
     upsertMeta('description', meta.description);
-    upsertMeta('robots', 'index,follow');
+    upsertMeta('robots', meta.robots || 'index,follow');
+    upsertHttpEquiv('content-language', 'en-US');
     upsertMeta('og:site_name', 'LA Restaurant Services', true);
     upsertMeta('og:type', 'website', true);
     upsertMeta('og:title', meta.title, true);

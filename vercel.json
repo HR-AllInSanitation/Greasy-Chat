@@ -1,4 +1,19 @@
 {
+  "headers": [
+    {
+      "source": "/891709ac5542488e8e52426bc1c5c58a.txt",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        },
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    }
+  ],
   "routes": [
     {
       "handle": "filesystem"

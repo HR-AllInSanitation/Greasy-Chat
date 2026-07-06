@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import App from './App';
 import GreaseTrapCleaningLA from './pages/GreaseTrapCleaningLA';
 import UsedCookingOilPickupLA from './pages/UsedCookingOilPickupLA';
@@ -31,6 +31,7 @@ import RestaurantGreaseTrapCleaningFrequencyLA from './pages/RestaurantGreaseTra
 import WhyRestaurantDrainsBackUpLA from './pages/WhyRestaurantDrainsBackUpLA';
 import GreaseTrapVsInterceptorLA from './pages/GreaseTrapVsInterceptorLA';
 import SignsRestaurantNeedsHydroJettingLA from './pages/SignsRestaurantNeedsHydroJettingLA';
+import NotFound from './pages/NotFound';
 import { SiteLayout } from './components/SiteLayout';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -68,6 +69,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="/why-restaurant-kitchen-drains-back-up-los-angeles" element={<WhyRestaurantDrainsBackUpLA />} />
           <Route path="/grease-trap-vs-grease-interceptor-los-angeles" element={<GreaseTrapVsInterceptorLA />} />
           <Route path="/signs-restaurant-needs-hydro-jetting-los-angeles" element={<SignsRestaurantNeedsHydroJettingLA />} />
+          <Route path="/404" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/404" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>
