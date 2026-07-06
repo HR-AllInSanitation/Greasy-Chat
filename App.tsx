@@ -113,12 +113,12 @@ const App: React.FC = () => {
             <div className="space-y-16">
               <div className="space-y-10">
                 <h1 className="text-6xl lg:text-8xl font-black text-slate-950 leading-[0.9] tracking-tighter">
-                  Running or Opening a <br/>
+                  Running, Scaling, or Opening a <br/>
                   Commercial Kitchen in Los Angeles?
                 </h1>
                 
                 <p className="text-2xl text-slate-500 leading-relaxed max-w-xl font-medium">
-                  LA Restaurant Services supports existing restaurants and new foodservice operators with <span className="text-slate-950 font-bold">grease trap cleaning, interceptor pumping, commercial hydro jetting, used cooking oil pickup, and sanitation support</span> across Los Angeles and Southern California.
+                  LA Restaurant Services helps <span className="text-slate-950 font-bold">restaurants, commercial kitchens, cafes, bars, hotels, ghost kitchens, shared kitchens, and foodservice operators</span> across Los Angeles and Southern California with grease trap cleaning, grease interceptor pumping, commercial hydro jetting, restaurant drain support, used cooking oil pickup, and restaurant waste services to prevent backups and support FOG compliance.
                 </p>
 
                 <div className="flex flex-wrap gap-3">
@@ -150,16 +150,16 @@ const App: React.FC = () => {
               </div>
 
               <section className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl space-y-6" aria-labelledby="seo-content-heading">
-                <h2 id="seo-content-heading" className="text-4xl font-black text-slate-950 tracking-tight">Grease Trap Services in Los Angeles</h2>
+                <h2 id="seo-content-heading" className="text-4xl font-black text-slate-950 tracking-tight">Grease Trap &amp; Interceptor Services in Los Angeles</h2>
                 <p className="text-slate-600 text-lg leading-relaxed font-medium">
-                  Our grease trap pumping services in Los Angeles keep your restaurant ready for health inspections while minimizing downtime. We specialize in eco-friendly collection, compliant hauling, and proactive maintenance plans.
+                  Our grease trap cleaning and grease interceptor pumping services support restaurants and commercial kitchens across Los Angeles and Southern California with scheduled maintenance designed to prevent backups, reduce downtime, and keep teams ready for inspections.
                 </p>
                 <div className="space-y-4">
                   <h2 className="text-2xl font-black text-slate-900">Why Choose Us?</h2>
                   <ul className="list-disc list-inside text-slate-600 space-y-2 font-medium">
-                    <li>Eco-friendly solutions with documented disposal manifests</li>
-                    <li>Affordable pricing and transparent estimates</li>
-                    <li>Fast, reliable dispatch for scheduled and emergency service</li>
+                    <li>Grease trap cleaning, interceptor pumping, and drain support built for foodservice operations</li>
+                    <li>Documented service records and manifests that support FOG compliance workflows</li>
+                    <li>Scheduled maintenance planning for restaurants, cafes, bars, hotels, and shared kitchens</li>
                   </ul>
                 </div>
                 <div className="space-y-3">
@@ -210,6 +210,42 @@ const App: React.FC = () => {
                     </button>
                   ))}
                 </div>
+
+                <div className="rounded-2xl border border-slate-100 bg-white p-5">
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 mb-3">Popular Service Pages</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      to="/grease-trap-cleaning-los-angeles"
+                      className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-600 hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                    >
+                      Grease Trap Cleaning
+                    </Link>
+                    <Link
+                      to="/grease-trap-interceptor-pumping"
+                      className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-600 hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                    >
+                      Interceptor Pumping
+                    </Link>
+                    <Link
+                      to="/hydro-jetting-los-angeles"
+                      className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-600 hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                    >
+                      Hydro Jetting
+                    </Link>
+                    <Link
+                      to="/used-cooking-oil-pickup-los-angeles"
+                      className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-600 hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                    >
+                      UCO Pickup
+                    </Link>
+                    <Link
+                      to="/restaurant-waste-services"
+                      className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-600 hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                    >
+                      Restaurant Waste Services
+                    </Link>
+                  </div>
+                </div>
               </div>
 
               <section id="faq" className="scroll-mt-32 bg-white p-8 lg:p-10 rounded-[2rem] border border-slate-100 shadow-xl">
@@ -221,7 +257,7 @@ const App: React.FC = () => {
                     </div>
                     <h3 className="text-3xl lg:text-4xl font-black text-slate-950 tracking-tight">Need answers before requesting service?</h3>
                     <p className="text-slate-600 font-medium leading-relaxed">
-                      We moved our full FAQ library into a dedicated page so this homepage stays focused on instant estimates and lead capture.
+                      Review the key service and compliance questions, then request a quote through our instant estimate flow.
                     </p>
                     <div className="flex flex-wrap gap-2 pt-2">
                       {relatedPages.map((page) => (

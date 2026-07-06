@@ -61,21 +61,21 @@ const HydroJettingLA: React.FC = () => {
             </h1>
 
             <p className="text-xl text-slate-600 leading-relaxed max-w-3xl font-medium">
-              Clear persistent grease and debris from restaurant sewer lines with <Link to="/instant-estimate?service=hydro-jetting" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">commercial hydro jetting</Link>. Built for Los Angeles restaurants with recurring drain issues, including <Link to="/restaurant-waste-services" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">restaurant drain cleaning</Link> cases tied to heavy FOG output. This helps prevent backups, avoid downtime, and support scheduled maintenance plans for commercial kitchen operations. Pair this with <Link to="/grease-trap-cleaning-los-angeles" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">restaurant grease trap cleaning</Link> to reduce repeat blockages.
+              Clear grease-heavy drain lines with <Link to="/instant-estimate?service=hydro-jetting" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">commercial hydro jetting</Link> for Los Angeles and Southern California <span className="font-semibold">restaurants, commercial kitchens, cafes, bars, hotels, ghost kitchens, shared kitchens, and foodservice operators</span>. Use this service to prevent backups, restore flow, and support FOG compliance through scheduled maintenance. Pair with <Link to="/grease-trap-interceptor-pumping" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">grease interceptor pumping</Link> to reduce repeat blockages.
             </p>
           </div>
 
           <div className="bg-purple-600 text-white p-8 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xl">
             <div className="space-y-2">
-              <h3 className="text-2xl font-black uppercase tracking-tight">Solve Recurring Backups</h3>
-              <p className="text-purple-100 text-sm font-medium">Commercial-kitchen line clearing for high-volume operations</p>
+              <h3 className="text-2xl font-black uppercase tracking-tight">Request Hydro Jetting Quote</h3>
+              <p className="text-purple-100 text-sm font-medium">Commercial line clearing to prevent backups and keep kitchens operating.</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
                 to="/instant-estimate?service=hydro-jetting"
                 className="bg-white text-purple-600 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-purple-50 transition-all shadow-lg"
               >
-                Get Instant Estimate
+                Request a Quote
               </Link>
               <a
                 href="tel:8186984252"
@@ -99,8 +99,8 @@ const HydroJettingLA: React.FC = () => {
               <div className="bg-purple-50 border border-purple-100 rounded-2xl p-6 space-y-3">
                 <h3 className="text-lg font-black text-purple-900">What You Get</h3>
                 <ul className="space-y-2 text-slate-700 text-sm">
-                  <li>• High-pressure cleaning focused on grease-heavy segments</li>
-                  <li>• Better residual removal than basic snaking alone</li>
+                  <li>• High-pressure cleaning focused on grease-heavy restaurant drain segments</li>
+                  <li>• Deeper removal than basic snaking for repeat restaurant drain cleaning issues</li>
                   <li>• Deployable for preventive and urgent service scenarios</li>
                   <li>• Streamlined intake through instant estimate workflow</li>
                 </ul>

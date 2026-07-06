@@ -156,27 +156,27 @@ const RestaurantWasteServicesLA: React.FC = () => {
             </div>
             
             <h1 className="text-5xl lg:text-7xl font-black text-slate-950 leading-tight tracking-tighter">
-              Complete Waste Services<br />
-              <span className="text-amber-600">for Restaurants</span>
+              Restaurant Waste Services<br />
+              <span className="text-amber-600">Los Angeles</span>
             </h1>
             
             <p className="text-xl text-slate-600 leading-relaxed max-w-3xl font-medium">
-              From <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">restaurant grease trap cleaning</Link> and <Link to="/instant-estimate?service=grease-trap-interceptor" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">grease interceptor pumping</Link> to <Link to="/used-cooking-oil-pickup-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">used cooking oil pickup</Link> and <Link to="/hydro-jetting-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">commercial hydro jetting</Link>, we support commercial kitchen operations with scheduled maintenance built to prevent backups, reduce downtime risk, and support FOG compliance workflows for Los Angeles restaurants.
+              Coordinate <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">grease trap cleaning</Link>, <Link to="/grease-trap-interceptor-pumping" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">grease interceptor pumping</Link>, <Link to="/used-cooking-oil-pickup-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">used cooking oil pickup</Link>, and <Link to="/hydro-jetting-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">commercial hydro jetting</Link> for Los Angeles and Southern California <span className="font-semibold">restaurants, commercial kitchens, cafes, bars, hotels, ghost kitchens, shared kitchens, and foodservice operators</span>. Built to prevent backups, support FOG compliance, and simplify scheduled maintenance.
             </p>
           </div>
 
           {/* CTA */}
           <div className="bg-slate-950 text-white p-8 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xl">
             <div className="space-y-2">
-              <h3 className="text-2xl font-black uppercase tracking-tight">New Opening? Get 10% Off</h3>
-              <p className="text-slate-400 text-sm font-medium">First-year discount for new restaurants • All services included</p>
+              <h3 className="text-2xl font-black uppercase tracking-tight">Request a Restaurant Waste Quote</h3>
+              <p className="text-slate-400 text-sm font-medium">Plan service coverage across grease, drains, UCO, and sanitation operations.</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link 
                 to="/instant-estimate?service=grease-trap-interceptor" 
                 className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-400 transition-all shadow-lg"
               >
-                Get Instant Estimate
+                Request a Quote
               </Link>
               <a 
                 href="tel:8186984252" 
@@ -209,7 +209,7 @@ const RestaurantWasteServicesLA: React.FC = () => {
                   <div className="flex-1">
                     <h3 className="text-xl font-black text-slate-900 mb-2">Grease Trap / Interceptor Service</h3>
                     <p className="text-slate-600 leading-relaxed mb-3">
-                      Complete pumping, scraping, and disposal for indoor and exterior grease systems. All sizes from 50-gallon residential traps to 2000+ gallon commercial interceptors.
+                      Complete pumping, scraping, and disposal for indoor and exterior grease systems. All sizes from compact kitchen traps to high-capacity commercial interceptors.
                     </p>
                     <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-600 font-bold text-sm hover:text-amber-700 inline-flex items-center gap-2">
                       Learn More <i className="fas fa-arrow-right text-xs"></i>
@@ -245,6 +245,9 @@ const RestaurantWasteServicesLA: React.FC = () => {
                     <p className="text-slate-600 leading-relaxed mb-3">
                       For restaurants not connected to city sewer. Regular maintenance prevents overflows and keeps you compliant with environmental regulations.
                     </p>
+                    <Link to="/septic-holding-tank-pumping-los-angeles" className="text-blue-600 font-bold text-sm hover:text-blue-700 inline-flex items-center gap-2">
+                      Learn More <i className="fas fa-arrow-right text-xs"></i>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -293,6 +296,9 @@ const RestaurantWasteServicesLA: React.FC = () => {
                     <p className="text-slate-600 leading-relaxed mb-3">
                       Full FOG program documentation, waste manifests, and compliance certificates. Digital portal with 24/7 access to all your service records.
                     </p>
+                    <Link to="/compliance-audits-los-angeles" className="text-slate-700 font-bold text-sm hover:text-slate-900 inline-flex items-center gap-2">
+                      Learn More <i className="fas fa-arrow-right text-xs"></i>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -344,13 +350,13 @@ const RestaurantWasteServicesLA: React.FC = () => {
               Ready to Simplify Your Operations?
             </h2>
             <p className="text-lg font-medium text-amber-50 max-w-2xl mx-auto">
-              Get a custom quote for all your waste and sanitation needs. New openings get 10% off for the first year.
+              Request a quote for restaurant waste services aligned to your kitchen operations and maintenance schedule.
             </p>
             <Link 
               to="/instant-estimate?service=grease-trap-interceptor" 
               className="inline-block bg-slate-950 text-white px-12 py-5 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-slate-800 transition-all shadow-xl"
             >
-              Get Your Quote
+              Request a Quote
             </Link>
           </div>
         </div>

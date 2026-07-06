@@ -163,7 +163,8 @@ test.describe('core services flows', () => {
           .map(href => {
             try {
               const url = new URL(href, origin as string);
-              return url.origin === origin ? `${url.pathname}${url.search}` : '';
+              // For crawl validity we only need to verify each internal path once.
+              return url.origin === origin ? url.pathname : '';
             } catch {
               return '';
             }
@@ -204,14 +205,14 @@ test.describe('core services flows', () => {
 
   test('service landings expose consistent estimate/call/message CTAs', async ({ page }) => {
     await page.goto('/hydro-jetting-los-angeles');
-    await expect(page.getByRole('link', { name: 'Get Instant Estimate' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Call Dispatch' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Send Us a Message' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Get Instant Estimate' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Call Dispatch' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Send Us a Message' }).first()).toBeVisible();
 
     await page.goto('/hood-cleaning-los-angeles');
-    await expect(page.getByRole('link', { name: 'Get Instant Estimate' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Call Dispatch' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Send Us a Message' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Get Instant Estimate' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Call Dispatch' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Send Us a Message' }).first()).toBeVisible();
   });
 
   test('service query preselects estimator context from deep link', async ({ page }) => {

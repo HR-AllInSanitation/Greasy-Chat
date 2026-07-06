@@ -1,11 +1,18 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { FAQSection, FAQItem } from '../components/FAQSection';
 import { StructuredData, buildServiceSchema, buildFAQPageSchema, buildBreadcrumbSchema } from '../components/StructuredData';
 import { ServiceLandingLinks } from '../components/ServiceLandingLinks';
 import { trackEvent } from '../api/gtag-utils';
 
 const GreaseTrapCleaningLA: React.FC = () => {
+  const location = useLocation();
+  const isInterceptorRoute = location.pathname === '/grease-trap-interceptor-pumping';
+  const breadcrumbLabel = isInterceptorRoute ? 'Grease Interceptor Pumping Los Angeles' : 'Grease Trap Cleaning Los Angeles';
+  const heroBadge = isInterceptorRoute ? 'Grease Interceptor Pumping' : 'Professional Grease Trap Service';
+  const heroTitleMain = isInterceptorRoute ? 'Grease Interceptor Pumping' : 'Grease Trap Cleaning';
+  const ctaLink = '/instant-estimate?service=grease-trap-interceptor';
+
   const faqs: FAQItem[] = [
     {
       question: "¿Cada cuánto se debe limpiar un grease trap según su tamaño?",
@@ -102,18 +109,27 @@ const GreaseTrapCleaningLA: React.FC = () => {
   ];
 
   const serviceSchema = buildServiceSchema({
-    name: "Grease Trap Cleaning Los Angeles",
-    description: "Professional grease trap and interceptor pumping services in Los Angeles. Full scraping, pumping, and EPA-certified disposal with manifests. Scheduled and urgent service support for commercial kitchens.",
+    name: isInterceptorRoute ? "Grease Interceptor Pumping Los Angeles" : "Grease Trap Cleaning Los Angeles",
+    description: isInterceptorRoute
+      ? "Grease interceptor pumping for Los Angeles restaurants and commercial kitchens. Recurring support with service records and documentation for operations and compliance workflows."
+      : "Professional grease trap and interceptor pumping services in Los Angeles. Full scraping, pumping, and EPA-certified disposal with manifests. Scheduled and urgent service support for commercial kitchens.",
     areaServed: ["Los Angeles", "Ventura", "San Bernardino", "Lancaster", "Palmdale", "Orange County", "San Diego"],
-    serviceType: "Grease Trap Cleaning Service",
-    url: "https://www.larestaurantservices.com/grease-trap-cleaning-los-angeles"
+    serviceType: isInterceptorRoute ? "Grease Interceptor Pumping Service" : "Grease Trap Cleaning Service",
+    url: isInterceptorRoute
+      ? "https://www.larestaurantservices.com/grease-trap-interceptor-pumping"
+      : "https://www.larestaurantservices.com/grease-trap-cleaning-los-angeles"
   });
 
   const faqSchema = buildFAQPageSchema(faqs);
 
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: "Home", url: "https://www.larestaurantservices.com" },
-    { name: "Grease Trap Cleaning Los Angeles", url: "https://www.larestaurantservices.com/grease-trap-cleaning-los-angeles" }
+    {
+      name: breadcrumbLabel,
+      url: isInterceptorRoute
+        ? "https://www.larestaurantservices.com/grease-trap-interceptor-pumping"
+        : "https://www.larestaurantservices.com/grease-trap-cleaning-los-angeles"
+    }
   ]);
 
   return (
@@ -128,38 +144,46 @@ const GreaseTrapCleaningLA: React.FC = () => {
           <nav className="flex items-center gap-2 text-sm font-medium text-slate-500">
             <Link to="/" className="hover:text-amber-600 transition-colors">Home</Link>
             <i className="fas fa-chevron-right text-xs"></i>
-            <span className="text-slate-950 font-bold">Grease Trap Cleaning Los Angeles</span>
+            <span className="text-slate-950 font-bold">{breadcrumbLabel}</span>
           </nav>
 
           {/* Hero Section */}
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider border border-amber-100">
               <i className="fas fa-faucet"></i>
-              <span>Professional Grease Trap Service</span>
+              <span>{heroBadge}</span>
             </div>
             
             <h1 className="text-5xl lg:text-7xl font-black text-slate-950 leading-tight tracking-tighter">
-              Grease Trap Cleaning<br />
+              {heroTitleMain}<br />
               <span className="text-amber-600">Los Angeles</span>
             </h1>
             
             <p className="text-xl text-slate-600 leading-relaxed max-w-3xl font-medium">
-              Professional restaurant grease trap cleaning and <Link to="/instant-estimate?service=grease-trap-interceptor" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">grease interceptor pumping</Link> for Los Angeles restaurants, food trucks, and commercial kitchens. Built to help teams prevent backups, avoid downtime, and support FOG compliance with scheduled maintenance. Need line support too? See our <Link to="/hydro-jetting-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">commercial hydro jetting</Link> and <Link to="/restaurant-waste-services" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">restaurant waste services</Link> options.
+              {isInterceptorRoute ? (
+                <>
+                  Grease interceptor pumping for Los Angeles and Southern California <span className="font-semibold">restaurants, commercial kitchens, cafes, bars, hotels, ghost kitchens, shared kitchens, and foodservice operators</span>. This service helps prevent backups, support FOG compliance, and keep scheduled maintenance predictable. Need related line support? Add <Link to="/hydro-jetting-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">commercial hydro jetting</Link> or coordinate complete <Link to="/restaurant-waste-services" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">restaurant waste services</Link>.
+                </>
+              ) : (
+                <>
+                  Grease trap cleaning and <Link to={ctaLink} className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">grease interceptor pumping</Link> for Los Angeles and Southern California <span className="font-semibold">restaurants, commercial kitchens, cafes, bars, hotels, ghost kitchens, shared kitchens, and foodservice operators</span>. Built to prevent backups, reduce downtime, and support FOG compliance with scheduled maintenance. Need line support too? See our <Link to="/hydro-jetting-los-angeles" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">commercial hydro jetting</Link> and <Link to="/restaurant-waste-services" className="text-amber-600 hover:text-amber-700 transition-colors font-semibold">restaurant waste services</Link> options.
+                </>
+              )}
             </p>
           </div>
 
           {/* CTA Bar */}
           <div className="bg-slate-950 text-white p-8 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xl">
             <div className="space-y-2">
-              <h3 className="text-2xl font-black uppercase tracking-tight">Get Instant Estimate</h3>
-              <p className="text-slate-400 text-sm font-medium">Free quote in 60 seconds with our Greasy Agent</p>
+              <h3 className="text-2xl font-black uppercase tracking-tight">{isInterceptorRoute ? 'Request Interceptor Pumping Quote' : 'Request Grease Trap Cleaning Quote'}</h3>
+              <p className="text-slate-400 text-sm font-medium">Use the instant estimate flow to scope service for your kitchen.</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link 
-                to="/instant-estimate?service=grease-trap-interceptor" 
+                to={ctaLink} 
                 className="bg-amber-500 text-slate-950 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-amber-400 transition-all shadow-lg"
               >
-                Get Instant Estimate
+                Request a Quote
               </Link>
               <a 
                 href="tel:8186984252" 
@@ -169,7 +193,7 @@ const GreaseTrapCleaningLA: React.FC = () => {
                 Call Dispatch
               </a>
               <Link
-                to="/instant-estimate?service=grease-trap-interceptor&contact=message#dispatch-help"
+                to={`${ctaLink}&contact=message#dispatch-help`}
                 className="bg-transparent text-white px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-white/10 transition-all border border-dashed border-white/40"
               >
                 Send Us a Message
@@ -229,7 +253,7 @@ const GreaseTrapCleaningLA: React.FC = () => {
             <div className="border-t border-slate-100 pt-8 space-y-4">
               <h2 className="text-2xl font-black text-slate-950">Service Areas in Los Angeles</h2>
               <p className="text-slate-600">
-                We serve restaurants, food trucks, commercial kitchens, and food halls throughout:
+                We serve restaurants, commercial kitchens, cafes, bars, hotels, ghost kitchens, shared kitchens, and other foodservice operators throughout:
               </p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-slate-700 font-semibold">
                 <div className="flex items-center gap-2">
@@ -325,13 +349,13 @@ const GreaseTrapCleaningLA: React.FC = () => {
               Ready to Stay Compliant?
             </h2>
             <p className="text-lg font-medium text-amber-50 max-w-2xl mx-auto">
-              Get your free grease trap estimate now. Our Greasy Agent provides instant pricing based on your system size and location.
+              Request a quote for grease trap cleaning or interceptor pumping based on your system and service location.
             </p>
             <Link 
-              to="/instant-estimate?service=grease-trap-interceptor" 
+              to={ctaLink} 
               className="inline-block bg-slate-950 text-white px-12 py-5 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-slate-800 transition-all shadow-xl"
             >
-              Get Free Estimate
+              Request a Quote
             </Link>
           </div>
         </div>

@@ -41,6 +41,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route element={<SiteLayout />}>
           <Route path="/" element={<App />} />
           <Route path="/grease-trap-cleaning-los-angeles" element={<GreaseTrapCleaningLA />} />
+          <Route path="/grease-trap-interceptor-pumping" element={<GreaseTrapCleaningLA />} />
           <Route path="/used-cooking-oil-pickup-los-angeles" element={<UsedCookingOilPickupLA />} />
           <Route path="/restroom-trailer-rentals-los-angeles" element={<RestroomTrailerRentalsLA />} />
           <Route path="/restaurant-waste-services" element={<RestaurantWasteServicesLA />} />

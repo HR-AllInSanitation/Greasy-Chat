@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { StructuredData, buildBreadcrumbSchema } from '../components/StructuredData';
+import { ArticleAIOPanel } from '../components/ArticleAIOPanel';
 import { trackEvent } from '../api/gtag-utils';
 
 const articleSchema = {
@@ -225,6 +226,8 @@ const LAFOGProgramExplained: React.FC = () => {
               </div>
             </div>
           </aside>
+
+          <ArticleAIOPanel />
 
           <section className="bg-slate-950 text-white rounded-3xl p-8 lg:p-10 shadow-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div>

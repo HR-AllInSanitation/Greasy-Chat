@@ -6,9 +6,9 @@ import { trackEvent } from '../api/gtag-utils';
 const articleSchema = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: 'Which Kitchens Are Required to Have a Grease Trap in LA',
+  headline: 'Which LA Restaurants Need Grease Traps? Requirements & Service Help',
   description:
-    'How LA County Environmental Health classifies Food Service Establishments and which kitchens are legally required to have grease interceptors — including food trucks, ghost kitchens, and commissaries.',
+    'General guidance on which Los Angeles restaurants, cafes, ghost kitchens, and commercial kitchens may need grease traps or interceptors, plus when to request service.',
   author: { '@type': 'Organization', name: 'LA Restaurant Services' },
   publisher: {
     '@type': 'Organization',
@@ -35,19 +35,19 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
   const categories = [
     {
       icon: 'fa-utensils',
-      label: 'Required',
+      label: 'Commonly Required',
       labelColor: 'text-red-600 bg-red-50 border-red-100',
       title: 'Full-service restaurants',
       detail:
-        'Any restaurant cooking food and discharging wash water into the sanitary sewer is required to have a grease interceptor. This covers the vast majority of sit-down restaurants, fast food locations, bars with kitchens, and hotel dining operations throughout LA County.',
+        'Restaurants that cook food and discharge wash water into the sanitary sewer commonly need grease management equipment. This often includes sit-down restaurants, quick-service locations, bars with kitchens, and hotel dining operations.',
     },
     {
       icon: 'fa-school',
-      label: 'Required',
+      label: 'Commonly Required',
       labelColor: 'text-red-600 bg-red-50 border-red-100',
       title: 'School cafeterias and institutional kitchens',
       detail:
-        'K-12 schools, college dining halls, hospital cafeterias, and correctional facility kitchens all fall under LACDPH Food Service Establishment (FSE) classification. If a kitchen cooks food and discharges to the city sewer, it needs a properly sized interceptor.',
+        'K-12 schools, college dining halls, hospital cafeterias, and similar institutional kitchens are commonly treated as food service operations that need properly sized grease control systems.',
     },
     {
       icon: 'fa-truck',
@@ -55,23 +55,23 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
       labelColor: 'text-amber-700 bg-amber-50 border-amber-100',
       title: 'Food trucks and mobile vendors',
       detail:
-        'Food trucks themselves don\'t connect to a sewer line, but they\'re required to operate out of a licensed commissary — and that commissary must have a functioning grease interceptor. If your commissary is non-compliant, your truck\'s health permit is at risk. Verify your commissary\'s compliance status before you rely on it.',
+        'Food trucks do not usually connect directly to sewer lines, but they often rely on commissaries that may need compliant grease management systems. It is best to verify your commissary setup with your local authority.',
     },
     {
       icon: 'fa-warehouse',
-      label: 'Required',
+      label: 'Commonly Required',
       labelColor: 'text-red-600 bg-red-50 border-red-100',
       title: 'Ghost kitchens and delivery-only operations',
       detail:
-        'Ghost kitchens operate at full commercial cooking volume and discharge just as much FOG as a traditional restaurant. The fact that you have no dining room does not exempt you. LACDPH classifies them the same way — based on cooking activity and sewer discharge, not customer seating.',
+        'Ghost kitchens and delivery-only operations can produce the same FOG load as traditional restaurants, so they may need grease traps or interceptors based on kitchen activity and plumbing setup.',
     },
     {
       icon: 'fa-building',
-      label: 'Required',
+      label: 'Commonly Required',
       labelColor: 'text-red-600 bg-red-50 border-red-100',
       title: 'Catering companies with commissary kitchens',
       detail:
-        'Catering operations preparing food at a fixed facility are FSEs and must maintain grease interceptors. This includes caterers who prep at their own space and rent commissary kitchens for overflow. Whoever owns the discharge point is responsible for the interceptor.',
+        'Catering operations that prep at fixed facilities or commissaries may need grease control equipment depending on discharge points and local requirements.',
     },
     {
       icon: 'fa-mug-hot',
@@ -79,7 +79,7 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
       labelColor: 'text-slate-600 bg-slate-100 border-slate-200',
       title: 'Coffee shops and juice bars',
       detail:
-        'A pure espresso bar with no cooking activity may qualify for an exemption or a reduced interceptor requirement under LACDPH guidelines — but this is determined case by case. If you also serve food, do any light cooking, or operate a blending station, you likely need a trap. Do not assume you are exempt. Confirm directly with your local Environmental Health district office.',
+        'Some low-FOG concepts may have different requirements, while locations with food prep or blending may still need grease control. Confirm your specific setup with your local Environmental Health district office.',
     },
   ];
 
@@ -102,13 +102,16 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
           <header className="space-y-5">
             <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider border border-amber-100">
               <i className="fas fa-scale-balanced"></i>
-              <span>LA County Compliance</span>
+              <span>General Guidance</span>
             </div>
             <h1 className="text-5xl lg:text-6xl font-black text-slate-950 leading-tight tracking-tighter">
               Which Restaurants in Los Angeles Need a Grease Trap?
             </h1>
             <p className="text-xl text-slate-600 leading-relaxed max-w-3xl font-medium">
-              More operations than you would expect — here is how LACDPH classifies your kitchen and what the law actually requires.
+              Restaurants and commercial kitchens that generate fats, oils, and grease (FOG) may need a grease trap or grease interceptor depending on local requirements, kitchen fixtures, and sewer connection setup.
+            </p>
+            <p className="text-sm text-slate-500 font-medium max-w-3xl">
+              This page is for general informational purposes and is not legal or official compliance advice.
             </p>
             <div className="flex items-center gap-3 pt-2">
               <div className="w-8 h-8 rounded-full bg-slate-950 text-amber-400 flex items-center justify-center text-xs">
@@ -118,38 +121,48 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
             </div>
           </header>
 
+          <section className="bg-amber-50 border border-amber-100 rounded-3xl p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div>
+              <h2 className="text-2xl font-black text-slate-950 tracking-tight">Need grease trap cleaning or interceptor pumping in Los Angeles?</h2>
+              <p className="text-slate-600 font-medium mt-1">Request service from LA Restaurant Services.</p>
+            </div>
+            <Link
+              to="/instant-estimate?service=grease-trap-interceptor&source=which-restaurants-top-cta"
+              onClick={() => trackEvent('support_page_cta_click', { page_type: 'which_restaurants_need_grease_traps', cta: 'top_request_service' })}
+              className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all whitespace-nowrap"
+            >
+              Request Service
+            </Link>
+          </section>
+
           <article className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm space-y-4">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-slate-950 text-amber-400 rounded-xl flex items-center justify-center shrink-0">
                 <i className="fas fa-book"></i>
               </div>
-              <h2 className="text-xl font-black text-slate-950 tracking-tight">The governing rule</h2>
+              <h2 className="text-xl font-black text-slate-950 tracking-tight">Direct answer</h2>
             </div>
             <div className="pl-14 text-slate-600 font-medium leading-relaxed space-y-3">
               <p>
-                In Los Angeles County, the requirement comes from two overlapping authorities: the
-                <strong> LA County Department of Public Health (LACDPH)</strong> Environmental Health division and the
-                <strong> LA Sanitation FOG (Fats, Oils, Grease) Control Program</strong>. Together they mandate that all
-                Food Service Establishments — any facility that prepares or serves food for public consumption and connects
-                to the sanitary sewer — must install, maintain, and regularly service a grease interceptor.
+                Many Los Angeles food operations that prepare food and discharge to the sanitary sewer may need grease traps
+                or interceptors. In practice, this often includes restaurants, commercial kitchens, cafes, bars, hotels,
+                ghost kitchens, and shared kitchen facilities.
               </p>
               <p>
-                The key phrase is <strong>"discharges to the sanitary sewer."</strong> If your facility has a sewer
-                connection and cooks food, you are presumed to need an interceptor unless you can demonstrate to LACDPH
-                that your discharge does not contain FOG at actionable levels. That is a narrow exception, and it requires
-                formal approval — not a judgment call on your part.
+                Final requirements depend on your kitchen setup, fixture counts, and local agency interpretation. Confirm
+                your classification with your district office, then align service scheduling to protect operations.
               </p>
             </div>
           </article>
 
           <article className="bg-amber-50 border border-amber-100 rounded-3xl p-8 space-y-3">
             <p className="text-slate-700 font-medium leading-relaxed">
-              Need help confirming grease trap service for a Los Angeles restaurant? LA Restaurant Services provides <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap cleaning</Link> and grease interceptor pumping, plus <Link to="/restaurant-waste-services" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">restaurant waste support</Link> for commercial kitchens across Los Angeles and Southern California. (Not sure about the difference between a trap and an interceptor? <Link to="/grease-trap-vs-grease-interceptor-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">Read our guide</Link>.)
+              Need help translating requirements into a service plan? LA Restaurant Services provides <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap cleaning</Link>, <Link to="/grease-trap-interceptor-pumping" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease interceptor pumping</Link>, and <Link to="/restaurant-waste-services" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">restaurant waste services</Link> for commercial kitchens across Los Angeles and Southern California. (Not sure about the difference between a trap and an interceptor? <Link to="/grease-trap-vs-grease-interceptor-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">Read our guide</Link>.)
             </p>
           </article>
 
           <div className="space-y-5">
-            <h2 className="text-2xl font-black text-slate-950 tracking-tight">By operation type</h2>
+            <h2 className="text-2xl font-black text-slate-950 tracking-tight">Who may need a grease trap</h2>
             <div className="grid gap-5">
               {categories.map((cat, idx) => (
                 <article key={idx} className="bg-white border border-slate-100 rounded-3xl p-7 shadow-sm space-y-3">
@@ -171,6 +184,99 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
               ))}
             </div>
           </div>
+
+          <article className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-slate-950 text-amber-400 rounded-xl flex items-center justify-center shrink-0">
+                <i className="fas fa-triangle-exclamation"></i>
+              </div>
+              <h2 className="text-xl font-black text-slate-950 tracking-tight">Signs your grease trap needs service</h2>
+            </div>
+            <div className="pl-14 text-slate-600 font-medium leading-relaxed space-y-3">
+              <p>Watch for operational signs that service may be due:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Recurring slow drains in prep sinks or dish areas.</li>
+                <li>Persistent kitchen drain odor during or after busy shifts.</li>
+                <li>Frequent backups that return after temporary fixes.</li>
+                <li>More emergency calls between scheduled pumping visits.</li>
+              </ul>
+              <p>
+                If backups are recurring, pair <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap cleaning</Link> with
+                <Link to="/hydro-jetting-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors"> commercial hydro jetting</Link> to clear downstream buildup.
+              </p>
+            </div>
+          </article>
+
+          <article className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-slate-950 text-amber-400 rounded-xl flex items-center justify-center shrink-0">
+                <i className="fas fa-code-compare"></i>
+              </div>
+              <h2 className="text-xl font-black text-slate-950 tracking-tight">Grease trap vs interceptor</h2>
+            </div>
+            <div className="pl-14 text-slate-600 font-medium leading-relaxed space-y-3">
+              <p>
+                Smaller indoor systems are often called grease traps, while larger exterior systems are commonly referred to as interceptors. Both are built to capture FOG before it reaches sewer lines.
+              </p>
+              <p>
+                If you are unsure which system applies to your site, compare options in our
+                <Link to="/grease-trap-vs-grease-interceptor-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors"> grease trap vs interceptor guide</Link>, then request
+                <Link to="/grease-trap-interceptor-pumping" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors"> interceptor pumping service</Link> for your kitchen profile.
+              </p>
+            </div>
+          </article>
+
+          <article className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-slate-950 text-amber-400 rounded-xl flex items-center justify-center shrink-0">
+                <i className="fas fa-calendar-check"></i>
+              </div>
+              <h2 className="text-xl font-black text-slate-950 tracking-tight">Why cleaning schedules matter</h2>
+            </div>
+            <div className="pl-14 text-slate-600 font-medium leading-relaxed space-y-3">
+              <p>
+                Consistent scheduling helps reduce emergency downtime, protects kitchen throughput, and keeps service records organized for internal operations.
+              </p>
+              <p>
+                Teams managing multiple vendors can simplify planning by coordinating through
+                <Link to="/restaurant-waste-services" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors"> restaurant waste services</Link> with aligned maintenance windows.
+              </p>
+            </div>
+          </article>
+
+          <article className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-slate-950 text-amber-400 rounded-xl flex items-center justify-center shrink-0">
+                <i className="fas fa-bell"></i>
+              </div>
+              <h2 className="text-xl font-black text-slate-950 tracking-tight">When to request service</h2>
+            </div>
+            <div className="pl-14 text-slate-600 font-medium leading-relaxed space-y-3">
+              <p>Request service when you are onboarding a new kitchen, seeing repeat drain issues, or adjusting maintenance frequency after volume changes.</p>
+              <p>
+                For active issues, request <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap cleaning</Link> or
+                <Link to="/grease-trap-interceptor-pumping" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors"> interceptor pumping</Link> with your site details.
+              </p>
+            </div>
+          </article>
+
+          <article className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-slate-950 text-amber-400 rounded-xl flex items-center justify-center shrink-0">
+                <i className="fas fa-clipboard-list"></i>
+              </div>
+              <h2 className="text-xl font-black text-slate-950 tracking-tight">What information to provide for a quote</h2>
+            </div>
+            <div className="pl-14 text-slate-600 font-medium leading-relaxed space-y-3">
+              <p>To get a faster quote, prepare:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Business name and service address.</li>
+                <li>Kitchen type and operating volume.</li>
+                <li>Current system type (trap or interceptor) and known size.</li>
+                <li>Service history, current issue, and preferred schedule window.</li>
+              </ul>
+            </div>
+          </article>
 
           <article className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm space-y-4">
             <div className="flex items-center gap-4">
@@ -201,9 +307,8 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
                 <p className="font-black text-slate-950 text-sm">When in doubt, call your district office</p>
                 <p className="text-slate-600 text-sm font-medium leading-relaxed mt-1">
                   LACDPH Environmental Health operates district offices across the county. If your operation is borderline
-                  — a ghost kitchen, a shared commissary, a food-adjacent business — call your district office directly
-                  and ask how they classify your FSE type. Getting it in writing is even better. A 10-minute phone call
-                  is cheaper than a shutdown.
+                  — such as a ghost kitchen, shared commissary, or food-adjacent business — confirm how your site is
+                  classified and what equipment is expected.
                 </p>
               </div>
             </div>
@@ -211,15 +316,15 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
 
           <section className="bg-slate-950 text-white rounded-3xl p-8 lg:p-10 shadow-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div>
-              <h2 className="text-2xl font-black uppercase tracking-tight">Need a compliant service provider?</h2>
-              <p className="text-slate-300 text-sm font-medium mt-1">We handle manifests, compliance documentation, and scheduling across all LA County districts.</p>
+              <h2 className="text-2xl font-black uppercase tracking-tight">Need grease trap cleaning or interceptor pumping in Los Angeles?</h2>
+              <p className="text-slate-300 text-sm font-medium mt-1">Request service from LA Restaurant Services.</p>
             </div>
             <Link
               to="/instant-estimate?service=grease-trap-interceptor&source=which-restaurants-need-traps"
               onClick={() => trackEvent('support_page_cta_click', { page_type: 'which_restaurants_need_grease_traps', cta: 'get_estimate' })}
               className="bg-amber-500 text-slate-950 px-6 py-3 rounded-xl font-black uppercase tracking-wide text-xs hover:bg-amber-400 transition-all whitespace-nowrap"
             >
-              Get My Estimate
+              Request Service
             </Link>
           </section>
 

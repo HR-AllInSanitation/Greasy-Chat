@@ -67,6 +67,12 @@ const ROUTE_META: Record<string, RouteMeta> = {
     description:
       'Grease trap and interceptor pumping for restaurants in Los Angeles with full scraping, manifests, and fast dispatch support.',
   },
+  '/grease-trap-interceptor-pumping': {
+    title: 'Grease Interceptor Pumping Los Angeles | LA Restaurant Services',
+    description:
+      'Grease interceptor pumping for Los Angeles restaurants and commercial kitchens with recurring service support and documentation workflows.',
+    canonicalPath: '/grease-trap-interceptor-pumping',
+  },
   '/used-cooking-oil-pickup-los-angeles': {
     title: 'Used Cooking Oil Pickup Los Angeles | LA Restaurant Services',
     description:
@@ -114,9 +120,9 @@ const ROUTE_META: Record<string, RouteMeta> = {
       'A plain-language explanation of grease trap anatomy, separation layers, service thresholds, and compliance implications.',
   },
   '/which-restaurants-need-grease-traps-los-angeles': {
-    title: 'Which Restaurants in Los Angeles Need Grease Traps? | LA Restaurant Services',
+    title: 'Which LA Restaurants Need Grease Traps? Requirements & Service Help',
     description:
-      'Learn which Los Angeles restaurants and commercial kitchens may need grease traps or interceptors, FOG compliance requirements, and when to request grease trap service.',
+      'Learn which Los Angeles restaurants, cafes, ghost kitchens, and commercial kitchens may need grease traps — and when to schedule cleaning or interceptor service.',
   },
   '/how-to-tell-if-grease-trap-was-serviced': {
     title: 'How to Tell If a Grease Trap Was Serviced | LA Restaurant Services',

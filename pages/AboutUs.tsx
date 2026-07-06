@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { StructuredData, buildBreadcrumbSchema, buildLocalBusinessSchema } from '../components/StructuredData';
+import { StructuredData, buildBreadcrumbSchema } from '../components/StructuredData';
 import { trackEvent } from '../api/gtag-utils';
 
 const AboutUs: React.FC = () => {
@@ -8,7 +8,6 @@ const AboutUs: React.FC = () => {
     trackEvent('page_view_support', { page_type: 'about_us' });
   }, []);
 
-  const organizationSchema = buildLocalBusinessSchema();
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: 'Home', url: 'https://www.larestaurantservices.com' },
     { name: 'About Us', url: 'https://www.larestaurantservices.com/about-us' },
@@ -16,7 +15,6 @@ const AboutUs: React.FC = () => {
 
   return (
     <>
-      <StructuredData data={organizationSchema} />
       <StructuredData data={breadcrumbSchema} />
 
       <div className="min-h-screen bg-[#FDFDFF] py-16 px-6">

@@ -139,22 +139,22 @@ const UsedCookingOilPickupLA: React.FC = () => {
             </h1>
             
             <p className="text-xl text-slate-600 leading-relaxed max-w-3xl font-medium">
-              Turn your <Link to="/instant-estimate?service=uco-recycling" className="text-emerald-600 hover:text-emerald-700 transition-colors font-semibold">used cooking oil pickup</Link> program into a cleaner revenue stream while supporting commercial kitchen operations. Free containers, scheduled pickups, and compliance documentation for Los Angeles restaurants. For bundled support, compare our <Link to="/restaurant-waste-services" className="text-emerald-600 hover:text-emerald-700 transition-colors font-semibold">restaurant waste services</Link>, <Link to="/grease-trap-cleaning-los-angeles" className="text-emerald-600 hover:text-emerald-700 transition-colors font-semibold">restaurant grease trap cleaning</Link>, and <Link to="/hydro-jetting-los-angeles" className="text-emerald-600 hover:text-emerald-700 transition-colors font-semibold">commercial hydro jetting</Link> options.
+              Build a reliable <Link to="/instant-estimate?service=uco-recycling" className="text-emerald-600 hover:text-emerald-700 transition-colors font-semibold">used cooking oil pickup</Link> program for Los Angeles and Southern California <span className="font-semibold">restaurants, commercial kitchens, cafes, bars, hotels, ghost kitchens, shared kitchens, and foodservice operators</span>. Scheduled pickups, container support, and documentation help keep operations clean while supporting FOG compliance workflows. For bundled support, compare our <Link to="/restaurant-waste-services" className="text-emerald-600 hover:text-emerald-700 transition-colors font-semibold">restaurant waste services</Link>, <Link to="/grease-trap-interceptor-pumping" className="text-emerald-600 hover:text-emerald-700 transition-colors font-semibold">grease interceptor pumping</Link>, and <Link to="/hydro-jetting-los-angeles" className="text-emerald-600 hover:text-emerald-700 transition-colors font-semibold">commercial hydro jetting</Link> options.
             </p>
           </div>
 
           {/* CTA */}
           <div className="bg-emerald-600 text-white p-8 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xl">
             <div className="space-y-2">
-              <h3 className="text-2xl font-black uppercase tracking-tight">Get Paid For Your Used Oil</h3>
-              <p className="text-emerald-100 text-sm font-medium">Free containers • Scheduled pickups • Compliance docs included</p>
+              <h3 className="text-2xl font-black uppercase tracking-tight">Request UCO Pickup Quote</h3>
+              <p className="text-emerald-100 text-sm font-medium">Scheduled pickups, container support, and compliance documentation.</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link 
                 to="/instant-estimate?service=uco-recycling" 
                 className="bg-white text-emerald-600 px-8 py-4 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-emerald-50 transition-all shadow-lg"
               >
-                Get Instant Estimate
+                Request a Quote
               </Link>
               <a 
                 href="tel:8186984252" 
@@ -185,7 +185,7 @@ const UsedCookingOilPickupLA: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-black text-slate-900">Get Paid</h3>
                 <p className="text-slate-600 text-sm leading-relaxed">
-                  Earn $0.10-0.25/lb for clean yellow grease. Turn waste into revenue.
+                  Turn used cooking oil into operational value while maintaining cleaner storage and pickup workflows.
                 </p>
               </div>
 
@@ -195,7 +195,7 @@ const UsedCookingOilPickupLA: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-black text-slate-900">Eco-Friendly</h3>
                 <p className="text-slate-600 text-sm leading-relaxed">
-                  Your oil becomes biodiesel, reducing carbon footprint and landfill waste.
+                  Recycling routes used oil away from drains and supports cleaner commercial kitchen operations.
                 </p>
               </div>
 
@@ -300,13 +300,13 @@ const UsedCookingOilPickupLA: React.FC = () => {
               Start Recycling Today
             </h2>
             <p className="text-lg font-medium text-emerald-50 max-w-2xl mx-auto">
-              Request your free UCO container and start turning waste into cash while protecting the environment.
+              Request a quote for scheduled used cooking oil pickup and support consistent service planning.
             </p>
             <Link 
               to="/instant-estimate?service=uco-recycling" 
               className="inline-block bg-white text-emerald-600 px-12 py-5 rounded-xl font-black uppercase tracking-wide text-sm hover:bg-emerald-50 transition-all shadow-xl"
             >
-              Request Free Container
+              Request a Quote
             </Link>
           </div>
         </div>

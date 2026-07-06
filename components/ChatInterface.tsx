@@ -7,7 +7,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { calculateServiceEstimate } from '../services/pricingEngine';
 import { EstimationInputs, EstimationResult, Frequency, ServiceType } from '../types';
-import { trackConversion, trackEvent } from '../api/gtag-utils';
+import { inferServiceContext, trackConversion, trackEvent, trackLeadEvent } from '../api/gtag-utils';
 import { getEstimatorServiceByLabel, type EstimatorServiceOption } from '../data/serviceOptions';
 import {
   defaultContactState,
@@ -844,6 +844,13 @@ export const ChatInterface: React.FC = () => {
           service: selectedServiceLabelRef.current,
           estimateId: quoteIdRef.current,
         });
+        // Fire only when the chat lead post succeeds.
+        trackLeadEvent('quote_agent_completed', {
+          page_path: typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : '/instant-estimate',
+          service_context: inferServiceContext(typeof window !== 'undefined' ? window.location.pathname : '/instant-estimate'),
+          lead_event: leadEvent,
+          quote_id: quoteIdRef.current,
+        });
         sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
         selectedServiceLabelRef.current = null;
         return true;
@@ -869,6 +876,13 @@ export const ChatInterface: React.FC = () => {
           email: contactRef.current?.email,
           service: selectedServiceLabelRef.current,
           estimateId: quoteIdRef.current,
+        });
+        // Fire only when the chat lead post succeeds.
+        trackLeadEvent('quote_agent_completed', {
+          page_path: typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : '/instant-estimate',
+          service_context: inferServiceContext(typeof window !== 'undefined' ? window.location.pathname : '/instant-estimate'),
+          lead_event: leadEvent,
+          quote_id: quoteIdRef.current,
         });
         sendHandoffOnce({ serviceLabel, moveForward, needsOfficeReview });
         selectedServiceLabelRef.current = null;

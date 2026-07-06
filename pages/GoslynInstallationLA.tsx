@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { StructuredData, buildBreadcrumbSchema, buildFAQPageSchema, buildServiceSchema } from '../components/StructuredData';
+import { inferServiceContext, trackLeadEvent } from '../api/gtag-utils';
 import { getEstimatorServiceByKey } from '../data/serviceOptions';
 import {
   buildLeadPayload,
@@ -128,6 +129,14 @@ const GoslynInstallationLA: React.FC = () => {
       if (!ok) {
         throw new Error('Submission failed. Please try again or call dispatch at (818) 698-4252.');
       }
+
+      // Fire only when consultation lead submission is confirmed successful.
+      trackLeadEvent('request_quote_submit', {
+        page_path: typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : '/goslyn-installation-los-angeles',
+        service_context: inferServiceContext(typeof window !== 'undefined' ? window.location.pathname : '/goslyn-installation-los-angeles'),
+        service_key: goslynService.key,
+        quote_mode: 'manual_review',
+      });
 
       setIsSubmitted(true);
     } catch (err: any) {

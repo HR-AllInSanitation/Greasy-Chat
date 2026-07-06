@@ -8,7 +8,6 @@
     <title>LA Restaurant Services | Los Angeles Restaurant Waste & Sanitation</title>
     <meta name="description" content="Request grease trap pumping, hydro jetting, UCO recycling, compliance help, and restaurant sanitation support across Los Angeles and Southern California." />
     <meta name="keywords" content="grease trap pumping, restaurant sanitation services, hydro jetting Los Angeles, used cooking oil pickup, septic pumping, compliance audit, restroom trailer rentals, dispatch support" />
-    <link rel="canonical" href="https://www.larestaurantservices.com/" />
     <link rel="icon" type="image/svg+xml" href="/icons/la-favicon.svg" />
     <link rel="alternate icon" href="/favicon.ico" />
     <!-- OpenGraph tags -->
@@ -30,118 +29,67 @@
       gtag('config', 'AW-17824333319');
       gtag('config', 'G-19H92NHMK8');
     </script>
-    <!-- JSON-LD LocalBusiness Schema (Mejorado para IA) -->
+    <!-- JSON-LD Organization + LocalBusiness + WebSite -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "LocalBusiness",
-      "@id": "https://www.larestaurantservices.com/#organization",
-      "name": "LA Restaurant Services",
-      "alternateName": "All In Sanitation",
-      "description": "Professional grease trap cleaning, used cooking oil recycling, septic pumping, and waste management services for restaurants in Los Angeles and Southern California. 24/7 emergency service with full compliance documentation.",
-      "image": "https://www.larestaurantservices.com/brand-hero.svg",
-      "logo": "https://www.larestaurantservices.com/brand-hero.svg",
-      "url": "https://www.larestaurantservices.com",
-      "telephone": "+1-818-698-4252",
-      "priceRange": "$$",
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "13141 San Fernando Rd",
-        "addressLocality": "Sylmar",
-        "addressRegion": "CA",
-        "postalCode": "91342",
-        "addressCountry": "US"
-      },
-      "geo": {
-        "@type": "GeoCoordinates",
-        "latitude": 34.3089,
-        "longitude": -118.4409
-      },
-      "openingHoursSpecification": {
-        "@type": "OpeningHoursSpecification",
-        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-        "opens": "00:00",
-        "closes": "23:59"
-      },
-      "areaServed": [
+      "@graph": [
         {
-          "@type": "City",
-          "name": "Los Angeles",
-          "containedInPlace": {
-            "@type": "State",
-            "name": "California"
+          "@type": "Organization",
+          "@id": "https://www.larestaurantservices.com/#organization",
+          "name": "LA Restaurant Services",
+          "url": "https://www.larestaurantservices.com",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.larestaurantservices.com/brand-hero.svg"
+          },
+          "sameAs": [
+            "https://www.facebook.com/larestaurantservices",
+            "https://twitter.com/larestaurantservices"
+          ]
+        },
+        {
+          "@type": "LocalBusiness",
+          "@id": "https://www.larestaurantservices.com/#localbusiness",
+          "name": "LA Restaurant Services",
+          "url": "https://www.larestaurantservices.com",
+          "image": "https://www.larestaurantservices.com/brand-hero.svg",
+          "telephone": "+1-818-698-4252",
+          "parentOrganization": {
+            "@id": "https://www.larestaurantservices.com/#organization"
+          },
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "13141 San Fernando Rd",
+            "addressLocality": "Sylmar",
+            "addressRegion": "CA",
+            "postalCode": "91342",
+            "addressCountry": "US"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 34.3089,
+            "longitude": -118.4409
+          },
+          "areaServed": [
+            { "@type": "City", "name": "Los Angeles" },
+            { "@type": "City", "name": "Ventura" },
+            { "@type": "City", "name": "San Bernardino" },
+            { "@type": "City", "name": "Lancaster" },
+            { "@type": "City", "name": "Palmdale" },
+            { "@type": "City", "name": "San Diego" },
+            { "@type": "AdministrativeArea", "name": "Orange County" }
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://www.larestaurantservices.com/#website",
+          "url": "https://www.larestaurantservices.com",
+          "name": "LA Restaurant Services",
+          "publisher": {
+            "@id": "https://www.larestaurantservices.com/#organization"
           }
-        },
-        {
-          "@type": "City",
-          "name": "Ventura"
-        },
-        {
-          "@type": "City",
-          "name": "San Bernardino"
-        },
-        {
-          "@type": "City",
-          "name": "Lancaster"
-        },
-        {
-          "@type": "City",
-          "name": "Palmdale"
-        },
-        {
-          "@type": "City",
-          "name": "San Diego"
-        },
-        {
-          "@type": "City",
-          "name": "Orange County"
         }
-      ],
-      "hasOfferCatalog": {
-        "@type": "OfferCatalog",
-        "name": "Restaurant Waste Management Services",
-        "itemListElement": [
-          {
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Service",
-              "name": "Grease Trap Cleaning",
-              "description": "Professional grease trap and interceptor pumping with full scraping and EPA-certified disposal",
-              "serviceType": "Grease Trap Cleaning Service"
-            }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Service",
-              "name": "Used Cooking Oil Recycling",
-              "description": "UCO collection and recycling with payment for clean oil and free containers",
-              "serviceType": "Used Cooking Oil Recycling Service"
-            }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Service",
-              "name": "Septic Tank Pumping",
-              "description": "Commercial septic and holding tank pumping for restaurants",
-              "serviceType": "Septic Tank Service"
-            }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Service",
-              "name": "Restroom Trailer Rentals",
-              "description": "Luxury portable restroom trailers for outdoor dining and events",
-              "serviceType": "Portable Restroom Rental"
-            }
-          }
-        ]
-      },
-      "sameAs": [
-        "https://www.facebook.com/larestaurantservices",
-        "https://twitter.com/larestaurantservices"
       ]
     }
     </script>

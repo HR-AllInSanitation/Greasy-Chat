@@ -1,4 +1,5 @@
 import React from 'react';
+import { inferServiceContext, trackLeadEvent } from '../api/gtag-utils';
 import { getEstimatorServiceByKey } from '../data/serviceOptions';
 import { hasMinPhoneDigits, isValidEmail } from '../utils/estimateFlow';
 
@@ -66,6 +67,13 @@ export const ComplexCaseWidget: React.FC<ComplexCaseWidgetProps> = ({ serviceKey
       if (!response.ok || data?.ok !== true) {
         throw new Error(data?.error || 'We could not send your message right now. Please call dispatch.');
       }
+
+      // Fire only on successful contact form submission.
+      trackLeadEvent('contact_form_submit', {
+        page_path: typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : '/instant-estimate',
+        service_context: inferServiceContext(typeof window !== 'undefined' ? window.location.pathname : '/instant-estimate'),
+        service_key: service?.key || undefined,
+      });
 
       setSubmitSuccess(true);
       setShowMessageForm(true);

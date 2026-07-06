@@ -1,5 +1,5 @@
 import React from 'react';
-import { trackConversion, trackEvent } from '../api/gtag-utils';
+import { inferServiceContext, trackConversion, trackEvent, trackLeadEvent } from '../api/gtag-utils';
 import { estimatorServiceOptions, getEstimatorServiceByKey } from '../data/serviceOptions';
 import { Frequency, ServiceType, type EstimationResult } from '../types';
 import {
@@ -180,6 +180,15 @@ export const IntelligentEstimateForm: React.FC<IntelligentEstimateFormProps> = (
       const ok = await submitLeadPayload(payload);
       if (!ok) throw new Error('We could not submit the request right now. Please call us directly.');
       setEstimateResult(estimate);
+
+      // Fire only on successful lead submission (never on button click).
+      trackLeadEvent('request_quote_submit', {
+        page_path: typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : '/instant-estimate',
+        service_context: inferServiceContext(typeof window !== 'undefined' ? window.location.pathname : '/instant-estimate'),
+        service_key: selectedService.key,
+        quote_mode: isQuoteFlow ? 'estimate' : 'manual_review',
+      });
+
       trackConversion({ phone: contact.contactPhone, email: contact.contactEmail, service: selectedService.label });
       trackEvent('quote_lead_submit', { service_key: selectedService.key, quote_mode: isQuoteFlow ? 'estimate' : 'manual_review' });
       setStep(3);

@@ -226,6 +226,10 @@ export const ArticleAIOPanel: React.FC = () => {
             {config.quickAnswer}
           </p>
 
+          <p className="text-sm text-slate-600 font-medium leading-relaxed">
+            Need service support now? Compare <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap cleaning</Link> and <Link to="/grease-trap-interceptor-pumping" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease interceptor pumping</Link> options before requesting service.
+          </p>
+
           <div className="space-y-2">
             <h3 className="text-sm font-black uppercase tracking-[0.15em] text-slate-900">Common questions</h3>
             <div className="space-y-2">
