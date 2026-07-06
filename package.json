@@ -17,7 +17,9 @@
     "ports:kill:repo": "node scripts/kill-ports.mjs",
     "dev:clean": "npm run ports:kill:repo && npm run dev:strict",
     "build:verify:prod": "npm run build && (rg -n '__setContactState|__triggerLeadSend|__lastLeadPayload|data-testid=\\\"chat-shell\\\"|data-glowing|VITE_E2E' dist && exit 1 || true) && (rg -n 'data-testid' dist && exit 1 || true)",
-    "ci:prod": "npm run build:verify:prod && npx tsc --noEmit --pretty false"
+    "ci:prod": "npm run build:verify:prod && npx tsc --noEmit --pretty false",
+    "indexnow:submit": "node scripts/submit-indexnow.mjs",
+    "indexnow:dry-run": "node scripts/submit-indexnow.mjs --dry-run"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",

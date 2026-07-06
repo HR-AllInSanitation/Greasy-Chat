@@ -38,3 +38,17 @@ View your app in AI Studio: https://ai.studio/apps/drive/1rSBqWvIRzc49aWlNDfPYoi
 - For prod safety, `npm run build` fails if `VITE_E2E` is set; `build:verify:prod` also checks bundles for test hooks/attrs.
 - If `VITE_OFFICE_PHONE` is empty in dev, the CTA will not render; set it locally to exercise the handoff link.
 - If you hit exit 137 / OOM or have stray dev servers, run `npm run dev:clean` (kills repo ports then starts dev:strict). Avoid running multiple dev servers concurrently.
+
+## IndexNow setup
+
+- Key file hosted at site root: `/891709ac5542488e8e52426bc1c5c58a.txt`
+- To validate payload before submit: `npm run indexnow:dry-run`
+- To submit URLs in bulk from `public/sitemap.xml`: `npm run indexnow:submit`
+
+Optional environment variables:
+
+- `SITE_ORIGIN` (default: auto-detected from first URL in `public/sitemap.xml`)
+- `INDEXNOW_ENDPOINT` (default: `https://api.indexnow.org/indexnow`)
+- `INDEXNOW_KEY` (default: `891709ac5542488e8e52426bc1c5c58a`)
+- `INDEXNOW_KEY_FILE_PATH` (default: `/<key>.txt`)
+- `SITEMAP_PATH` (default: `./public/sitemap.xml`)
