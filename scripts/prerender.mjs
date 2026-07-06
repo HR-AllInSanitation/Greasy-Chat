@@ -4,6 +4,8 @@ import { createReadStream } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
+import puppeteerCore from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +36,7 @@ const contentTypeByExt = {
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const IS_VERCEL = Boolean(process.env.VERCEL);
 
 const routeToOutputFile = (routePath) => {
   if (routePath === '/') return path.join(DIST_DIR, 'index.html');
@@ -133,6 +136,20 @@ const prerenderRoute = async (page, routePath) => {
   return outputFile;
 };
 
+const launchBrowser = async () => {
+  if (IS_VERCEL) {
+    const executablePath = await chromium.executablePath();
+    return puppeteerCore.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath,
+      headless: chromium.headless,
+    });
+  }
+
+  return puppeteer.launch({ headless: true });
+};
+
 const run = async () => {
   await ensureBuilt();
   const routes = await parseRoutesFromSitemap();
@@ -140,7 +157,7 @@ const run = async () => {
   console.log(`Prerender: ${routes.length} route(s) from sitemap (deferred: ${Array.from(DEFERRED_ROUTES).join(', ') || 'none'})`);
 
   const server = await startStaticServer();
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await launchBrowser();
 
   try {
     const page = await browser.newPage();
