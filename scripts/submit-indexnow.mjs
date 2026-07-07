@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 const INDEXNOW_ENDPOINT = process.env.INDEXNOW_ENDPOINT || 'https://api.indexnow.org/indexnow';
 const SITE_ORIGIN = (process.env.SITE_ORIGIN || process.env.VITE_SITE_URL || '').replace(/\/$/, '');
-const KEY = process.env.INDEXNOW_KEY || '891709ac5542488e8e52426bc1c5c58a';
+const KEY = process.env.INDEXNOW_KEY || '5rpdkc5b7yd3hqdjanajl8cirnhn9d2k';
 const KEY_FILE_PATH = process.env.INDEXNOW_KEY_FILE_PATH || `/${KEY}.txt`;
 const SITEMAP_PATH = process.env.SITEMAP_PATH || './public/sitemap.xml';
 const DRY_RUN = process.argv.includes('--dry-run');
