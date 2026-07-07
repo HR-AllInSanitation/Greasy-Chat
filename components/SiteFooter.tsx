@@ -64,6 +64,7 @@ export const SiteFooter: React.FC = () => {
       <div className="max-w-7xl mx-auto mt-12 pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-6">
         <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">© 2026 LA Restaurant Services. HQ Dispatch: 13141 San Fernando Rd. Sylmar, CA.</p>
         <div className="flex gap-10 text-[9px] font-black uppercase tracking-widest text-slate-600">
+          <a href="https://bucketleads.com" rel="nofollow" className="hover:text-slate-400 transition-colors">Lead system powered by Bucket Leads</a>
           <span>Privacy</span>
           <span>Compliance</span>
           <span>Terms</span>
