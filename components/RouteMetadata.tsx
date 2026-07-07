@@ -35,7 +35,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/instant-estimate': {
     title: 'Instant Estimate | LA Restaurant Services',
     description:
-      'Use the structured form to request a fast restaurant service estimate, call dispatch, or send a message for follow-up.',
+      'Request an estimate for grease trap cleaning, hydro jetting, used cooking oil pickup, and restaurant waste services in Los Angeles.',
     canonicalPath: '/instant-estimate',
   },
   '/faq': {
@@ -63,9 +63,9 @@ const ROUTE_META: Record<string, RouteMeta> = {
     canonicalPath: '/environmental-impact',
   },
   '/grease-trap-cleaning-los-angeles': {
-    title: 'Grease Trap Cleaning Los Angeles | LA Restaurant Services',
+    title: 'Grease Trap Cleaning Los Angeles | Restaurant Pumping Service',
     description:
-      'Grease trap and interceptor pumping for restaurants in Los Angeles with full scraping, manifests, and fast dispatch support.',
+      'Schedule grease trap cleaning and interceptor pumping for Los Angeles restaurants and commercial kitchens. Pumping, scraping, manifests, and dispatch support.',
   },
   '/grease-trap-interceptor-pumping': {
     title: 'Grease Interceptor Pumping Los Angeles | LA Restaurant Services',
@@ -74,9 +74,9 @@ const ROUTE_META: Record<string, RouteMeta> = {
     canonicalPath: '/grease-trap-interceptor-pumping',
   },
   '/used-cooking-oil-pickup-los-angeles': {
-    title: 'Used Cooking Oil Pickup Los Angeles | LA Restaurant Services',
+    title: 'Used Cooking Oil Pickup Los Angeles | Restaurant UCO Recycling',
     description:
-      'Used cooking oil pickup and recycling for restaurants in Los Angeles with containers, scheduled collection, and compliance records.',
+      'Used cooking oil pickup for Los Angeles restaurants with scheduled collection, containers, recycling support, and service records.',
   },
   '/restroom-trailer-rentals-los-angeles': {
     title: 'Restroom Trailer Rentals Los Angeles | LA Restaurant Services',
@@ -95,9 +95,9 @@ const ROUTE_META: Record<string, RouteMeta> = {
       'Restaurant septic and holding tank pumping with dispatch coordination, maintenance scheduling, and compliance-focused follow-up.',
   },
   '/hydro-jetting-los-angeles': {
-    title: 'Hydro Jetting Los Angeles | LA Restaurant Services',
+    title: 'Restaurant Hydro Jetting Los Angeles | Kitchen Drain Cleaning',
     description:
-      'Hydro jetting for restaurant sewer and kitchen drain lines in Los Angeles with fast dispatch support for recurring backups.',
+      'Hydro jetting for Los Angeles restaurant drains, kitchen sewer lines, recurring clogs, odors, and grease buildup. Call or request an estimate.',
   },
   '/compliance-audits-los-angeles': {
     title: 'Compliance Audits Los Angeles | LA Restaurant Services',
@@ -120,9 +120,9 @@ const ROUTE_META: Record<string, RouteMeta> = {
       'A plain-language explanation of grease trap anatomy, separation layers, service thresholds, and compliance implications.',
   },
   '/which-restaurants-need-grease-traps-los-angeles': {
-    title: 'Which LA Restaurants Need Grease Traps? Requirements & Service Help',
+    title: 'Do LA Restaurants Need Grease Traps? Rules, Cleaning & Service Help',
     description:
-      'Learn which Los Angeles restaurants, cafes, ghost kitchens, and commercial kitchens may need grease traps — and when to schedule cleaning or interceptor service.',
+      'See which Los Angeles restaurants need grease traps, when cleaning is required, and how service records help with FOG compliance. Request service help.',
   },
   '/how-to-tell-if-grease-trap-was-serviced': {
     title: 'How to Tell If a Grease Trap Was Serviced | LA Restaurant Services',
