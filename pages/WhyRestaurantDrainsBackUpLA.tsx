@@ -162,7 +162,7 @@ const WhyRestaurantDrainsBackUpLA: React.FC = () => {
             </div>
             <div className="pl-14 mt-4 pt-4 border-t border-slate-100 text-slate-600 font-medium text-sm leading-relaxed">
               <p>
-                <strong>Multiple areas backing up at once?</strong> This usually means your main grease trap is at or past capacity. A grease trap service is the first step. If backups persist after service, your drain lines may have hardened FOG deposits that need <Link to="/hydro-jetting-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">commercial hydro jetting</Link> to clear.
+                <strong>Multiple areas backing up at once?</strong> This usually means your main grease trap is at or past capacity. A grease trap service is the first step. If backups persist after service, your drain lines may have hardened FOG deposits that need <Link to="/hydro-jetting-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">commercial hydro jetting</Link> to clear. Check <Link to="/signs-restaurant-needs-hydro-jetting-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">signs your restaurant needs hydro jetting</Link> and <Link to="/grease-trap-interceptor-pumping" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease interceptor pumping</Link> to assess your situation.
               </p>
             </div>
           </article>
@@ -179,7 +179,7 @@ const WhyRestaurantDrainsBackUpLA: React.FC = () => {
                 A plumber with a drain snake can clear a temporary clog, but if the underlying problem is an over-capacity grease trap or hardened FOG deposits in the lines, the backup will return in days or weeks. You end up paying for repeated service calls instead of fixing the root cause.
               </p>
               <p>
-                The solution is two-part: <strong>First,</strong> ensure your <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap is serviced on schedule</Link> and never exceeds 25% capacity. <strong>Second,</strong> if backups persist, use hydro jetting to blast out hardened FOG inside the drain lines, then maintain a regular service schedule to prevent recurrence.
+                The solution is two-part: <strong>First,</strong> ensure your <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap is serviced on schedule</Link> and never exceeds 25% capacity. See <Link to="/restaurant-grease-trap-cleaning-frequency-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">how often Los Angeles restaurants need grease trap service</Link> for intervals by kitchen type. <strong>Second,</strong> if backups persist, use hydro jetting to blast out hardened FOG inside the drain lines, then maintain a regular service schedule to prevent recurrence.
               </p>
             </div>
           </article>

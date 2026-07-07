@@ -172,6 +172,9 @@ const GreaseTrapVsInterceptorLA: React.FC = () => {
               </div>
               <h2 className="text-xl font-black text-slate-950 tracking-tight">Why they work the same way</h2>
             </div>
+            <p className="text-slate-600 text-sm font-medium">
+              Both devices use gravity separation to trap FOG, but they differ in size and capacity. To understand what happens when either reaches capacity, see <Link to="/why-restaurant-kitchen-drains-back-up-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">what causes restaurant kitchen drain backups</Link>. For high-volume drains, <Link to="/hydro-jetting-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">commercial hydro jetting</Link> may complement regular pumping.
+            </p>
             <div className="grid gap-5 pl-14">
               {functionalPoints.map((point, idx) => (
                 <div key={idx} className="flex gap-4">

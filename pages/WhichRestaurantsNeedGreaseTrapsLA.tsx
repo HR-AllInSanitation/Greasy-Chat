@@ -119,6 +119,7 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
               </div>
               <span className="text-sm font-bold text-slate-500">LA Restaurant Services · Field Technician Notes</span>
             </div>
+            <p className="text-sm text-slate-600 font-medium mt-2">Not sure about your service schedule? See <Link to="/restaurant-grease-trap-cleaning-frequency-los-angeles" className="text-amber-600 hover:text-amber-700 font-semibold transition-colors">how often grease trap service is required</Link> based on your kitchen type.</p>
           </header>
 
           <section className="bg-amber-50 border border-amber-100 rounded-3xl p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
@@ -157,7 +158,7 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
 
           <article className="bg-amber-50 border border-amber-100 rounded-3xl p-8 space-y-3">
             <p className="text-slate-700 font-medium leading-relaxed">
-              Need help translating requirements into a service plan? LA Restaurant Services provides <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap cleaning</Link>, <Link to="/grease-trap-interceptor-pumping" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease interceptor pumping</Link>, and <Link to="/restaurant-waste-services" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">restaurant waste services</Link> for commercial kitchens across Los Angeles and Southern California. (Not sure about the difference between a trap and an interceptor? <Link to="/grease-trap-vs-grease-interceptor-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">Read our guide</Link>.)
+              Need help translating requirements into a service plan? LA Restaurant Services provides <Link to="/grease-trap-cleaning-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease trap cleaning</Link>, <Link to="/grease-trap-interceptor-pumping" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">grease interceptor pumping</Link>, and <Link to="/restaurant-waste-services" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">restaurant waste services</Link> for commercial kitchens across Los Angeles and Southern California. (Not sure about the difference between a trap and an interceptor? <Link to="/grease-trap-vs-grease-interceptor-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">Read our guide</Link>.) Want to know <Link to="/la-fog-program-explained" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">LA FOG program requirements</Link>? See our compliance overview.
             </p>
           </article>
 
@@ -194,6 +195,7 @@ const WhichRestaurantsNeedGreaseTrapsLA: React.FC = () => {
             </div>
             <div className="pl-14 text-slate-600 font-medium leading-relaxed space-y-3">
               <p>Watch for operational signs that service may be due:</p>
+              <p className="text-sm pt-2">If you're experiencing recurring backups or slow drains, learn <Link to="/why-restaurant-kitchen-drains-back-up-los-angeles" className="text-amber-700 hover:text-amber-800 font-semibold transition-colors">what happens when service is skipped</Link> and how often you may need scheduled maintenance.</p>
               <ul className="list-disc pl-5 space-y-1">
                 <li>Recurring slow drains in prep sinks or dish areas.</li>
                 <li>Persistent kitchen drain odor during or after busy shifts.</li>

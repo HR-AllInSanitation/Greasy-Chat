@@ -61,7 +61,7 @@ const HydroJettingLA: React.FC = () => {
             </h1>
 
             <p className="text-xl text-slate-600 leading-relaxed max-w-3xl font-medium">
-              Clear grease-heavy drain lines with <Link to="/instant-estimate?service=hydro-jetting" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">commercial hydro jetting</Link> for Los Angeles and Southern California <span className="font-semibold">restaurants, commercial kitchens, cafes, bars, hotels, ghost kitchens, shared kitchens, and foodservice operators</span>. Use this service to prevent backups, restore flow, and support FOG compliance through scheduled maintenance. Pair with <Link to="/grease-trap-interceptor-pumping" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">grease interceptor pumping</Link> to reduce repeat blockages.
+              Clear grease-heavy drain lines with <Link to="/instant-estimate?service=hydro-jetting" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">commercial hydro jetting</Link> for Los Angeles and Southern California <span className="font-semibold">restaurants, commercial kitchens, cafes, bars, hotels, ghost kitchens, shared kitchens, and foodservice operators</span>. Use this service to prevent backups, restore flow, and support FOG compliance through scheduled maintenance. Pair with <Link to="/grease-trap-interceptor-pumping" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">grease interceptor pumping</Link> and <Link to="/grease-trap-cleaning-los-angeles" className="text-purple-600 hover:text-purple-700 transition-colors font-semibold">grease trap cleaning</Link> to reduce repeat blockages.
             </p>
           </div>
 
@@ -113,6 +113,7 @@ const HydroJettingLA: React.FC = () => {
                   <li>• Persistent sewer odor during peak service hours</li>
                   <li>• Pre-inspection risk reduction for FOG-heavy kitchens</li>
                 </ul>
+                <p className="text-xs text-slate-600 font-medium pt-2">Learn more: <Link to="/why-restaurant-kitchen-drains-back-up-los-angeles" className="text-purple-700 hover:text-purple-800 font-semibold transition-colors">why restaurant drains keep backing up</Link>, and see <Link to="/signs-restaurant-needs-hydro-jetting-los-angeles" className="text-purple-700 hover:text-purple-800 font-semibold transition-colors">signs your restaurant needs hydro jetting</Link>.</p>
               </div>
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-sm text-slate-700 font-medium">
